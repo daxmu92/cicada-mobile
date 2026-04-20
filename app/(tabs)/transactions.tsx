@@ -1,0 +1,320 @@
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+
+import {
+  getIncomeOutlayTotalsForMonth,
+  listTransactionsInMonth,
+} from '../../src/db/tran-repo';
+import {
+  currentYearMonth,
+  prevYearMonth,
+  nextYearMonth,
+  MONTH_NAMES,
+} from '../../src/utils/date';
+import { useFormat } from '../../src/hooks/SettingsContext';
+import type { Transaction } from '../../src/utils/types';
+import { colors, shared, spacing } from '../../src/utils/theme';
+import { CategoryBars } from '../../src/components/charts/CategoryBars';
+
+type Tab = 'list' | 'breakdown';
+
+export default function TransactionsScreen() {
+  const router = useRouter();
+  const { fmt } = useFormat();
+  const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [totals, setTotals] = useState({ income: 0, outlay: 0 });
+  const [tab, setTab] = useState<Tab>('list');
+
+  const loadData = useCallback(async () => {
+    const [txs, t] = await Promise.all([
+      listTransactionsInMonth(selectedMonth),
+      getIncomeOutlayTotalsForMonth(selectedMonth),
+    ]);
+    setTransactions(txs);
+    setTotals(t);
+  }, [selectedMonth]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const breakdowns = useMemo(() => {
+    const groupBy = (type: 'INCOME' | 'OUTLAY') => {
+      const agg = new Map<string, number>();
+      transactions
+        .filter((tx) => tx.type === type)
+        .forEach((tx) => {
+          const tags = tx.cat.split(',').map((t) => t.trim()).filter(Boolean);
+          if (tags.length === 0) {
+            agg.set('Untagged', (agg.get('Untagged') ?? 0) + tx.value);
+          } else {
+            tags.forEach((tag) =>
+              agg.set(tag, (agg.get(tag) ?? 0) + tx.value / tags.length)
+            );
+          }
+        });
+      return Array.from(agg.entries()).map(([label, value]) => ({ label, value }));
+    };
+    return { income: groupBy('INCOME'), outlay: groupBy('OUTLAY') };
+  }, [transactions]);
+
+  const [year, month] = selectedMonth.split('-').map(Number);
+  const net = totals.income - totals.outlay;
+
+  return (
+    <View style={shared.screen}>
+      <View style={{ padding: spacing.lg, paddingBottom: 0 }}>
+        <View style={[shared.card, styles.selectorCard]}>
+          <TouchableOpacity
+            onPress={() => setSelectedMonth(prevYearMonth(selectedMonth))}
+            style={styles.arrowBtn}>
+            <Text style={styles.arrow}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.monthLabel}>
+            {MONTH_NAMES[month - 1]} {year}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setSelectedMonth(nextYearMonth(selectedMonth))}
+            style={styles.arrowBtn}>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.totalsRow}>
+          <View style={[shared.card, styles.totalCard]}>
+            <Text style={shared.sectionTitle}>Income</Text>
+            <Text style={[styles.totalValue, { color: colors.positive }]}>
+              {fmt(totals.income)}
+            </Text>
+          </View>
+          <View style={[shared.card, styles.totalCard]}>
+            <Text style={shared.sectionTitle}>Outlay</Text>
+            <Text style={[styles.totalValue, { color: colors.negative }]}>
+              {fmt(totals.outlay)}
+            </Text>
+          </View>
+          <View style={[shared.card, styles.totalCard]}>
+            <Text style={shared.sectionTitle}>Net</Text>
+            <Text
+              style={[
+                styles.totalValue,
+                { color: net >= 0 ? colors.positive : colors.negative },
+              ]}>
+              {fmt(net)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.tabRow}>
+          {(['list', 'breakdown'] as const).map((t) => (
+            <TouchableOpacity
+              key={t}
+              onPress={() => setTab(t)}
+              style={[styles.tab, tab === t && styles.tabActive]}>
+              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                {t === 'list' ? 'List' : 'Breakdown'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {tab === 'list' ? (
+        <FlatList
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
+          data={transactions}
+          keyExtractor={(t) => String(t.id)}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={shared.muted}>No transactions this month</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[shared.card, styles.txRow]}
+              onPress={() => router.push(`/modals/add-transaction?id=${item.id}`)}>
+              <View style={{ flex: 1 }}>
+                <View style={styles.txHeader}>
+                  <Text style={styles.txType}>
+                    {item.type === 'INCOME' ? '+' : '−'}
+                  </Text>
+                  <Text style={styles.txDate}>{item.date}</Text>
+                </View>
+                {item.cat ? <Text style={styles.txCat}>{item.cat}</Text> : null}
+                {item.note ? <Text style={styles.txNote}>{item.note}</Text> : null}
+              </View>
+              <Text
+                style={[
+                  styles.txValue,
+                  { color: item.type === 'INCOME' ? colors.positive : colors.negative },
+                ]}>
+                {fmt(item.value)}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      ) : (
+        <FlatList
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
+          data={[{ key: 'breakdown' }]}
+          keyExtractor={(i) => i.key}
+          renderItem={() => (
+            <View>
+              <View style={shared.card}>
+                <Text style={[shared.sectionTitle, { marginBottom: spacing.sm }]}>
+                  Income by Category
+                </Text>
+                <CategoryBars
+                  items={breakdowns.income}
+                  color={colors.positive}
+                  emptyText="No income this month"
+                />
+              </View>
+              <View style={shared.card}>
+                <Text style={[shared.sectionTitle, { marginBottom: spacing.sm }]}>
+                  Outlay by Category
+                </Text>
+                <CategoryBars
+                  items={breakdowns.outlay}
+                  color={colors.negative}
+                  emptyText="No outlay this month"
+                />
+              </View>
+            </View>
+          )}
+        />
+      )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push(`/modals/add-transaction?date=${selectedMonth}-01`)}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  selectorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  arrowBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  arrow: {
+    fontSize: 24,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  monthLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  totalsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  totalCard: {
+    flex: 1,
+    padding: spacing.md,
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.muted,
+  },
+  tabTextActive: {
+    color: 'white',
+  },
+  empty: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl,
+  },
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  txHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  txType: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  txDate: {
+    fontSize: 14,
+    color: colors.muted,
+  },
+  txCat: {
+    fontSize: 13,
+    color: colors.primary,
+    marginTop: 2,
+  },
+  txNote: {
+    fontSize: 13,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  txValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  fabText: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '300',
+    marginTop: -2,
+  },
+});
