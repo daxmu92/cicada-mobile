@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import {
@@ -7,21 +7,18 @@ import {
   getTotalsForDate,
   listSnapshotsByDate,
 } from '../../src/db/snapshot-repo';
-import {
-  currentYearMonth,
-  prevYearMonth,
-  nextYearMonth,
-  MONTH_NAMES,
-  yearMonth,
-} from '../../src/utils/date';
-import { useFormat } from '../../src/hooks/SettingsContext';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
+import { useFormat, useSemanticColors, useSettings } from '../../src/hooks/SettingsContext';
+import { shared, spacing } from '../../src/utils/theme';
 import { AllocationBarList } from '../../src/components/charts/AllocationBarList';
 import { Sparkline } from '../../src/components/charts/Sparkline';
+import { YearCalendar } from '../../src/components/YearCalendar';
 import type { SnapshotWithAsset } from '../../src/utils/types';
 
 export default function HomeScreen() {
   const { fmt, fmtSigned } = useFormat();
+  const { forwardFill } = useSettings();
+  const { gain, loss } = useSemanticColors();
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [totals, setTotals] = useState({ netWorth: 0, inflow: 0, profit: 0 });
   const [prevNetWorth, setPrevNetWorth] = useState(0);
@@ -30,9 +27,9 @@ export default function HomeScreen() {
 
   const loadData = useCallback(async () => {
     const [cur, prev, snaps] = await Promise.all([
-      getTotalsForDate(selectedMonth),
-      getTotalsForDate(prevYearMonth(selectedMonth)),
-      listSnapshotsByDate(selectedMonth),
+      getTotalsForDate(selectedMonth, { forwardFill }),
+      getTotalsForDate(prevYearMonth(selectedMonth), { forwardFill }),
+      listSnapshotsByDate(selectedMonth, { forwardFill }),
     ]);
     setTotals(cur);
     setPrevNetWorth(prev.netWorth);
@@ -43,7 +40,7 @@ export default function HomeScreen() {
     for (let i = 0; i < 11; i++) start = prevYearMonth(start);
     const months = await getMonthlyTotals(start, selectedMonth);
     setTrend(months.map((m) => m.netWorth));
-  }, [selectedMonth]);
+  }, [selectedMonth, forwardFill]);
 
   useEffect(() => {
     loadData();
@@ -56,20 +53,18 @@ export default function HomeScreen() {
   );
 
   const netGrowth = totals.netWorth - prevNetWorth;
-  const [year, month] = selectedMonth.split('-').map(Number);
   const allocationItems = allocations.map((s) => ({
     label: `${s.accountName} · ${s.assetName}`,
     value: s.netWorth,
   }));
 
+  // NOTE: YearCalendar computes each month's net growth from raw SQL sums via
+  // getMonthlyTotals. Forward-fill (when enabled in settings) is intentionally
+  // NOT applied to the year-view cells yet — getMonthlyTotals has no
+  // forward-fill support and we chose not to add it as part of this change.
   return (
     <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
-      <MonthSelector
-        selected={selectedMonth}
-        onChange={setSelectedMonth}
-        year={year}
-        month={month}
-      />
+      <YearCalendar selected={selectedMonth} onChange={setSelectedMonth} />
 
       <View style={shared.card}>
         <View style={styles.worthHeader}>
@@ -82,7 +77,7 @@ export default function HomeScreen() {
               values={trend}
               width={100}
               height={40}
-              color={trend[trend.length - 1] >= trend[0] ? colors.positive : colors.negative}
+              color={trend[trend.length - 1] >= trend[0] ? gain : loss}
             />
           )}
         </View>
@@ -94,7 +89,7 @@ export default function HomeScreen() {
           <Text
             style={[
               styles.metricValue,
-              { color: netGrowth >= 0 ? colors.positive : colors.negative },
+              { color: netGrowth >= 0 ? gain : loss },
             ]}>
             {fmtSigned(netGrowth)}
           </Text>
@@ -104,7 +99,7 @@ export default function HomeScreen() {
           <Text
             style={[
               styles.metricValue,
-              { color: totals.profit >= 0 ? colors.positive : colors.negative },
+              { color: totals.profit >= 0 ? gain : loss },
             ]}>
             {fmtSigned(totals.profit)}
           </Text>
@@ -119,71 +114,7 @@ export default function HomeScreen() {
   );
 }
 
-function MonthSelector({
-  selected,
-  onChange,
-  year,
-  month,
-}: {
-  selected: string;
-  onChange: (ym: string) => void;
-  year: number;
-  month: number;
-}) {
-  return (
-    <View style={[shared.card, styles.selectorCard]}>
-      <View style={styles.selectorRow}>
-        <TouchableOpacity
-          onPress={() => onChange(prevYearMonth(selected))}
-          style={styles.arrowBtn}>
-          <Text style={styles.arrow}>‹</Text>
-        </TouchableOpacity>
-        <View style={styles.selectorCenter}>
-          <Text style={styles.monthLabel}>{MONTH_NAMES[month - 1]} {year}</Text>
-          <TouchableOpacity onPress={() => onChange(currentYearMonth())}>
-            <Text style={styles.todayLink}>Today</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-          onPress={() => onChange(nextYearMonth(selected))}
-          style={styles.arrowBtn}>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  selectorCard: {
-    paddingVertical: spacing.sm,
-  },
-  selectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  arrowBtn: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  arrow: {
-    fontSize: 28,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  selectorCenter: {
-    alignItems: 'center',
-  },
-  monthLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  todayLink: {
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: 2,
-  },
   metricsRow: {
     flexDirection: 'row',
     gap: spacing.md,

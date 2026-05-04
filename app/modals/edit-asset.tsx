@@ -13,7 +13,12 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { getAccount } from '../../src/db/account-repo';
-import { deleteAsset, getAsset, updateAsset } from '../../src/db/asset-repo';
+import {
+  deleteAsset,
+  getAsset,
+  setAssetArchived,
+  updateAsset,
+} from '../../src/db/asset-repo';
 import type { Asset } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 
@@ -73,9 +78,29 @@ export default function EditAssetModal() {
     try {
       await updateAsset(assetId, name.trim(), catMap);
       router.back();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to save');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to save';
+      Alert.alert('Error', message);
     }
+  };
+
+  const toggleArchive = async () => {
+    if (!asset) return;
+    const nextArchived = !asset.archived;
+    const title = nextArchived ? 'Archive Asset' : 'Unarchive Asset';
+    const message = nextArchived
+      ? `Hide "${asset.name}" from default views? History is preserved and can be restored later.`
+      : `Restore "${asset.name}" to default views?`;
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: nextArchived ? 'Archive' : 'Unarchive',
+        onPress: async () => {
+          await setAssetArchived(assetId, nextArchived);
+          router.back();
+        },
+      },
+    ]);
   };
 
   const confirmDelete = () => {
@@ -104,7 +129,14 @@ export default function EditAssetModal() {
         {asset && (
           <>
             <View style={shared.card}>
-              <Text style={shared.sectionTitle}>{accountName}</Text>
+              <View style={styles.headerRow}>
+                <Text style={shared.sectionTitle}>{accountName}</Text>
+                {asset.archived && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>Archived</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.label}>Asset Name</Text>
               <TextInput style={styles.input} value={name} onChangeText={setName} />
             </View>
@@ -148,6 +180,12 @@ export default function EditAssetModal() {
               <Text style={styles.saveBtnText}>Save</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity style={styles.archiveBtn} onPress={toggleArchive}>
+              <Text style={styles.archiveBtnText}>
+                {asset.archived ? 'Unarchive Asset' : 'Archive Asset'}
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete}>
               <Text style={styles.deleteBtnText}>Delete Asset</Text>
             </TouchableOpacity>
@@ -159,6 +197,24 @@ export default function EditAssetModal() {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  badge: {
+    backgroundColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -215,6 +271,20 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  archiveBtn: {
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'white',
+  },
+  archiveBtnText: {
+    color: colors.muted,
     fontSize: 16,
     fontWeight: '600',
   },

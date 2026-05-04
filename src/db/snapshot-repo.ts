@@ -1,4 +1,5 @@
 import { getDatabase } from './database';
+import { listAssets } from './asset-repo';
 import type { AssetSnapshot, SnapshotWithAsset } from '../utils/types';
 
 type SnapshotRow = {
@@ -45,21 +46,56 @@ export async function listSnapshotsByAsset(assetId: number): Promise<AssetSnapsh
   return rows.map(rowToSnapshot);
 }
 
-export async function listSnapshotsByDate(date: string): Promise<SnapshotWithAsset[]> {
+export async function listSnapshotsByDate(
+  date: string,
+  opts?: { forwardFill?: boolean }
+): Promise<SnapshotWithAsset[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<SnapshotWithAssetRow>(`
     SELECT s.*, acc.name AS account_name, a.name AS asset_name
     FROM asset_snapshot s
     JOIN asset a ON s.asset_id = a.id
     JOIN account acc ON a.account_id = acc.id
-    WHERE s.date = ?
+    WHERE s.date = ? AND a.archived = 0
     ORDER BY acc.name, a.name
   `, [date]);
-  return rows.map(r => ({
+  const exact: SnapshotWithAsset[] = rows.map(r => ({
     ...rowToSnapshot(r),
     accountName: r.account_name,
     assetName: r.asset_name,
   }));
+
+  if (!opts?.forwardFill) return exact;
+
+  const assets = await listAssets();
+  const byId = new Map<number, SnapshotWithAsset>();
+  for (const s of exact) byId.set(s.assetId, s);
+
+  const result: SnapshotWithAsset[] = [];
+  for (const asset of assets) {
+    const existing = byId.get(asset.id);
+    if (existing) {
+      result.push(existing);
+      continue;
+    }
+    const prev = await getLastSnapshotBefore(asset.id, date);
+    if (!prev) continue; // asset with no prior history — skip
+    result.push({
+      assetId: asset.id,
+      date,
+      netWorth: prev.netWorth,
+      inflow: 0,
+      profit: 0,
+      accountName: asset.accountName,
+      assetName: asset.name,
+    });
+  }
+
+  result.sort((a, b) => {
+    const cmp = a.accountName.localeCompare(b.accountName);
+    return cmp !== 0 ? cmp : a.assetName.localeCompare(b.assetName);
+  });
+  return result;
 }
 
 export async function listSnapshotsInRange(
@@ -135,19 +171,23 @@ export async function getMonthlyTotals(
 ): Promise<Array<{ date: string; netWorth: number; profit: number; inflow: number }>> {
   const db = await getDatabase();
   return db.getAllAsync<{ date: string; netWorth: number; profit: number; inflow: number }>(
-    `SELECT date,
-      SUM(net_worth) AS netWorth,
-      SUM(profit)    AS profit,
-      SUM(inflow)    AS inflow
-    FROM asset_snapshot
-    WHERE date BETWEEN ? AND ?
-    GROUP BY date
-    ORDER BY date`,
+    `SELECT s.date AS date,
+      SUM(s.net_worth) AS netWorth,
+      SUM(s.profit)    AS profit,
+      SUM(s.inflow)    AS inflow
+    FROM asset_snapshot s
+    JOIN asset a ON s.asset_id = a.id
+    WHERE s.date BETWEEN ? AND ? AND a.archived = 0
+    GROUP BY s.date
+    ORDER BY s.date`,
     [startDate, endDate]
   );
 }
 
-export async function getTotalsForDate(date: string): Promise<{
+export async function getTotalsForDate(
+  date: string,
+  opts?: { forwardFill?: boolean }
+): Promise<{
   netWorth: number;
   inflow: number;
   profit: number;
@@ -159,15 +199,45 @@ export async function getTotalsForDate(date: string): Promise<{
     profit: number | null;
   }>(`
     SELECT
-      SUM(net_worth) AS net_worth,
-      SUM(inflow) AS inflow,
-      SUM(profit) AS profit
-    FROM asset_snapshot
-    WHERE date = ?
+      SUM(s.net_worth) AS net_worth,
+      SUM(s.inflow) AS inflow,
+      SUM(s.profit) AS profit
+    FROM asset_snapshot s
+    JOIN asset a ON s.asset_id = a.id
+    WHERE s.date = ? AND a.archived = 0
   `, [date]);
-  return {
+  const base = {
     netWorth: row?.net_worth ?? 0,
     inflow: row?.inflow ?? 0,
     profit: row?.profit ?? 0,
+  };
+
+  if (!opts?.forwardFill) return base;
+
+  // Find assets without an exact-date snapshot and add their last-known netWorth.
+  // Only consider non-archived assets; the forward-fill set already does via
+  // listAssets() below, but we also filter the "exact" lookup to archived=0
+  // so archived snapshots on this date don't mark an asset as having one.
+  const exactRows = await db.getAllAsync<{ asset_id: number }>(
+    `SELECT s.asset_id
+       FROM asset_snapshot s
+       JOIN asset a ON s.asset_id = a.id
+      WHERE s.date = ? AND a.archived = 0`,
+    [date]
+  );
+  const haveExact = new Set<number>(exactRows.map(r => r.asset_id));
+
+  const assets = await listAssets();
+  let filledNetWorth = 0;
+  for (const asset of assets) {
+    if (haveExact.has(asset.id)) continue;
+    const prev = await getLastSnapshotBefore(asset.id, date);
+    if (prev) filledNetWorth += prev.netWorth;
+  }
+
+  return {
+    netWorth: base.netWorth + filledNetWorth,
+    inflow: base.inflow,
+    profit: base.profit,
   };
 }

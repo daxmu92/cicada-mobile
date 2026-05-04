@@ -10,7 +10,7 @@ import {
   listSnapshotsByAsset,
 } from '../../src/db/snapshot-repo';
 import { currentYearMonth } from '../../src/utils/date';
-import { useFormat } from '../../src/hooks/SettingsContext';
+import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Account, AssetWithAccount } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { Sparkline } from '../../src/components/charts/Sparkline';
@@ -28,6 +28,7 @@ type AccountGroup = {
 export default function AssetsScreen() {
   const router = useRouter();
   const { fmt } = useFormat();
+  const { gain, loss } = useSemanticColors();
   const [groups, setGroups] = useState<AccountGroup[]>([]);
 
   const loadData = useCallback(async () => {
@@ -84,8 +85,8 @@ export default function AssetsScreen() {
               const trendColor =
                 asset.history.length > 1 &&
                 asset.history[asset.history.length - 1] >= asset.history[0]
-                  ? colors.positive
-                  : colors.negative;
+                  ? gain
+                  : loss;
               return (
                 <TouchableOpacity
                   key={asset.id}

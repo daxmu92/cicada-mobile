@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
@@ -12,7 +12,7 @@ import {
   nextYearMonth,
   MONTH_NAMES,
 } from '../../src/utils/date';
-import { useFormat } from '../../src/hooks/SettingsContext';
+import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Transaction } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { CategoryBars } from '../../src/components/charts/CategoryBars';
@@ -22,6 +22,7 @@ type Tab = 'list' | 'breakdown';
 export default function TransactionsScreen() {
   const router = useRouter();
   const { fmt } = useFormat();
+  const { gain, loss } = useSemanticColors();
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totals, setTotals] = useState({ income: 0, outlay: 0 });
@@ -62,6 +63,35 @@ export default function TransactionsScreen() {
     return { income: groupBy('INCOME'), outlay: groupBy('OUTLAY') };
   }, [transactions]);
 
+  const sections = useMemo(() => {
+    const byDate = new Map<string, Transaction[]>();
+    for (const tx of transactions) {
+      const list = byDate.get(tx.date);
+      if (list) {
+        list.push(tx);
+      } else {
+        byDate.set(tx.date, [tx]);
+      }
+    }
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const formatDate = (isoDate: string) => {
+      const [y, m, d] = isoDate.split('-').map(Number);
+      if (!y || !m || !d) return isoDate;
+      // Construct as UTC to avoid timezone shifting the day.
+      return dateFormatter.format(new Date(Date.UTC(y, m - 1, d)));
+    };
+    return Array.from(byDate.entries())
+      .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
+      .map(([date, items]) => ({
+        title: formatDate(date),
+        data: [...items].sort((a, b) => b.id - a.id),
+      }));
+  }, [transactions]);
+
   const [year, month] = selectedMonth.split('-').map(Number);
   const net = totals.income - totals.outlay;
 
@@ -87,13 +117,13 @@ export default function TransactionsScreen() {
         <View style={styles.totalsRow}>
           <View style={[shared.card, styles.totalCard]}>
             <Text style={shared.sectionTitle}>Income</Text>
-            <Text style={[styles.totalValue, { color: colors.positive }]}>
+            <Text style={[styles.totalValue, { color: gain }]}>
               {fmt(totals.income)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>
             <Text style={shared.sectionTitle}>Outlay</Text>
-            <Text style={[styles.totalValue, { color: colors.negative }]}>
+            <Text style={[styles.totalValue, { color: loss }]}>
               {fmt(totals.outlay)}
             </Text>
           </View>
@@ -102,7 +132,7 @@ export default function TransactionsScreen() {
             <Text
               style={[
                 styles.totalValue,
-                { color: net >= 0 ? colors.positive : colors.negative },
+                { color: net >= 0 ? gain : loss },
               ]}>
               {fmt(net)}
             </Text>
@@ -124,16 +154,20 @@ export default function TransactionsScreen() {
       </View>
 
       {tab === 'list' ? (
-        <FlatList
+        <SectionList
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
-          data={transactions}
+          sections={sections}
           keyExtractor={(t) => String(t.id)}
+          stickySectionHeadersEnabled={false}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={shared.muted}>No transactions this month</Text>
             </View>
           }
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionHeader}>{title}</Text>
+          )}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[shared.card, styles.txRow]}
@@ -151,7 +185,7 @@ export default function TransactionsScreen() {
               <Text
                 style={[
                   styles.txValue,
-                  { color: item.type === 'INCOME' ? colors.positive : colors.negative },
+                  { color: item.type === 'INCOME' ? gain : loss },
                 ]}>
                 {fmt(item.value)}
               </Text>
@@ -172,7 +206,7 @@ export default function TransactionsScreen() {
                 </Text>
                 <CategoryBars
                   items={breakdowns.income}
-                  color={colors.positive}
+                  color={gain}
                   emptyText="No income this month"
                 />
               </View>
@@ -182,7 +216,7 @@ export default function TransactionsScreen() {
                 </Text>
                 <CategoryBars
                   items={breakdowns.outlay}
-                  color={colors.negative}
+                  color={loss}
                   emptyText="No outlay this month"
                 />
               </View>
@@ -262,6 +296,16 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: 'center',
     paddingTop: spacing.xxl,
+  },
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    backgroundColor: colors.bg,
   },
   txRow: {
     flexDirection: 'row',

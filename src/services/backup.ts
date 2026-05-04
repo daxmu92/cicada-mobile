@@ -5,12 +5,31 @@ import * as Sharing from 'expo-sharing';
 import { getDatabase, resetDatabase } from '../db/database';
 import { getAllSettings } from '../db/setting-repo';
 
-const BACKUP_VERSION = 1;
+const BACKUP_VERSION = 2;
 
-type BackupAccount = { id: number; name: string };
-type BackupAsset = { id: number; accountId: number; name: string; categories: string };
-type BackupSnapshot = { assetId: number; date: string; netWorth: number; inflow: number; profit: number };
-type BackupTran = { id: number; date: string; type: string; value: number; cat: string; note: string };
+type BackupAccount = { id: number; name: string; archived?: number };
+type BackupAsset = {
+  id: number;
+  accountId: number;
+  name: string;
+  categories: string;
+  archived?: number;
+};
+type BackupSnapshot = {
+  assetId: number;
+  date: string;
+  netWorth: number;
+  inflow: number;
+  profit: number;
+};
+type BackupTran = {
+  id: number;
+  date: string;
+  type: string;
+  value: number;
+  cat: string;
+  note: string;
+};
 
 type BackupFile = {
   version: number;
@@ -25,11 +44,17 @@ type BackupFile = {
 export async function exportBackup(): Promise<void> {
   const db = await getDatabase();
 
-  const [accounts, assets, snapshotsRaw, transactionsRaw, settings] = await Promise.all([
-    db.getAllAsync<BackupAccount>('SELECT id, name FROM account'),
-    db.getAllAsync<{ id: number; account_id: number; name: string; categories: string }>(
-      'SELECT id, account_id, name, categories FROM asset'
+  const [accountsRaw, assetsRaw, snapshotsRaw, transactionsRaw, settings] = await Promise.all([
+    db.getAllAsync<{ id: number; name: string; archived: number }>(
+      'SELECT id, name, archived FROM account'
     ),
+    db.getAllAsync<{
+      id: number;
+      account_id: number;
+      name: string;
+      categories: string;
+      archived: number;
+    }>('SELECT id, account_id, name, categories, archived FROM asset'),
     db.getAllAsync<{ asset_id: number; date: string; net_worth: number; inflow: number; profit: number }>(
       'SELECT asset_id, date, net_worth, inflow, profit FROM asset_snapshot'
     ),
@@ -40,12 +65,17 @@ export async function exportBackup(): Promise<void> {
   const backup: BackupFile = {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    accounts,
-    assets: assets.map((a) => ({
+    accounts: accountsRaw.map((a) => ({
+      id: a.id,
+      name: a.name,
+      archived: a.archived,
+    })),
+    assets: assetsRaw.map((a) => ({
       id: a.id,
       accountId: a.account_id,
       name: a.name,
       categories: a.categories,
+      archived: a.archived,
     })),
     snapshots: snapshotsRaw.map((s) => ({
       assetId: s.asset_id,
@@ -75,17 +105,23 @@ export async function exportBackup(): Promise<void> {
   });
 }
 
-function validateBackup(obj: any): obj is BackupFile {
+function validateBackup(obj: unknown): obj is BackupFile {
   if (!obj || typeof obj !== 'object') return false;
-  if (typeof obj.version !== 'number') return false;
-  if (!Array.isArray(obj.accounts)) return false;
-  if (!Array.isArray(obj.assets)) return false;
-  if (!Array.isArray(obj.snapshots)) return false;
-  if (!Array.isArray(obj.transactions)) return false;
+  const o = obj as Record<string, unknown>;
+  if (typeof o.version !== 'number') return false;
+  if (!Array.isArray(o.accounts)) return false;
+  if (!Array.isArray(o.assets)) return false;
+  if (!Array.isArray(o.snapshots)) return false;
+  if (!Array.isArray(o.transactions)) return false;
   return true;
 }
 
-export async function importBackup(): Promise<{ accounts: number; assets: number; snapshots: number; transactions: number }> {
+export async function importBackup(): Promise<{
+  accounts: number;
+  assets: number;
+  snapshots: number;
+  transactions: number;
+}> {
   const pick = await DocumentPicker.getDocumentAsync({
     type: 'application/json',
     copyToCacheDirectory: true,
@@ -97,25 +133,32 @@ export async function importBackup(): Promise<{ accounts: number; assets: number
   const asset = pick.assets[0];
   const file = new File(asset.uri);
   const content = await file.text();
-  const parsed = JSON.parse(content);
+  const parsed: unknown = JSON.parse(content);
   if (!validateBackup(parsed)) {
     throw new Error('Invalid backup file format');
   }
-  if (parsed.version !== BACKUP_VERSION) {
+  if (parsed.version > BACKUP_VERSION) {
     throw new Error(`Unsupported backup version: ${parsed.version}`);
   }
+
+  const backupVersion = parsed.version;
 
   await resetDatabase();
   const db = await getDatabase();
 
   await db.withTransactionAsync(async () => {
     for (const acc of parsed.accounts) {
-      await db.runAsync('INSERT INTO account (id, name) VALUES (?, ?)', [acc.id, acc.name]);
+      const archived = backupVersion < 2 ? 0 : acc.archived ?? 0;
+      await db.runAsync(
+        'INSERT INTO account (id, name, archived) VALUES (?, ?, ?)',
+        [acc.id, acc.name, archived]
+      );
     }
     for (const a of parsed.assets) {
+      const archived = backupVersion < 2 ? 0 : a.archived ?? 0;
       await db.runAsync(
-        'INSERT INTO asset (id, account_id, name, categories) VALUES (?, ?, ?, ?)',
-        [a.id, a.accountId, a.name, a.categories ?? '{}']
+        'INSERT INTO asset (id, account_id, name, categories, archived) VALUES (?, ?, ?, ?, ?)',
+        [a.id, a.accountId, a.name, a.categories ?? '{}', archived]
       );
     }
     for (const s of parsed.snapshots) {

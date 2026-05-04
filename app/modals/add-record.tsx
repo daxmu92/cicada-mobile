@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { getAsset } from '../../src/db/asset-repo';
@@ -24,16 +25,37 @@ import {
 import { useFormat } from '../../src/hooks/SettingsContext';
 import { colors, shared, spacing } from '../../src/utils/theme';
 
+function formatYM(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function parseYM(s: string): Date {
+  const [y, m] = s.split('-').map(Number);
+  return new Date(y || new Date().getFullYear(), (m || 1) - 1, 1);
+}
+
 export default function AddRecordModal() {
   const router = useRouter();
   const { fmt } = useFormat();
   const params = useLocalSearchParams<{ assetId: string; date: string }>();
   const assetId = Number(params.assetId);
   const [date, setDate] = useState(params.date ?? '');
+  const [showPicker, setShowPicker] = useState(false);
   const [assetName, setAssetName] = useState('');
   const [accountName, setAccountName] = useState('');
   const [lastNetWorth, setLastNetWorth] = useState(0);
   const [hasExisting, setHasExisting] = useState(false);
+
+  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowPicker(false);
+      if (event.type === 'set' && selected) {
+        setDate(formatYM(selected));
+      }
+    } else if (selected) {
+      setDate(formatYM(selected));
+    }
+  };
 
   const [netWorth, setNetWorth] = useState('');
   const [inflow, setInflow] = useState('');
@@ -127,7 +149,26 @@ export default function AddRecordModal() {
           <Text style={shared.sectionTitle}>
             {accountName} · {assetName}
           </Text>
-          <Text style={styles.dateLabel}>Date: {date}</Text>
+          <TouchableOpacity onPress={() => setShowPicker((s) => !s)}>
+            <Text style={styles.dateLabel}>Date: {date}</Text>
+          </TouchableOpacity>
+          {showPicker && (
+            <View style={styles.pickerWrap}>
+              <DateTimePicker
+                value={parseYM(date)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={onPickerChange}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.doneBtn}
+                  onPress={() => setShowPicker(false)}>
+                  <Text style={styles.doneText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
           <Text style={shared.muted}>
             Previous net worth: {fmt(lastNetWorth)}
           </Text>
@@ -193,6 +234,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
+    color: colors.primary,
+  },
+  pickerWrap: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: spacing.sm,
+  },
+  doneBtn: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  doneText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   autoFillRow: {
     flexDirection: 'row',

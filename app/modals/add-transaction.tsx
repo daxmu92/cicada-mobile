@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
@@ -20,20 +21,43 @@ import {
   updateTransaction,
 } from '../../src/db/tran-repo';
 import { currentDate } from '../../src/utils/date';
+import { useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { TranType } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
+
+function formatYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function parseYMD(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
 
 export default function AddTransactionModal() {
   const router = useRouter();
   const params = useLocalSearchParams<{ date?: string; id?: string }>();
   const editingId = params.id ? Number(params.id) : null;
+  const { gain, loss } = useSemanticColors();
 
   const [type, setType] = useState<TranType>('OUTLAY');
   const [date, setDate] = useState(params.date ?? currentDate());
+  const [showPicker, setShowPicker] = useState(false);
   const [value, setValue] = useState('');
   const [cat, setCat] = useState('');
   const [note, setNote] = useState('');
   const [existingTags, setExistingTags] = useState<string[]>([]);
+
+  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowPicker(false);
+      if (event.type === 'set' && selected) {
+        setDate(formatYMD(selected));
+      }
+    } else if (selected) {
+      setDate(formatYMD(selected));
+    }
+  };
 
   const loadData = useCallback(async () => {
     const tags = await getAllTags();
@@ -112,8 +136,8 @@ export default function AddTransactionModal() {
                 style={[
                   styles.typeBtn,
                   type === t && {
-                    backgroundColor: t === 'INCOME' ? colors.positive : colors.negative,
-                    borderColor: t === 'INCOME' ? colors.positive : colors.negative,
+                    backgroundColor: t === 'INCOME' ? gain : loss,
+                    borderColor: t === 'INCOME' ? gain : loss,
                   },
                 ]}>
                 <Text
@@ -128,13 +152,28 @@ export default function AddTransactionModal() {
           </View>
 
           <Text style={styles.label}>Date</Text>
-          <TextInput
+          <TouchableOpacity
             style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-            autoCapitalize="none"
-          />
+            onPress={() => setShowPicker((s) => !s)}>
+            <Text style={styles.inputText}>{date}</Text>
+          </TouchableOpacity>
+          {showPicker && (
+            <View style={styles.pickerWrap}>
+              <DateTimePicker
+                value={parseYMD(date)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={onPickerChange}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.doneBtn}
+                  onPress={() => setShowPicker(false)}>
+                  <Text style={styles.doneText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <Text style={styles.label}>Value</Text>
           <TextInput
@@ -234,6 +273,28 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     fontSize: 16,
     backgroundColor: 'white',
+  },
+  inputText: {
+    fontSize: 16,
+    paddingVertical: 2,
+  },
+  pickerWrap: {
+    marginTop: spacing.xs,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: spacing.sm,
+  },
+  doneBtn: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  doneText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   tagChipsRow: {
     flexDirection: 'row',

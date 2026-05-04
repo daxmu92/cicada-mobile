@@ -4,6 +4,7 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -14,13 +15,26 @@ import { resetDatabase } from '../../src/db/database';
 import { exportBackup, importBackup } from '../../src/services/backup';
 import { loadSampleData } from '../../src/services/sample-data';
 import { useSettings } from '../../src/hooks/SettingsContext';
+import type { GainColor } from '../../src/hooks/SettingsContext';
 import { colors, shared, spacing } from '../../src/utils/theme';
 
 const CURRENCY_OPTIONS = ['$', '€', '£', '¥', 'R$', '₹', '₩', 'CHF'];
 
+const GAIN_COLOR_OPTIONS: { value: GainColor; label: string; color: string }[] = [
+  { value: 'green', label: 'Green', color: colors.positive },
+  { value: 'red', label: 'Red', color: colors.negative },
+];
+
 export default function SettingsScreen() {
   const router = useRouter();
-  const { currency, setCurrency } = useSettings();
+  const {
+    currency,
+    setCurrency,
+    forwardFill,
+    setForwardFill,
+    gainColor,
+    setGainColor,
+  } = useSettings();
   const [loading, setLoading] = useState(false);
 
   const confirmReset = () => {
@@ -70,6 +84,17 @@ export default function SettingsScreen() {
     <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
       <Text style={shared.sectionTitle}>Preferences</Text>
       <View style={shared.card}>
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleText}>
+            <Text style={styles.rowTitle}>Forward-fill missing months</Text>
+            <Text style={shared.muted}>
+              Use the last known value when a snapshot is missing
+            </Text>
+          </View>
+          <Switch value={forwardFill} onValueChange={setForwardFill} />
+        </View>
+      </View>
+      <View style={shared.card}>
         <Text style={styles.rowTitle}>Currency</Text>
         <Text style={shared.muted}>Displayed before all amounts</Text>
         <View style={styles.currencyRow}>
@@ -90,6 +115,35 @@ export default function SettingsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+      </View>
+      <View style={shared.card}>
+        <Text style={styles.rowTitle}>Color for gains</Text>
+        <Text style={shared.muted}>
+          Red for gains matches Chinese/HK stock market convention
+        </Text>
+        <View style={styles.currencyRow}>
+          {GAIN_COLOR_OPTIONS.map((opt) => {
+            const active = gainColor === opt.value;
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => setGainColor(opt.value)}
+                style={[
+                  styles.currencyChip,
+                  styles.gainChip,
+                  active && { backgroundColor: opt.color, borderColor: opt.color },
+                ]}>
+                <Text
+                  style={[
+                    styles.currencyChipText,
+                    { color: active ? 'white' : opt.color },
+                  ]}>
+                  {opt.label} {'\u25B2'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -236,8 +290,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.muted,
   },
+  gainChip: {
+    paddingHorizontal: spacing.lg,
+    minWidth: 96,
+  },
   loading: {
     marginTop: spacing.lg,
     alignItems: 'center',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  toggleText: {
+    flex: 1,
   },
 });

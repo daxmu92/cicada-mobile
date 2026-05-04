@@ -6,6 +6,7 @@ type AssetRow = {
   account_id: number;
   name: string;
   categories: string;
+  archived: number;
 };
 
 type AssetWithAccountRow = AssetRow & {
@@ -26,33 +27,43 @@ function rowToAsset(row: AssetRow): Asset {
     accountId: row.account_id,
     name: row.name,
     categories: parseCategories(row.categories),
+    archived: row.archived !== 0,
   };
 }
 
-export async function listAssets(): Promise<AssetWithAccount[]> {
+export async function listAssets(
+  options?: { includeArchived?: boolean }
+): Promise<AssetWithAccount[]> {
   const db = await getDatabase();
+  const includeArchived = options?.includeArchived ?? false;
+  const whereClause = includeArchived ? '' : 'WHERE a.archived = 0';
   const rows = await db.getAllAsync<AssetWithAccountRow>(`
-    SELECT a.id, a.account_id, a.name, a.categories, acc.name AS account_name
+    SELECT a.id, a.account_id, a.name, a.categories, a.archived, acc.name AS account_name
     FROM asset a
     JOIN account acc ON a.account_id = acc.id
+    ${whereClause}
     ORDER BY acc.name, a.name
   `);
-  return rows.map(r => ({ ...rowToAsset(r), accountName: r.account_name }));
+  return rows.map((r) => ({ ...rowToAsset(r), accountName: r.account_name }));
 }
 
-export async function listAssetsByAccount(accountId: number): Promise<Asset[]> {
+export async function listAssetsByAccount(
+  accountId: number,
+  options?: { includeArchived?: boolean }
+): Promise<Asset[]> {
   const db = await getDatabase();
-  const rows = await db.getAllAsync<AssetRow>(
-    'SELECT id, account_id, name, categories FROM asset WHERE account_id = ? ORDER BY name',
-    [accountId]
-  );
+  const includeArchived = options?.includeArchived ?? false;
+  const sql = includeArchived
+    ? 'SELECT id, account_id, name, categories, archived FROM asset WHERE account_id = ? ORDER BY name'
+    : 'SELECT id, account_id, name, categories, archived FROM asset WHERE account_id = ? AND archived = 0 ORDER BY name';
+  const rows = await db.getAllAsync<AssetRow>(sql, [accountId]);
   return rows.map(rowToAsset);
 }
 
 export async function getAsset(id: number): Promise<Asset | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<AssetRow>(
-    'SELECT id, account_id, name, categories FROM asset WHERE id = ?',
+    'SELECT id, account_id, name, categories, archived FROM asset WHERE id = ?',
     [id]
   );
   return row ? rowToAsset(row) : null;
@@ -86,4 +97,15 @@ export async function updateAsset(
 export async function deleteAsset(id: number): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM asset WHERE id = ?', [id]);
+}
+
+export async function setAssetArchived(
+  id: number,
+  archived: boolean
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('UPDATE asset SET archived = ? WHERE id = ?', [
+    archived ? 1 : 0,
+    id,
+  ]);
 }

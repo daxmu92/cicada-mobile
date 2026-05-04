@@ -1,6 +1,7 @@
 export type Account = {
   id: number;
   name: string;
+  archived: boolean;
 };
 
 export type Asset = {
@@ -8,6 +9,7 @@ export type Asset = {
   accountId: number;
   name: string;
   categories: Record<string, string>;
+  archived: boolean;
 };
 
 export type AssetWithAccount = Asset & {

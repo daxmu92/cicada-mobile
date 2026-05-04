@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { getAsset } from '../../src/db/asset-repo';
 import { getAccount } from '../../src/db/account-repo';
 import { listSnapshotsByAsset } from '../../src/db/snapshot-repo';
-import { currentYearMonth } from '../../src/utils/date';
-import { useFormat } from '../../src/hooks/SettingsContext';
+import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
+import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Asset, AssetSnapshot } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { AssetLineChart } from '../../src/components/charts/AssetLineChart';
@@ -19,16 +19,29 @@ const METRIC_LABELS: Record<Metric, string> = {
   inflow: 'Inflow',
 };
 
+type TimeRange = '3M' | '6M' | '1Y' | '3Y' | 'All';
+
+const TIME_RANGES: TimeRange[] = ['3M', '6M', '1Y', '3Y', 'All'];
+
+const RANGE_MONTHS: Record<Exclude<TimeRange, 'All'>, number> = {
+  '3M': 3,
+  '6M': 6,
+  '1Y': 12,
+  '3Y': 36,
+};
+
 export default function AssetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { fmt } = useFormat();
+  const { gain, loss } = useSemanticColors();
   const assetId = Number(id);
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [accountName, setAccountName] = useState('');
   const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([]);
   const [metric, setMetric] = useState<Metric>('netWorth');
+  const [range, setRange] = useState<TimeRange>('All');
 
   const loadData = useCallback(async () => {
     const a = await getAsset(assetId);
@@ -53,7 +66,21 @@ export default function AssetDetailScreen() {
 
   const reversed = [...snapshots].reverse();
   const latest = reversed[0];
-  const chartData = snapshots.map((s) => ({
+
+  const filteredSnapshots = useMemo<AssetSnapshot[]>(() => {
+    if (range === 'All' || snapshots.length === 0) return snapshots;
+    const latestDate = snapshots[snapshots.length - 1].date;
+    const months = RANGE_MONTHS[range];
+    let cutoff = latestDate;
+    // prevYearMonth steps back one month at a time; subtract (months - 1)
+    // so the window is inclusive of `months` snapshots ending at latestDate.
+    for (let i = 0; i < months - 1; i++) {
+      cutoff = prevYearMonth(cutoff);
+    }
+    return snapshots.filter((s) => s.date >= cutoff);
+  }, [snapshots, range]);
+
+  const chartData = filteredSnapshots.map((s) => ({
     label: s.date,
     value: s[metric],
   }));
@@ -98,13 +125,32 @@ export default function AssetDetailScreen() {
                     </TouchableOpacity>
                   ))}
                 </View>
+                <View style={styles.rangeRow}>
+                  {TIME_RANGES.map((r) => (
+                    <TouchableOpacity
+                      key={r}
+                      onPress={() => setRange(r)}
+                      style={[
+                        styles.chip,
+                        range === r && { backgroundColor: colors.primary },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          range === r && { color: 'white' },
+                        ]}>
+                        {r}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
                 <AssetLineChart
                   data={chartData}
                   color={
                     metric === 'profit'
                       ? latest && latest.profit >= 0
-                        ? colors.positive
-                        : colors.negative
+                        ? gain
+                        : loss
                       : colors.primary
                   }
                 />
@@ -145,7 +191,7 @@ export default function AssetDetailScreen() {
                     <Text
                       style={[
                         styles.cell,
-                        { textAlign: 'right', color: s.profit >= 0 ? colors.positive : colors.negative },
+                        { textAlign: 'right', color: s.profit >= 0 ? gain : loss },
                       ]}>
                       {fmt(s.profit)}
                     </Text>
@@ -167,6 +213,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   chipRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  rangeRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.md,
