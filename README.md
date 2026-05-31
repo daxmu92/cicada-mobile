@@ -1,8 +1,38 @@
-# CicadaFinScape Mobile
+# 🐝 CicadaFinScape Mobile
 
-A cross-platform personal finance tracker built with Expo (React Native + TypeScript). Local-first: all data lives in an on-device SQLite database. Tracks accounts, assets, monthly net-worth snapshots, and income/expense transactions, with charts and JSON backup/restore.
+> A local-first, cross-platform personal finance tracker — track your net worth across accounts and assets, log income and expenses, and visualize trends over time. All data stays on your device.
+
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-blue)
+![Expo SDK](https://img.shields.io/badge/Expo-SDK%2054-000020?logo=expo)
+![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)
+![Storage](https://img.shields.io/badge/storage-SQLite%20(local--first)-003B57?logo=sqlite)
 
 Ported from the original [Streamlit app](https://github.com/daxmu92/CicadaFinScape).
+
+## Features
+
+- 📊 **Dashboard** — total net worth, a year-at-a-glance calendar of monthly net growth, and asset allocation
+- 💰 **Assets** — group by account, drill into per-asset history with line charts and time-range filters (3M/6M/1Y/3Y/All)
+- 🔄 **Transactions** — income/expense tracking grouped by date, with category breakdown and tag suggestions
+- 📈 **Charts** — sparklines, allocation bars, line charts, and category breakdowns (swappable chart layer)
+- 🗂️ **Snapshots** — monthly net-worth entries with smart auto-fill (profit = Δnet-worth − inflow) and optional forward-fill for skipped months
+- 🗄️ **Archive** — hide closed accounts/assets without losing history
+- ⚙️ **Preferences** — configurable currency symbol and gain/loss color convention (green-up or red-up for Asian markets)
+- 💾 **Backup** — versioned JSON export/import; one-off migration from the Streamlit app
+- 📴 **Offline-first** — everything runs on-device, no account or network required
+
+## Tech stack
+
+| Layer | Choice |
+|-------|--------|
+| Framework | Expo SDK 54 (React Native 0.81) |
+| Language | TypeScript |
+| Navigation | Expo Router (file-based) |
+| Storage | expo-sqlite (local, with schema migrations) |
+| State | React Context (settings) + local component state |
+| Charts | react-native-gifted-charts |
+| Build / OTA | EAS Build + EAS Update |
 
 ## Requirements
 
