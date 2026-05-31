@@ -1,50 +1,95 @@
-# Welcome to your Expo app 👋
+# CicadaFinScape Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A cross-platform personal finance tracker built with Expo (React Native + TypeScript). Local-first: all data lives in an on-device SQLite database. Tracks accounts, assets, monthly net-worth snapshots, and income/expense transactions, with charts and JSON backup/restore.
 
-## Get started
+Ported from the original [Streamlit app](https://github.com/daxmu92/CicadaFinScape).
 
-1. Install dependencies
+## Requirements
 
-   ```bash
-   npm install
-   ```
+- **Node.js 20+** (see `.nvmrc` — use `nvm use`)
+- **npm** (lockfile committed; use `npm ci` for reproducible installs)
+- For device testing: the **Expo Go** app, or an EAS build (see below)
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Quick start
 
 ```bash
-npm run reset-project
+nvm use            # or ensure Node 20+
+npm ci             # reproducible install from package-lock.json
+npx expo start     # starts Metro bundler + dev server
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with **Expo Go** (Android) or the Camera app (iOS).
 
-## Learn more
+### WSL2 networking note
 
-To learn more about developing your project with Expo, look at the following resources:
+On WSL2, Expo may advertise the WSL virtual IP, which phones can't reach. Two options:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Enable **mirrored networking** in `%USERPROFILE%\.wslconfig`:
+  ```ini
+  [wsl2]
+  networkingMode=mirrored
+  ```
+  then `wsl --shutdown` and reopen. Allow port 8081 through Windows Firewall.
+- Or pin the LAN IP explicitly:
+  ```bash
+  REACT_NATIVE_PACKAGER_HOSTNAME=<your-LAN-IP> npx expo start
+  ```
 
-## Join the community
+## Project structure
 
-Join our community of developers creating universal apps.
+```
+app/                      Expo Router screens
+  (tabs)/                 Home, Assets, Transactions, Settings
+  asset/[id].tsx          Asset detail (history + chart)
+  modals/                 add-record, add-transaction, manage-accounts, edit-asset
+src/
+  db/                     SQLite: database, account/asset/snapshot/tran/setting repos
+  components/charts/      Sparkline, AllocationBarList, AssetLineChart, CategoryBars
+  components/YearCalendar.tsx
+  hooks/SettingsContext.tsx   currency, forward-fill, gain/loss color
+  services/               backup (JSON export/import), sample-data
+  utils/                  date, format, theme, types
+scripts/migrate-streamlit.js   one-off converter (see below)
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Type-checking
+
+```bash
+npx tsc --noEmit
+```
+
+## Building a standalone app (EAS)
+
+The app uses [EAS Build](https://docs.expo.dev/build/introduction/) for installable binaries and [EAS Update](https://docs.expo.dev/eas-update/introduction/) for over-the-air JS updates.
+
+```bash
+npm install -g eas-cli
+eas login
+
+# Build an installable Android APK (cloud build, ~15 min)
+eas build --profile preview --platform android
+
+# Push JS-only changes to installed builds without rebuilding
+eas update --branch preview --message "describe the change"
+```
+
+Build profiles live in `eas.json` (`development`, `preview`, `production`). Signing
+credentials (Android keystore) are managed by EAS and are **not** stored in this repo.
+The native `android/` and `ios/` folders are intentionally gitignored — EAS regenerates
+them from `app.json` via Continuous Native Generation.
+
+## Migrating data from the Streamlit app
+
+Export a backup ZIP from the original CicadaFinScape (Cicada Tools page), then convert it:
+
+```bash
+node scripts/migrate-streamlit.js <path-to-backup.zip> cicada-backup.json
+```
+
+Transfer `cicada-backup.json` to your phone and import via **Settings → Import Data**.
+
+## Data & backup
+
+- All data is stored locally in SQLite (`cicada.db`).
+- **Settings → Export Data** writes a versioned JSON backup and opens the share sheet.
+- **Settings → Import Data** restores from a JSON backup (replaces existing data).
