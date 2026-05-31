@@ -11,6 +11,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "export:web": "expo export --platform web",
+    "serve:web": "node scripts/serve-web.js",
     "lint": "expo lint"
   },
   "dependencies": {
