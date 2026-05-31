@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Switch,
@@ -16,6 +15,7 @@ import { exportBackup, importBackup } from '../../src/services/backup';
 import { loadSampleData } from '../../src/services/sample-data';
 import { useSettings } from '../../src/hooks/SettingsContext';
 import type { GainColor } from '../../src/hooks/SettingsContext';
+import { confirmAsync, notify } from '../../src/utils/dialog';
 import { colors, shared, spacing } from '../../src/utils/theme';
 
 const CURRENCY_OPTIONS = ['$', '€', '£', '¥', 'R$', '₹', '₩', 'CHF'];
@@ -37,47 +37,35 @@ export default function SettingsScreen() {
   } = useSettings();
   const [loading, setLoading] = useState(false);
 
-  const confirmReset = () => {
-    Alert.alert(
+  const confirmReset = async () => {
+    const ok = await confirmAsync(
       'Reset Database',
       'This will permanently delete all accounts, assets, snapshots, and transactions. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            await resetDatabase();
-            Alert.alert('Done', 'Database has been reset.');
-          },
-        },
-      ]
+      'Reset',
+      true
     );
+    if (!ok) return;
+    await resetDatabase();
+    notify('Done', 'Database has been reset.');
   };
 
-  const confirmLoadSample = () => {
-    Alert.alert(
+  const confirmLoadSample = async () => {
+    const ok = await confirmAsync(
       'Load Sample Data',
       'This will replace all current data with generated sample accounts, assets, snapshots, and transactions.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Load',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await loadSampleData();
-              Alert.alert('Done', 'Sample data loaded. Check the Home and Assets tabs.');
-            } catch (e: any) {
-              Alert.alert('Error', e?.message ?? 'Failed to load sample data');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
+      'Load',
+      true
     );
+    if (!ok) return;
+    setLoading(true);
+    try {
+      await loadSampleData();
+      notify('Done', 'Sample data loaded. Check the Home and Assets tabs.');
+    } catch (e: any) {
+      notify('Error', e?.message ?? 'Failed to load sample data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -163,7 +151,7 @@ export default function SettingsScreen() {
           try {
             await exportBackup();
           } catch (e: any) {
-            Alert.alert('Export Failed', e?.message ?? 'Unable to export');
+            notify('Export Failed', e?.message ?? 'Unable to export');
           } finally {
             setLoading(false);
           }
@@ -173,34 +161,30 @@ export default function SettingsScreen() {
       <Row
         title="Import Data"
         subtitle="Replace all data from a backup file"
-        onPress={() => {
-          Alert.alert(
+        onPress={async () => {
+          // Confirm synchronously on web so the file picker stays within the
+          // user gesture that importBackup() needs.
+          const proceed = await confirmAsync(
             'Import Backup',
             'This will replace all existing data. Continue?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Import',
-                style: 'destructive',
-                onPress: async () => {
-                  setLoading(true);
-                  try {
-                    const counts = await importBackup();
-                    Alert.alert(
-                      'Imported',
-                      `Accounts: ${counts.accounts}\nAssets: ${counts.assets}\nSnapshots: ${counts.snapshots}\nTransactions: ${counts.transactions}`
-                    );
-                  } catch (e: any) {
-                    if (e?.message !== 'CANCELLED') {
-                      Alert.alert('Import Failed', e?.message ?? 'Unable to import');
-                    }
-                  } finally {
-                    setLoading(false);
-                  }
-                },
-              },
-            ]
+            'Import',
+            true
           );
+          if (!proceed) return;
+          setLoading(true);
+          try {
+            const counts = await importBackup();
+            notify(
+              'Imported',
+              `Accounts: ${counts.accounts}\nAssets: ${counts.assets}\nSnapshots: ${counts.snapshots}\nTransactions: ${counts.transactions}`
+            );
+          } catch (e: any) {
+            if (e?.message !== 'CANCELLED') {
+              notify('Import Failed', e?.message ?? 'Unable to import');
+            }
+          } finally {
+            setLoading(false);
+          }
         }}
         disabled={loading}
       />

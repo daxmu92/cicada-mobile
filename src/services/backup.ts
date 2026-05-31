@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { File, Paths } from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
@@ -41,7 +42,18 @@ type BackupFile = {
   settings: Record<string, string>;
 };
 
-export async function exportBackup(): Promise<void> {
+type ImportCounts = {
+  accounts: number;
+  assets: number;
+  snapshots: number;
+  transactions: number;
+};
+
+// ---------------------------------------------------------------------------
+// Shared (platform-independent) serialization / restore
+// ---------------------------------------------------------------------------
+
+async function buildBackup(): Promise<BackupFile> {
   const db = await getDatabase();
 
   const [accountsRaw, assetsRaw, snapshotsRaw, transactionsRaw, settings] = await Promise.all([
@@ -62,7 +74,7 @@ export async function exportBackup(): Promise<void> {
     getAllSettings(),
   ]);
 
-  const backup: BackupFile = {
+  return {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     accounts: accountsRaw.map((a) => ({
@@ -87,22 +99,6 @@ export async function exportBackup(): Promise<void> {
     transactions: transactionsRaw,
     settings,
   };
-
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const file = new File(Paths.cache, `cicada-backup-${timestamp}.json`);
-  if (file.exists) file.delete();
-  file.create();
-  file.write(JSON.stringify(backup, null, 2));
-
-  const available = await Sharing.isAvailableAsync();
-  if (!available) {
-    throw new Error('Sharing is not available on this device');
-  }
-  await Sharing.shareAsync(file.uri, {
-    mimeType: 'application/json',
-    dialogTitle: 'Save Cicada Backup',
-    UTI: 'public.json',
-  });
 }
 
 function validateBackup(obj: unknown): obj is BackupFile {
@@ -116,23 +112,7 @@ function validateBackup(obj: unknown): obj is BackupFile {
   return true;
 }
 
-export async function importBackup(): Promise<{
-  accounts: number;
-  assets: number;
-  snapshots: number;
-  transactions: number;
-}> {
-  const pick = await DocumentPicker.getDocumentAsync({
-    type: 'application/json',
-    copyToCacheDirectory: true,
-  });
-  if (pick.canceled) {
-    throw new Error('CANCELLED');
-  }
-
-  const asset = pick.assets[0];
-  const file = new File(asset.uri);
-  const content = await file.text();
+function parseBackup(content: string): BackupFile {
   const parsed: unknown = JSON.parse(content);
   if (!validateBackup(parsed)) {
     throw new Error('Invalid backup file format');
@@ -140,7 +120,10 @@ export async function importBackup(): Promise<{
   if (parsed.version > BACKUP_VERSION) {
     throw new Error(`Unsupported backup version: ${parsed.version}`);
   }
+  return parsed;
+}
 
+async function restoreBackup(parsed: BackupFile): Promise<ImportCounts> {
   const backupVersion = parsed.version;
 
   await resetDatabase();
@@ -190,4 +173,109 @@ export async function importBackup(): Promise<{
     snapshots: parsed.snapshots.length,
     transactions: parsed.transactions.length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Web (browser / Tauri webview) file I/O
+// ---------------------------------------------------------------------------
+
+function downloadJsonWeb(filename: string, json: string): void {
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Defer revocation so the download has a chance to start.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function pickJsonWeb(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.style.display = 'none';
+    let settled = false;
+
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      input.remove();
+      fn();
+    };
+
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) {
+        finish(() => reject(new Error('CANCELLED')));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => finish(() => resolve(String(reader.result ?? '')));
+      reader.onerror = () => finish(() => reject(new Error('Failed to read file')));
+      reader.readAsText(file);
+    });
+
+    // Modern browsers fire 'cancel' when the picker is dismissed with no file.
+    input.addEventListener('cancel', () => finish(() => reject(new Error('CANCELLED'))));
+
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function exportBackup(): Promise<void> {
+  const backup = await buildBackup();
+  const json = JSON.stringify(backup, null, 2);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = `cicada-backup-${timestamp}.json`;
+
+  if (Platform.OS === 'web') {
+    downloadJsonWeb(filename, json);
+    return;
+  }
+
+  const file = new File(Paths.cache, filename);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(json);
+
+  const available = await Sharing.isAvailableAsync();
+  if (!available) {
+    throw new Error('Sharing is not available on this device');
+  }
+  await Sharing.shareAsync(file.uri, {
+    mimeType: 'application/json',
+    dialogTitle: 'Save Cicada Backup',
+    UTI: 'public.json',
+  });
+}
+
+export async function importBackup(): Promise<ImportCounts> {
+  let content: string;
+
+  if (Platform.OS === 'web') {
+    content = await pickJsonWeb();
+  } else {
+    const pick = await DocumentPicker.getDocumentAsync({
+      type: 'application/json',
+      copyToCacheDirectory: true,
+    });
+    if (pick.canceled) {
+      throw new Error('CANCELLED');
+    }
+    const asset = pick.assets[0];
+    const file = new File(asset.uri);
+    content = await file.text();
+  }
+
+  const parsed = parseBackup(content);
+  return restoreBackup(parsed);
 }
