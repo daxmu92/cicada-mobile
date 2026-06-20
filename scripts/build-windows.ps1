@@ -1,4 +1,4 @@
-# build-windows.ps1 — runs on the Windows host, invoked from WSL by build-windows.sh.
+# build-windows.ps1 - runs on the Windows host, invoked from WSL by build-windows.sh.
 # Syncs the build-only checkout to a WSL commit, installs deps only when the lockfile
 # changed, then produces the Tauri installer. Windows-only; do not run from WSL bash.
 param(
@@ -33,7 +33,7 @@ Write-Host "==> Fetching '$Branch' from WSL tree..."
 git fetch wsl
 git rev-parse --verify --quiet "wsl/$Branch" *> $null
 if ($LASTEXITCODE -ne 0) {
-  throw "Branch '$Branch' not found on the WSL tree after fetch — commit it on the WSL side first."
+  throw "Branch '$Branch' not found on the WSL tree after fetch - commit it on the WSL side first."
 }
 git checkout -B $Branch "wsl/$Branch"
 git reset --hard "wsl/$Branch"
