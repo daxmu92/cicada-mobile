@@ -17,7 +17,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "lint": "expo lint",
-    "test": "node --import tsx --test src/sync/hlc.test.ts"
+    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
