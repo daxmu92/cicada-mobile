@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# build-windows.sh — one-line Windows build, driven from WSL.
+#
+# Builds the Tauri desktop installer on the Windows host using the build-only
+# checkout at C:\projects\cicada-mobile (see docs/windows-build.md). The WSL tree
+# stays the source of truth; the build uses its latest *commit* on the current
+# branch — uncommitted edits are NOT included.
+#
+# Usage:  npm run build:windows   (or: bash scripts/build-windows.sh)
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+WIN_REPO='C:\projects\cicada-mobile'
+WIN_REPO_MNT='/mnt/c/projects/cicada-mobile'
+WSL_UNC="$(wslpath -w "$REPO_ROOT")"
+PS1_WIN="$(wslpath -w "$REPO_ROOT/scripts/build-windows.ps1")"
+BUILDS_DIR="$HOME/cicada-builds"
+
+# A clean build needs the Windows checkout in place.
+if [ ! -d "$WIN_REPO_MNT/.git" ]; then
+  echo "ERROR: no Windows checkout at $WIN_REPO" >&2
+  echo "Run: bash scripts/setup-windows-build.sh" >&2
+  exit 1
+fi
+
+# Builds use committed state only — warn so a forgotten commit isn't a surprise.
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "WARNING: WSL tree has uncommitted changes; the build uses the last commit on '$BRANCH'." >&2
+fi
+
+echo "==> Building branch '$BRANCH' on Windows ($WIN_REPO)..."
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
+  -Branch "$BRANCH" -WslRemote "$WSL_UNC"
+
+# Surface the installers on the Linux side for convenience.
+BUNDLE="$WIN_REPO_MNT/src-tauri/target/release/bundle"
+mkdir -p "$BUILDS_DIR"
+shopt -s nullglob
+copied=0
+for f in "$BUNDLE"/msi/*.msi "$BUNDLE"/nsis/*.exe; do
+  cp -f "$f" "$BUILDS_DIR/"
+  echo "    copied $(basename "$f")"
+  copied=1
+done
+shopt -u nullglob
+
+if [ "$copied" -eq 1 ]; then
+  echo "==> Installers copied to $BUILDS_DIR"
+else
+  echo "WARNING: no installers found under $BUNDLE" >&2
+fi
+echo "==> Done. Windows artifacts under $WIN_REPO\\src-tauri\\target\\release\\bundle\\"
