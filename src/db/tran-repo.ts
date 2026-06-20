@@ -1,4 +1,5 @@
 import { getDatabase } from './database';
+import { stampWrite, recordTombstones } from '../sync/stamp';
 import type { Transaction, TranType } from '../utils/types';
 
 type TranRow = {
@@ -53,9 +54,10 @@ export async function createTransaction(
   note: string = ''
 ): Promise<number> {
   const db = await getDatabase();
+  const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
-    'INSERT INTO tran (date, type, value, cat, note) VALUES (?, ?, ?, ?, ?)',
-    [date, type, value, cat, note]
+    'INSERT INTO tran (date, type, value, cat, note, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [date, type, value, cat, note, uuid, updatedAt]
   );
   return result.lastInsertRowId;
 }
@@ -69,15 +71,23 @@ export async function updateTransaction(
   note: string
 ): Promise<void> {
   const db = await getDatabase();
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(
-    'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ? WHERE id = ?',
-    [date, type, value, cat, note, id]
+    'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE id = ?',
+    [date, type, value, cat, note, updatedAt, id]
   );
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
   const db = await getDatabase();
+  const tran = await db.getFirstAsync<{ uuid: string }>(
+    'SELECT uuid FROM tran WHERE id = ?',
+    [id]
+  );
   await db.runAsync('DELETE FROM tran WHERE id = ?', [id]);
+  if (tran?.uuid) {
+    await recordTombstones(db, 'tran', [tran.uuid]);
+  }
 }
 
 export async function getAllTags(): Promise<string[]> {

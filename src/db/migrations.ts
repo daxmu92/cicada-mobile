@@ -2,6 +2,8 @@
 // same logic runs on every backend: expo-sqlite (native + web) and the
 // tauri-plugin-sql adapter (desktop). See database.ts / database.web.ts.
 
+import { encodeHlc } from '../sync/hlc';
+
 export type SqlParam = string | number | null;
 
 /** The subset of expo-sqlite's SQLiteDatabase the app actually uses. */
@@ -17,7 +19,7 @@ export interface CicadaDB {
   withTransactionAsync(task: () => Promise<void>): Promise<void>;
 }
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export async function migrate(db: CicadaDB): Promise<void> {
   await db.execAsync(`
@@ -25,9 +27,11 @@ export async function migrate(db: CicadaDB): Promise<void> {
     PRAGMA foreign_keys = ON;
 
     CREATE TABLE IF NOT EXISTS account (
-      id        INTEGER PRIMARY KEY,
-      name      TEXT NOT NULL UNIQUE,
-      archived  INTEGER NOT NULL DEFAULT 0
+      id          INTEGER PRIMARY KEY,
+      name        TEXT NOT NULL UNIQUE,
+      archived    INTEGER NOT NULL DEFAULT 0,
+      uuid        TEXT,
+      updated_at  TEXT
     );
 
     CREATE TABLE IF NOT EXISTS asset (
@@ -36,6 +40,8 @@ export async function migrate(db: CicadaDB): Promise<void> {
       name        TEXT NOT NULL,
       categories  TEXT NOT NULL DEFAULT '{}',
       archived    INTEGER NOT NULL DEFAULT 0,
+      uuid        TEXT,
+      updated_at  TEXT,
       UNIQUE(account_id, name)
     );
 
@@ -45,6 +51,7 @@ export async function migrate(db: CicadaDB): Promise<void> {
       net_worth   REAL NOT NULL DEFAULT 0,
       inflow      REAL NOT NULL DEFAULT 0,
       profit      REAL NOT NULL DEFAULT 0,
+      updated_at  TEXT,
       PRIMARY KEY (asset_id, date)
     );
 
@@ -54,10 +61,25 @@ export async function migrate(db: CicadaDB): Promise<void> {
       type    TEXT NOT NULL CHECK(type IN ('INCOME', 'OUTLAY')),
       value   REAL NOT NULL,
       cat     TEXT NOT NULL DEFAULT '',
-      note    TEXT NOT NULL DEFAULT ''
+      note    TEXT NOT NULL DEFAULT '',
+      uuid        TEXT,
+      updated_at  TEXT
     );
 
     CREATE TABLE IF NOT EXISTS setting (
+      key         TEXT PRIMARY KEY,
+      value       TEXT NOT NULL,
+      updated_at  TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS tombstone (
+      entity      TEXT NOT NULL,
+      uuid        TEXT NOT NULL,
+      deleted_at  TEXT NOT NULL,
+      PRIMARY KEY (entity, uuid)
+    );
+
+    CREATE TABLE IF NOT EXISTS sync_state (
       key     TEXT PRIMARY KEY,
       value   TEXT NOT NULL
     );
@@ -87,7 +109,55 @@ export async function migrate(db: CicadaDB): Promise<void> {
         'ALTER TABLE asset ADD COLUMN archived INTEGER NOT NULL DEFAULT 0'
       );
     }
-    await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
+    await db.execAsync(`PRAGMA user_version = 1`);
+  }
+
+  if (currentVersion < 2) {
+    // v2 (cloud sync, Phase 1): additive sync columns + tombstone/sync_state.
+    // Re-entrant — Tauri has no atomic transaction, so every step is safe to
+    // re-run, and `PRAGMA user_version = 2` is written strictly last.
+    await addColumnIfMissing(db, 'account', 'uuid', 'TEXT');
+    await addColumnIfMissing(db, 'account', 'updated_at', 'TEXT');
+    await addColumnIfMissing(db, 'asset', 'uuid', 'TEXT');
+    await addColumnIfMissing(db, 'asset', 'updated_at', 'TEXT');
+    await addColumnIfMissing(db, 'asset_snapshot', 'updated_at', 'TEXT');
+    await addColumnIfMissing(db, 'tran', 'uuid', 'TEXT');
+    await addColumnIfMissing(db, 'tran', 'updated_at', 'TEXT');
+    await addColumnIfMissing(db, 'setting', 'updated_at', 'TEXT');
+
+    // Stable device id; also used for the one-time migration HLC stamp.
+    const deviceId = await ensureDeviceId(db);
+    const migrationPhys = Date.now();
+    const migrationStamp = encodeHlc(migrationPhys, 0, deviceId);
+
+    // Backfill uuids — re-entrant (only NULLs). randomblob/hex/lower are core
+    // SQLite, identical on all three backends.
+    await db.execAsync(`UPDATE account SET uuid = lower(hex(randomblob(16))) WHERE uuid IS NULL`);
+    await db.execAsync(`UPDATE asset   SET uuid = lower(hex(randomblob(16))) WHERE uuid IS NULL`);
+    await db.execAsync(`UPDATE tran    SET uuid = lower(hex(randomblob(16))) WHERE uuid IS NULL`);
+
+    // Backfill updated_at with the single migration stamp (all pre-existing
+    // rows on this device share it — see spec §4 "first-merge caveat").
+    await db.runAsync(`UPDATE account        SET updated_at = ? WHERE updated_at IS NULL`, [migrationStamp]);
+    await db.runAsync(`UPDATE asset          SET updated_at = ? WHERE updated_at IS NULL`, [migrationStamp]);
+    await db.runAsync(`UPDATE asset_snapshot SET updated_at = ? WHERE updated_at IS NULL`, [migrationStamp]);
+    await db.runAsync(`UPDATE tran           SET updated_at = ? WHERE updated_at IS NULL`, [migrationStamp]);
+    await db.runAsync(`UPDATE setting        SET updated_at = ? WHERE updated_at IS NULL`, [migrationStamp]);
+
+    // Seed HLC state so later local ticks sort AFTER the migration stamp.
+    // DO NOTHING keeps an already-advanced clock if the migration re-runs.
+    await db.runAsync(
+      `INSERT INTO sync_state (key, value) VALUES ('hlc', ?)
+         ON CONFLICT(key) DO NOTHING`,
+      [JSON.stringify({ phys: migrationPhys, counter: 0 })]
+    );
+
+    // Unique index on uuid AFTER backfill (idempotent on re-run).
+    await db.execAsync(`CREATE UNIQUE INDEX IF NOT EXISTS idx_account_uuid ON account(uuid)`);
+    await db.execAsync(`CREATE UNIQUE INDEX IF NOT EXISTS idx_asset_uuid   ON asset(uuid)`);
+    await db.execAsync(`CREATE UNIQUE INDEX IF NOT EXISTS idx_tran_uuid    ON tran(uuid)`);
+
+    await db.execAsync(`PRAGMA user_version = 2`);
   }
 }
 
@@ -98,6 +168,8 @@ export async function resetSchema(db: CicadaDB): Promise<void> {
     DROP TABLE IF EXISTS asset;
     DROP TABLE IF EXISTS account;
     DROP TABLE IF EXISTS setting;
+    DROP TABLE IF EXISTS tombstone;
+    DROP TABLE IF EXISTS sync_state;
     PRAGMA user_version = 0;
   `);
   await migrate(db);
@@ -119,4 +191,36 @@ async function columnExists(
     `PRAGMA table_info(${table})`
   );
   return rows.some((r) => r.name === column);
+}
+
+async function addColumnIfMissing(
+  db: CicadaDB,
+  table: string,
+  column: string,
+  type: string
+): Promise<void> {
+  if (!(await columnExists(db, table, column))) {
+    await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
+}
+
+/** Read the persisted device id, generating + persisting one if absent. */
+async function ensureDeviceId(db: CicadaDB): Promise<string> {
+  const existing = await db.getFirstAsync<{ value: string }>(
+    `SELECT value FROM sync_state WHERE key = 'deviceId'`
+  );
+  if (existing?.value) return existing.value;
+  // 3 random bytes -> 6 lowercase hex chars (matches HLC_DEVICE_DIGITS).
+  const generated = await db.getFirstAsync<{ id: string }>(
+    `SELECT lower(hex(randomblob(3))) AS id`
+  );
+  await db.runAsync(
+    `INSERT INTO sync_state (key, value) VALUES ('deviceId', ?)
+       ON CONFLICT(key) DO NOTHING`,
+    [generated!.id]
+  );
+  const persisted = await db.getFirstAsync<{ value: string }>(
+    `SELECT value FROM sync_state WHERE key = 'deviceId'`
+  );
+  return persisted!.value;
 }

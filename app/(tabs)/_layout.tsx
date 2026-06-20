@@ -15,6 +15,10 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: true,
         tabBarButton: HapticTab,
+        // On web the tab button is vertically tight, so the label (a flex item)
+        // gets shrunk ~1px below its natural height and `overflow: hidden` clips
+        // the descenders. Pinning flexShrink keeps the label at full height.
+        tabBarLabelStyle: { flexShrink: 0 },
       }}>
       <Tabs.Screen
         name="index"
