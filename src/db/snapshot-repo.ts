@@ -1,6 +1,7 @@
 import { getDatabase } from './database';
 import { listAssets } from './asset-repo';
 import type { AssetSnapshot, SnapshotWithAsset } from '../utils/types';
+import { stampWrite } from '../sync/stamp';
 
 type SnapshotRow = {
   asset_id: number;
@@ -138,14 +139,16 @@ export async function upsertSnapshot(
   profit: number
 ): Promise<void> {
   const db = await getDatabase();
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(`
-    INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(asset_id, date) DO UPDATE SET
       net_worth = excluded.net_worth,
       inflow = excluded.inflow,
-      profit = excluded.profit
-  `, [assetId, date, netWorth, inflow, profit]);
+      profit = excluded.profit,
+      updated_at = excluded.updated_at
+  `, [assetId, date, netWorth, inflow, profit, updatedAt]);
 }
 
 export async function deleteSnapshot(assetId: number, date: string): Promise<void> {

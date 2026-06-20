@@ -1,5 +1,6 @@
 import { getDatabase } from './database';
 import type { Transaction, TranType } from '../utils/types';
+import { stampWrite } from '../sync/stamp';
 
 type TranRow = {
   id: number;
@@ -53,9 +54,10 @@ export async function createTransaction(
   note: string = ''
 ): Promise<number> {
   const db = await getDatabase();
+  const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
-    'INSERT INTO tran (date, type, value, cat, note) VALUES (?, ?, ?, ?, ?)',
-    [date, type, value, cat, note]
+    'INSERT INTO tran (date, type, value, cat, note, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [date, type, value, cat, note, uuid, updatedAt]
   );
   return result.lastInsertRowId;
 }
@@ -69,9 +71,10 @@ export async function updateTransaction(
   note: string
 ): Promise<void> {
   const db = await getDatabase();
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(
-    'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ? WHERE id = ?',
-    [date, type, value, cat, note, id]
+    'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE id = ?',
+    [date, type, value, cat, note, updatedAt, id]
   );
 }
 

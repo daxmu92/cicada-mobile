@@ -1,5 +1,6 @@
 import { getDatabase } from './database';
 import type { Account } from '../utils/types';
+import { stampWrite } from '../sync/stamp';
 
 type AccountRow = {
   id: number;
@@ -38,13 +39,22 @@ export async function getAccount(id: number): Promise<Account | null> {
 
 export async function createAccount(name: string): Promise<number> {
   const db = await getDatabase();
-  const result = await db.runAsync('INSERT INTO account (name) VALUES (?)', [name]);
+  const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
+  const result = await db.runAsync(
+    'INSERT INTO account (name, uuid, updated_at) VALUES (?, ?, ?)',
+    [name, uuid, updatedAt]
+  );
   return result.lastInsertRowId;
 }
 
 export async function renameAccount(id: number, name: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('UPDATE account SET name = ? WHERE id = ?', [name, id]);
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
+  await db.runAsync('UPDATE account SET name = ?, updated_at = ? WHERE id = ?', [
+    name,
+    updatedAt,
+    id,
+  ]);
 }
 
 export async function deleteAccount(id: number): Promise<void> {
@@ -58,14 +68,19 @@ export async function setAccountArchived(
 ): Promise<void> {
   const db = await getDatabase();
   const flag = archived ? 1 : 0;
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.withTransactionAsync(async () => {
-    await db.runAsync('UPDATE account SET archived = ? WHERE id = ?', [flag, id]);
+    await db.runAsync('UPDATE account SET archived = ?, updated_at = ? WHERE id = ?', [
+      flag,
+      updatedAt,
+      id,
+    ]);
     // Archiving an account cascades to all its assets; un-archiving does NOT
     // un-archive assets — user must explicitly un-archive each one.
     if (archived) {
       await db.runAsync(
-        'UPDATE asset SET archived = 1 WHERE account_id = ?',
-        [id]
+        'UPDATE asset SET archived = 1, updated_at = ? WHERE account_id = ?',
+        [updatedAt, id]
       );
     }
   });

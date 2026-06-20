@@ -1,5 +1,6 @@
 import { getDatabase } from './database';
 import type { Asset, AssetWithAccount } from '../utils/types';
+import { stampWrite } from '../sync/stamp';
 
 type AssetRow = {
   id: number;
@@ -75,9 +76,10 @@ export async function createAsset(
   categories: Record<string, string> = {}
 ): Promise<number> {
   const db = await getDatabase();
+  const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
-    'INSERT INTO asset (account_id, name, categories) VALUES (?, ?, ?)',
-    [accountId, name, JSON.stringify(categories)]
+    'INSERT INTO asset (account_id, name, categories, uuid, updated_at) VALUES (?, ?, ?, ?, ?)',
+    [accountId, name, JSON.stringify(categories), uuid, updatedAt]
   );
   return result.lastInsertRowId;
 }
@@ -88,9 +90,10 @@ export async function updateAsset(
   categories: Record<string, string>
 ): Promise<void> {
   const db = await getDatabase();
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(
-    'UPDATE asset SET name = ?, categories = ? WHERE id = ?',
-    [name, JSON.stringify(categories), id]
+    'UPDATE asset SET name = ?, categories = ?, updated_at = ? WHERE id = ?',
+    [name, JSON.stringify(categories), updatedAt, id]
   );
 }
 
@@ -104,8 +107,10 @@ export async function setAssetArchived(
   archived: boolean
 ): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('UPDATE asset SET archived = ? WHERE id = ?', [
+  const { updatedAt } = await stampWrite(db, { withUuid: false });
+  await db.runAsync('UPDATE asset SET archived = ?, updated_at = ? WHERE id = ?', [
     archived ? 1 : 0,
+    updatedAt,
     id,
   ]);
 }
