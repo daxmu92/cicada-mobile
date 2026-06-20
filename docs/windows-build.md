@@ -27,6 +27,11 @@ bash scripts/setup-windows-build.sh
 If this run installs Rust or Node for the first time, open a new terminal (or
 re-run the script) so PATH refreshes before building.
 
+The setup also runs `git config --global --add safe.directory '*'` on the Windows
+side. Git for Windows otherwise refuses to read the WSL repo over the
+`\\wsl.localhost\` path because its owner (a Linux uid) differs from the Windows
+user ("dubious ownership"). This is expected on a single-user dev machine.
+
 ## Building
 
 ```bash

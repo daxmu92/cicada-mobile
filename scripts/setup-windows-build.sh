@@ -60,6 +60,16 @@ else
   ps "winget install --id OpenJS.NodeJS.LTS -e --silent --accept-package-agreements --accept-source-agreements"
 fi
 
+# Git for Windows refuses to operate on the WSL repo over UNC because its owner
+# (a Linux uid) differs from the Windows user ("dubious ownership"). Whitelist it
+# so the clone and the build's later `git fetch wsl` can read the source repo.
+echo "==> Allowing git to read the WSL repo over UNC (safe.directory)..."
+if ps "git config --global --get-all safe.directory" | grep -qF '*'; then
+  echo "    already configured."
+else
+  ps "git config --global --add safe.directory '*'"
+fi
+
 echo "==> Setting up Windows checkout at $WIN_REPO..."
 if [ -d "$WIN_REPO_MNT/.git" ]; then
   echo "    already exists."
