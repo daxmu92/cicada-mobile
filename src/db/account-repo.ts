@@ -1,6 +1,7 @@
 import { getDatabase } from './database';
+import { stampWrite, recordTombstones } from '../sync/stamp';
+import { collectSnapshotTombstoneKeys } from './snapshot-repo';
 import type { Account } from '../utils/types';
-import { stampWrite } from '../sync/stamp';
 
 type AccountRow = {
   id: number;
@@ -59,6 +60,24 @@ export async function renameAccount(id: number, name: string): Promise<void> {
 
 export async function deleteAccount(id: number): Promise<void> {
   const db = await getDatabase();
+  const account = await db.getFirstAsync<{ uuid: string }>(
+    'SELECT uuid FROM account WHERE id = ?',
+    [id]
+  );
+  if (!account) return;
+  const assets = await db.getAllAsync<{ id: number; uuid: string }>(
+    'SELECT id, uuid FROM asset WHERE account_id = ?',
+    [id]
+  );
+  const snapshotKeys = await collectSnapshotTombstoneKeys(
+    db,
+    assets.map((a) => a.id)
+  );
+  // Record tombstones BEFORE the delete (the rows still exist to read).
+  await recordTombstones(db, 'account', [account.uuid]);
+  await recordTombstones(db, 'asset', assets.map((a) => a.uuid));
+  await recordTombstones(db, 'snapshot', snapshotKeys);
+  // FK ON DELETE CASCADE clears assets + snapshots locally.
   await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
 }
 

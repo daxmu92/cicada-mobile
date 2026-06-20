@@ -1,6 +1,7 @@
 import { getDatabase } from './database';
+import { stampWrite, recordTombstones } from '../sync/stamp';
+import { collectSnapshotTombstoneKeys } from './snapshot-repo';
 import type { Asset, AssetWithAccount } from '../utils/types';
-import { stampWrite } from '../sync/stamp';
 
 type AssetRow = {
   id: number;
@@ -99,6 +100,14 @@ export async function updateAsset(
 
 export async function deleteAsset(id: number): Promise<void> {
   const db = await getDatabase();
+  const asset = await db.getFirstAsync<{ uuid: string }>(
+    'SELECT uuid FROM asset WHERE id = ?',
+    [id]
+  );
+  if (!asset) return;
+  const snapshotKeys = await collectSnapshotTombstoneKeys(db, [id]);
+  await recordTombstones(db, 'asset', [asset.uuid]);
+  await recordTombstones(db, 'snapshot', snapshotKeys);
   await db.runAsync('DELETE FROM asset WHERE id = ?', [id]);
 }
 

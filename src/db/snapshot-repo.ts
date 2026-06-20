@@ -1,7 +1,8 @@
 import { getDatabase } from './database';
 import { listAssets } from './asset-repo';
+import { stampWrite, recordTombstones } from '../sync/stamp';
+import type { CicadaDB } from './migrations';
 import type { AssetSnapshot, SnapshotWithAsset } from '../utils/types';
-import { stampWrite } from '../sync/stamp';
 
 type SnapshotRow = {
   asset_id: number;
@@ -131,6 +132,27 @@ export async function getLastSnapshotBefore(
   return row ? rowToSnapshot(row) : null;
 }
 
+/**
+ * Composite tombstone keys ("<assetUuid>|<date>") for every snapshot belonging
+ * to the given assets. Used by deleteAccount/deleteAsset to tombstone snapshots
+ * that FK-cascade would otherwise erase silently.
+ */
+export async function collectSnapshotTombstoneKeys(
+  db: CicadaDB,
+  assetIds: number[]
+): Promise<string[]> {
+  if (assetIds.length === 0) return [];
+  const placeholders = assetIds.map(() => '?').join(',');
+  const rows = await db.getAllAsync<{ uuid: string; date: string }>(
+    `SELECT a.uuid AS uuid, s.date AS date
+       FROM asset_snapshot s
+       JOIN asset a ON s.asset_id = a.id
+      WHERE s.asset_id IN (${placeholders})`,
+    assetIds
+  );
+  return rows.map((r) => `${r.uuid}|${r.date}`);
+}
+
 export async function upsertSnapshot(
   assetId: number,
   date: string,
@@ -153,10 +175,17 @@ export async function upsertSnapshot(
 
 export async function deleteSnapshot(assetId: number, date: string): Promise<void> {
   const db = await getDatabase();
+  const asset = await db.getFirstAsync<{ uuid: string }>(
+    'SELECT uuid FROM asset WHERE id = ?',
+    [assetId]
+  );
   await db.runAsync(
     'DELETE FROM asset_snapshot WHERE asset_id = ? AND date = ?',
     [assetId, date]
   );
+  if (asset?.uuid) {
+    await recordTombstones(db, 'snapshot', [`${asset.uuid}|${date}`]);
+  }
 }
 
 export async function getDateRange(): Promise<{ start: string; end: string } | null> {

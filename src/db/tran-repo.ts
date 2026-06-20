@@ -1,6 +1,6 @@
 import { getDatabase } from './database';
+import { stampWrite, recordTombstones } from '../sync/stamp';
 import type { Transaction, TranType } from '../utils/types';
-import { stampWrite } from '../sync/stamp';
 
 type TranRow = {
   id: number;
@@ -80,7 +80,14 @@ export async function updateTransaction(
 
 export async function deleteTransaction(id: number): Promise<void> {
   const db = await getDatabase();
+  const tran = await db.getFirstAsync<{ uuid: string }>(
+    'SELECT uuid FROM tran WHERE id = ?',
+    [id]
+  );
   await db.runAsync('DELETE FROM tran WHERE id = ?', [id]);
+  if (tran?.uuid) {
+    await recordTombstones(db, 'tran', [tran.uuid]);
+  }
 }
 
 export async function getAllTags(): Promise<string[]> {
