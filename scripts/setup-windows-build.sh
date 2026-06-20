@@ -11,6 +11,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
 WIN_REPO='C:\projects\cicada-mobile'
 WIN_REPO_MNT='/mnt/c/projects/cicada-mobile'
 # Clone/sync source must be the MAIN working tree: a linked worktree's .git is a
