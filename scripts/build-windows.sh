@@ -15,7 +15,11 @@ cd "$REPO_ROOT"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 WIN_REPO='C:\projects\cicada-mobile'
 WIN_REPO_MNT='/mnt/c/projects/cicada-mobile'
-WSL_UNC="$(wslpath -w "$REPO_ROOT")"
+# Clone/sync source must be the MAIN working tree: a linked worktree's .git is a
+# file (a gitdir pointer), which is not clonable/fetchable over a UNC path.
+GIT_COMMON_DIR="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)"
+MAIN_ROOT="$(dirname "$GIT_COMMON_DIR")"
+WSL_UNC="$(wslpath -w "$MAIN_ROOT")"
 PS1_WIN="$(wslpath -w "$REPO_ROOT/scripts/build-windows.ps1")"
 BUILDS_DIR="$HOME/cicada-builds"
 

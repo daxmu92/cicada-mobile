@@ -13,7 +13,11 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WIN_REPO='C:\projects\cicada-mobile'
 WIN_REPO_MNT='/mnt/c/projects/cicada-mobile'
-WSL_UNC="$(wslpath -w "$REPO_ROOT")"
+# Clone/sync source must be the MAIN working tree: a linked worktree's .git is a
+# file (a gitdir pointer), which is not clonable/fetchable over a UNC path.
+GIT_COMMON_DIR="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)"
+MAIN_ROOT="$(dirname "$GIT_COMMON_DIR")"
+WSL_UNC="$(wslpath -w "$MAIN_ROOT")"
 
 # Run a PowerShell command with PATH rebuilt from the registry, so tools installed
 # earlier in this same run become visible without a terminal restart.
@@ -22,6 +26,14 @@ ps() {
     \$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User');
     $1"
 }
+
+echo "==> Checking Git for Windows..."
+if ps "Get-Command git -ErrorAction SilentlyContinue" | grep -qi git; then
+  echo "    already installed."
+else
+  echo "    installing Git.Git..."
+  ps "winget install --id Git.Git -e --silent --accept-package-agreements --accept-source-agreements"
+fi
 
 echo "==> Checking MSVC C++ build tools..."
 if ps "& \"\${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe\" -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath" | grep -qi "Visual Studio"; then
@@ -51,6 +63,10 @@ echo "==> Setting up Windows checkout at $WIN_REPO..."
 if [ -d "$WIN_REPO_MNT/.git" ]; then
   echo "    already exists."
 else
+  if ! powershell.exe -NoProfile -Command "if (Test-Path '$WSL_UNC') { exit 0 } else { exit 1 }" 2>/dev/null; then
+    echo "ERROR: WSL tree not reachable from Windows at $WSL_UNC (is WSL running?)." >&2
+    exit 1
+  fi
   ps "New-Item -ItemType Directory -Force -Path 'C:\projects' | Out-Null; git clone '$WSL_UNC' '$WIN_REPO'"
 fi
 ps "Set-Location '$WIN_REPO'; if (git remote | Select-String -Quiet '^wsl\$') { git remote set-url wsl '$WSL_UNC' } else { git remote add wsl '$WSL_UNC' }"

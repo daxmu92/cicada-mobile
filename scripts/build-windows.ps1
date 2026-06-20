@@ -18,6 +18,11 @@ if (-not (Test-Path "$RepoDir\.git")) {
 }
 Set-Location $RepoDir
 
+# Fail early with the exact path if the WSL tree isn't reachable (9p/UNC can be flaky).
+if (-not (Test-Path $WslRemote)) {
+  throw "WSL tree not reachable at $WslRemote (is WSL running?)."
+}
+
 # Point the 'wsl' remote at the WSL working tree (UNC path) and sync to its commit.
 if (git remote | Select-String -Quiet '^wsl$') {
   git remote set-url wsl $WslRemote
@@ -26,6 +31,10 @@ if (git remote | Select-String -Quiet '^wsl$') {
 }
 Write-Host "==> Fetching '$Branch' from WSL tree..."
 git fetch wsl
+git rev-parse --verify --quiet "wsl/$Branch" *> $null
+if ($LASTEXITCODE -ne 0) {
+  throw "Branch '$Branch' not found on the WSL tree after fetch — commit it on the WSL side first."
+}
 git checkout -B $Branch "wsl/$Branch"
 git reset --hard "wsl/$Branch"
 

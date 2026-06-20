@@ -10,6 +10,7 @@ building, as uncommitted edits are excluded.
 
 `scripts/setup-windows-build.sh` installs these via `winget` (idempotent):
 
+- Git for Windows (used to sync the build checkout)
 - Microsoft Visual Studio 2022 Build Tools — "Desktop development with C++" (MSVC linker)
 - Rust (via rustup; MSVC target by default)
 - Node.js 20 LTS
