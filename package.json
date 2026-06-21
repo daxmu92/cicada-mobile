@@ -18,7 +18,7 @@
     "tauri:build": "tauri build",
     "build:windows": "bash scripts/build-windows.sh",
     "lint": "expo lint",
-    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts"
+    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -67,11 +67,13 @@
     "@tauri-apps/cli": "^2.11.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/react": "~19.1.0",
-    "better-sqlite3": "^11.10.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "tsx": "^4.19.2",
     "typescript": "~5.9.2"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
   },
   "private": true
 }

@@ -22,8 +22,11 @@ import {
   syncNow as runSyncNow,
   overwriteCloud as runOverwriteCloud,
   LAST_SYNCED_KEY,
+  SYNC_IN_PROGRESS_KEY,
 } from '../sync/sync';
-import { getSyncState } from '../sync/sync-state-repo';
+import { getSyncState, setSyncState } from '../sync/sync-state-repo';
+import { getDatabase } from '../db/database';
+import { cascadeRepair } from '../sync/apply';
 
 export type SyncStatus = 'idle' | 'syncing' | 'ok' | 'offline' | 'authError' | 'error';
 
@@ -100,6 +103,17 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!available) return;
     (async () => {
+      // Crash recovery: a set flag means a prior apply was interrupted
+      // (Tauri non-atomic). Repair orphans, clear the flag, then sync normally.
+      try {
+        if ((await getSyncState(SYNC_IN_PROGRESS_KEY)) === '1') {
+          const db = await getDatabase();
+          await cascadeRepair(db);
+          await setSyncState(SYNC_IN_PROGRESS_KEY, '0');
+        }
+      } catch {
+        // recovery is best-effort; never block startup
+      }
       await refreshMeta();
       await doSync();
     })();

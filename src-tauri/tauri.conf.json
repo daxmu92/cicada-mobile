@@ -27,7 +27,8 @@
       "csp": null,
       "headers": {
         "Cross-Origin-Opener-Policy": "same-origin",
-        "Cross-Origin-Embedder-Policy": "credentialless"
+        "Cross-Origin-Embedder-Policy": "credentialless",
+        "Cache-Control": "no-store"
       }
     }
   },
