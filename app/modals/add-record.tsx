@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { getAsset } from '../../src/db/asset-repo';
 import { getAccount } from '../../src/db/account-repo';
@@ -36,6 +37,7 @@ function parseYM(s: string): Date {
 
 export default function AddRecordModal() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { fmt } = useFormat();
   const params = useLocalSearchParams<{ assetId: string; date: string }>();
   const assetId = Number(params.assetId);
@@ -119,7 +121,7 @@ export default function AddRecordModal() {
     const i = parseFloat(inflow) || 0;
     const p = parseFloat(profit) || 0;
     if (isNaN(n)) {
-      Alert.alert('Invalid input', 'Please enter a valid net worth.');
+      Alert.alert(t('addRecord.invalidTitle'), t('addRecord.invalidNetWorth'));
       return;
     }
     await upsertSnapshot(assetId, date, n, i, p);
@@ -127,10 +129,10 @@ export default function AddRecordModal() {
   };
 
   const confirmDelete = () => {
-    Alert.alert('Delete Snapshot', `Remove ${date} snapshot?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('addRecord.deleteTitle'), t('addRecord.deleteBody', { date }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteSnapshot(assetId, date);
@@ -150,7 +152,7 @@ export default function AddRecordModal() {
             {accountName} · {assetName}
           </Text>
           <TouchableOpacity onPress={() => setShowPicker((s) => !s)}>
-            <Text style={styles.dateLabel}>Date: {date}</Text>
+            <Text style={styles.dateLabel}>{t('addRecord.dateLabel', { date })}</Text>
           </TouchableOpacity>
           {showPicker && (
             <View style={styles.pickerWrap}>
@@ -164,63 +166,62 @@ export default function AddRecordModal() {
                 <TouchableOpacity
                   style={styles.doneBtn}
                   onPress={() => setShowPicker(false)}>
-                  <Text style={styles.doneText}>Done</Text>
+                  <Text style={styles.doneText}>{t('common.done')}</Text>
                 </TouchableOpacity>
               )}
             </View>
           )}
           <Text style={shared.muted}>
-            Previous net worth: {fmt(lastNetWorth)}
+            {t('addRecord.previousNetWorth', { value: fmt(lastNetWorth) })}
           </Text>
         </View>
 
         <View style={shared.card}>
           <View style={styles.autoFillRow}>
-            <Text style={styles.label}>Auto-calculate</Text>
+            <Text style={styles.label}>{t('addRecord.autoCalculate')}</Text>
             <Switch value={autoFill} onValueChange={setAutoFill} />
           </View>
           <Text style={shared.muted}>
-            When enabled, editing any two fields auto-fills the third using:
-            profit = (netWorth - lastNetWorth) - inflow
+            {t('addRecord.autoCalcHelp')}
           </Text>
         </View>
 
         <View style={shared.card}>
-          <Text style={styles.label}>Net Worth</Text>
+          <Text style={styles.label}>{t('addRecord.netWorth')}</Text>
           <TextInput
             style={styles.input}
             value={netWorth}
             onChangeText={updateNetWorth}
-            placeholder="0.00"
+            placeholder={t('addRecord.valuePlaceholder')}
             keyboardType="decimal-pad"
           />
 
-          <Text style={styles.label}>Inflow</Text>
+          <Text style={styles.label}>{t('addRecord.inflow')}</Text>
           <TextInput
             style={styles.input}
             value={inflow}
             onChangeText={updateInflow}
-            placeholder="0.00"
+            placeholder={t('addRecord.valuePlaceholder')}
             keyboardType="decimal-pad"
           />
 
-          <Text style={styles.label}>Profit</Text>
+          <Text style={styles.label}>{t('addRecord.profit')}</Text>
           <TextInput
             style={styles.input}
             value={profit}
             onChangeText={updateProfit}
-            placeholder="0.00"
+            placeholder={t('addRecord.valuePlaceholder')}
             keyboardType="decimal-pad"
           />
         </View>
 
         <TouchableOpacity style={styles.submitBtn} onPress={submit}>
-          <Text style={styles.submitText}>{hasExisting ? 'Update' : 'Save'}</Text>
+          <Text style={styles.submitText}>{hasExisting ? t('common.update') : t('common.save')}</Text>
         </TouchableOpacity>
 
         {hasExisting && (
           <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete}>
-            <Text style={styles.deleteText}>Delete</Text>
+            <Text style={styles.deleteText}>{t('common.delete')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

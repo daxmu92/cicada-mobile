@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   createTransaction,
@@ -36,6 +37,7 @@ function parseYMD(s: string): Date {
 
 export default function AddTransactionModal() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ date?: string; id?: string }>();
   const editingId = params.id ? Number(params.id) : null;
   const { gain, loss } = useSemanticColors();
@@ -81,12 +83,12 @@ export default function AddTransactionModal() {
 
   const activeTags = cat
     .split(',')
-    .map((t) => t.trim())
+    .map((tag) => tag.trim())
     .filter(Boolean);
 
   const toggleTag = (tag: string) => {
     if (activeTags.includes(tag)) {
-      setCat(activeTags.filter((t) => t !== tag).join(', '));
+      setCat(activeTags.filter((s) => s !== tag).join(', '));
     } else {
       setCat([...activeTags, tag].join(', '));
     }
@@ -95,7 +97,7 @@ export default function AddTransactionModal() {
   const submit = async () => {
     const v = parseFloat(value);
     if (isNaN(v) || v <= 0) {
-      Alert.alert('Invalid input', 'Please enter a valid positive value.');
+      Alert.alert(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
       return;
     }
     if (editingId) {
@@ -108,10 +110,10 @@ export default function AddTransactionModal() {
 
   const confirmDelete = () => {
     if (!editingId) return;
-    Alert.alert('Delete Transaction', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('addTransaction.deleteTitle'), t('addTransaction.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteTransaction(editingId);
@@ -127,31 +129,31 @@ export default function AddTransactionModal() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
         <View style={shared.card}>
-          <Text style={styles.label}>Type</Text>
+          <Text style={styles.label}>{t('addTransaction.type')}</Text>
           <View style={styles.typeRow}>
-            {(['INCOME', 'OUTLAY'] as const).map((t) => (
+            {(['INCOME', 'OUTLAY'] as const).map((opt) => (
               <TouchableOpacity
-                key={t}
-                onPress={() => setType(t)}
+                key={opt}
+                onPress={() => setType(opt)}
                 style={[
                   styles.typeBtn,
-                  type === t && {
-                    backgroundColor: t === 'INCOME' ? gain : loss,
-                    borderColor: t === 'INCOME' ? gain : loss,
+                  type === opt && {
+                    backgroundColor: opt === 'INCOME' ? gain : loss,
+                    borderColor: opt === 'INCOME' ? gain : loss,
                   },
                 ]}>
                 <Text
                   style={[
                     styles.typeBtnText,
-                    type === t && { color: 'white' },
+                    type === opt && { color: 'white' },
                   ]}>
-                  {t}
+                  {opt === 'INCOME' ? t('addTransaction.typeIncome') : t('addTransaction.typeOutlay')}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.label}>Date</Text>
+          <Text style={styles.label}>{t('addTransaction.date')}</Text>
           <TouchableOpacity
             style={styles.input}
             onPress={() => setShowPicker((s) => !s)}>
@@ -169,27 +171,27 @@ export default function AddTransactionModal() {
                 <TouchableOpacity
                   style={styles.doneBtn}
                   onPress={() => setShowPicker(false)}>
-                  <Text style={styles.doneText}>Done</Text>
+                  <Text style={styles.doneText}>{t('common.done')}</Text>
                 </TouchableOpacity>
               )}
             </View>
           )}
 
-          <Text style={styles.label}>Value</Text>
+          <Text style={styles.label}>{t('addTransaction.value')}</Text>
           <TextInput
             style={styles.input}
             value={value}
             onChangeText={setValue}
-            placeholder="0.00"
+            placeholder={t('addTransaction.valuePlaceholder')}
             keyboardType="decimal-pad"
           />
 
-          <Text style={styles.label}>Tags (comma-separated)</Text>
+          <Text style={styles.label}>{t('addTransaction.tags')}</Text>
           <TextInput
             style={styles.input}
             value={cat}
             onChangeText={setCat}
-            placeholder="e.g. food, dining"
+            placeholder={t('addTransaction.tagsPlaceholder')}
             autoCapitalize="none"
           />
 
@@ -215,23 +217,23 @@ export default function AddTransactionModal() {
             </View>
           )}
 
-          <Text style={styles.label}>Note</Text>
+          <Text style={styles.label}>{t('addTransaction.note')}</Text>
           <TextInput
             style={[styles.input, { height: 80 }]}
             value={note}
             onChangeText={setNote}
-            placeholder="Optional description"
+            placeholder={t('addTransaction.notePlaceholder')}
             multiline
           />
         </View>
 
         <TouchableOpacity style={styles.submitBtn} onPress={submit}>
-          <Text style={styles.submitText}>{editingId ? 'Update' : 'Save'}</Text>
+          <Text style={styles.submitText}>{editingId ? t('common.update') : t('common.save')}</Text>
         </TouchableOpacity>
 
         {editingId && (
           <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete}>
-            <Text style={styles.deleteText}>Delete</Text>
+            <Text style={styles.deleteText}>{t('common.delete')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
