@@ -7,6 +7,12 @@ import {
   useState,
 } from 'react';
 
+import i18n, {
+  detectDeviceLanguage,
+  isLanguage,
+  LOCALE_TAGS,
+  type Language,
+} from '../i18n';
 import { getSetting, setSetting } from '../db/setting-repo';
 import {
   formatCurrency,
@@ -25,12 +31,15 @@ type SettingsContextValue = {
   setForwardFill: (v: boolean) => Promise<void>;
   gainColor: GainColor;
   setGainColor: (v: GainColor) => Promise<void>;
+  language: Language;
+  setLanguage: (lang: Language) => Promise<void>;
   ready: boolean;
 };
 
 const DEFAULT_CURRENCY = '$';
 const DEFAULT_FORWARD_FILL = false;
 const DEFAULT_GAIN_COLOR: GainColor = 'green';
+const DEFAULT_LANGUAGE: Language = detectDeviceLanguage();
 
 const SettingsContext = createContext<SettingsContextValue>({
   currency: DEFAULT_CURRENCY,
@@ -39,6 +48,8 @@ const SettingsContext = createContext<SettingsContextValue>({
   setForwardFill: async () => {},
   gainColor: DEFAULT_GAIN_COLOR,
   setGainColor: async () => {},
+  language: DEFAULT_LANGUAGE,
+  setLanguage: async () => {},
   ready: false,
 });
 
@@ -46,6 +57,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState(DEFAULT_CURRENCY);
   const [forwardFill, setForwardFillState] = useState(DEFAULT_FORWARD_FILL);
   const [gainColor, setGainColorState] = useState<GainColor>(DEFAULT_GAIN_COLOR);
+  const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -59,6 +71,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       const storedGainColor = await getSetting('gainColor');
       if (storedGainColor === 'red' || storedGainColor === 'green') {
         setGainColorState(storedGainColor);
+      }
+      const storedLanguage = await getSetting('language');
+      if (isLanguage(storedLanguage)) {
+        setLanguageState(storedLanguage);
+        if (i18n.language !== storedLanguage) {
+          await i18n.changeLanguage(storedLanguage);
+        }
       }
       setReady(true);
     })();
@@ -79,6 +98,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setGainColorState(v);
   }, []);
 
+  const updateLanguage = useCallback(async (lang: Language) => {
+    await setSetting('language', lang);
+    await i18n.changeLanguage(lang);
+    setLanguageState(lang);
+  }, []);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -88,6 +113,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setForwardFill: updateForwardFill,
         gainColor,
         setGainColor: updateGainColor,
+        language,
+        setLanguage: updateLanguage,
         ready,
       }}>
       {children}
@@ -103,17 +130,25 @@ export function useCurrency() {
   return useContext(SettingsContext).currency;
 }
 
+export function useLocale(): string {
+  return LOCALE_TAGS[useContext(SettingsContext).language];
+}
+
 export function useFormat() {
   const currency = useCurrency();
-  const fmt = useCallback((v: number) => formatCurrency(v, currency), [currency]);
-  const fmtSigned = useCallback((v: number) => formatSigned(v, currency), [currency]);
+  const locale = useLocale();
+  const fmt = useCallback((v: number) => formatCurrency(v, currency, locale), [currency, locale]);
+  const fmtSigned = useCallback(
+    (v: number) => formatSigned(v, currency, locale),
+    [currency, locale]
+  );
   const fmtCompact = useCallback(
-    (v: number) => formatCurrencyCompact(v, currency),
-    [currency]
+    (v: number) => formatCurrencyCompact(v, currency, locale),
+    [currency, locale]
   );
   const fmtSignedCompact = useCallback(
-    (v: number) => formatSignedCompact(v, currency),
-    [currency]
+    (v: number) => formatSignedCompact(v, currency, locale),
+    [currency, locale]
   );
   return { fmt, fmtSigned, fmtCompact, fmtSignedCompact };
 }
