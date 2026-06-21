@@ -16,7 +16,7 @@ import {
   clearCredentials,
 } from '../sync/credentials';
 import { createConfiguredRemote } from '../sync/remote';
-import { type WebDavConfig } from '../sync/providers/webdav';
+import { type StoredRemoteConfig } from '../sync/remote-config';
 import { AuthError } from '../sync/providers/types';
 import {
   syncNow as runSyncNow,
@@ -36,8 +36,8 @@ type SyncContextValue = {
   status: SyncStatus;
   lastSyncedAt: number | null;
   lastError: string | null;
-  testConnection: (config: WebDavConfig) => Promise<void>;
-  connect: (config: WebDavConfig) => Promise<void>;
+  testConnection: (config: StoredRemoteConfig) => Promise<void>;
+  connect: (config: StoredRemoteConfig) => Promise<void>;
   disconnect: () => Promise<void>;
   syncNow: () => Promise<void>;
   overwriteCloud: () => Promise<void>;
@@ -128,11 +128,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [available, doSync]);
 
-  const testConnection = useCallback(async (config: WebDavConfig) => {
+  const testConnection = useCallback(async (config: StoredRemoteConfig) => {
     await createConfiguredRemote(config).testConnection(); // throws on failure
   }, []);
 
-  const connect = useCallback(async (config: WebDavConfig) => {
+  const connect = useCallback(async (config: StoredRemoteConfig) => {
     await createConfiguredRemote(config).testConnection(); // verify before persisting
     await saveCredentials(config);
     setConnected(true);

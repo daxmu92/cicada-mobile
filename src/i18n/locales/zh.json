@@ -214,7 +214,17 @@
     "cloudOverwrite": "用本设备覆盖云端",
     "cloudOverwriteSub": "用本设备的数据替换云端副本。仅在云端副本损坏时使用。",
     "cloudOverwriteConfirm": "确定用本设备的数据覆盖云端副本吗?",
-    "cloudMissingFields": "请填写服务器地址、账户和应用密码。"
+    "cloudMissingFields": "请填写服务器地址、账户和应用密码。",
+    "cloudProvider": "服务类型",
+    "cloudProviderWebdav": "WebDAV",
+    "cloudProviderS3": "S3 / R2",
+    "cloudEndpoint": "Endpoint 地址",
+    "cloudEndpointHelp": "如 https://<账户>.r2.cloudflarestorage.com(R2)或 https://s3.<区域>.amazonaws.com",
+    "cloudRegion": "区域(Region)",
+    "cloudRegionHelp": "Cloudflare R2 填 \"auto\";AWS 填 bucket 所在区域。",
+    "cloudBucket": "存储桶(Bucket)",
+    "cloudAccessKeyId": "Access Key ID",
+    "cloudSecretAccessKey": "Secret Access Key"
   },
   "charts": {
     "noData": "暂无数据",

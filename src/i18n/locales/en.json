@@ -214,7 +214,17 @@
     "cloudOverwrite": "Overwrite cloud with this device",
     "cloudOverwriteSub": "Replace the cloud copy with this device's data. Use only if the cloud copy is broken.",
     "cloudOverwriteConfirm": "Overwrite the cloud copy with this device's data?",
-    "cloudMissingFields": "Enter the server address, account, and app password."
+    "cloudMissingFields": "Enter the server address, account, and app password.",
+    "cloudProvider": "Provider",
+    "cloudProviderWebdav": "WebDAV",
+    "cloudProviderS3": "S3 / R2",
+    "cloudEndpoint": "Endpoint URL",
+    "cloudEndpointHelp": "e.g. https://<account>.r2.cloudflarestorage.com (R2) or https://s3.<region>.amazonaws.com",
+    "cloudRegion": "Region",
+    "cloudRegionHelp": "Cloudflare R2: use \"auto\". AWS: the bucket's region.",
+    "cloudBucket": "Bucket",
+    "cloudAccessKeyId": "Access key ID",
+    "cloudSecretAccessKey": "Secret access key"
   },
   "charts": {
     "noData": "No data",
