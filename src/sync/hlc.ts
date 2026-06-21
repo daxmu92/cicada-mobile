@@ -33,6 +33,30 @@ export function advanceLocal(prev: HlcState, now: number): HlcState {
   return { phys, counter };
 }
 
+/**
+ * Advance the clock on RECEIVING a remote event stamped `remote`, at local time
+ * `now` (ms). Standard HLC receive: take the greatest physical time, and bump the
+ * counter of whichever component(s) tie it. Guarantees the next encoded stamp
+ * sorts after both the local history and the remote event just merged in.
+ */
+export function receive(local: HlcState, remote: HlcState, now: number): HlcState {
+  const phys = Math.max(now, local.phys, remote.phys);
+  let counter: number;
+  if (phys === local.phys && phys === remote.phys) {
+    counter = Math.max(local.counter, remote.counter) + 1;
+  } else if (phys === local.phys) {
+    counter = local.counter + 1;
+  } else if (phys === remote.phys) {
+    counter = remote.counter + 1;
+  } else {
+    counter = 0;
+  }
+  if (counter > HLC_COUNTER_MAX) {
+    return { phys: phys + 1, counter: 0 };
+  }
+  return { phys, counter };
+}
+
 /** Ordinal compare. Returns -1 | 0 | 1. NEVER use localeCompare here. */
 export function compareHlc(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;

@@ -1,4 +1,4 @@
-import { advanceLocal, encodeHlc, type HlcState } from './hlc';
+import { advanceLocal, encodeHlc, parseHlc, receive, type HlcState } from './hlc';
 import { getDeviceId } from './device';
 import { getSyncState, setSyncState } from './sync-state-repo';
 
@@ -21,6 +21,21 @@ async function doTick(): Promise<string> {
 export function tick(): Promise<string> {
   const run = queue.then(doTick, doTick);
   // Swallow errors on the queue tail so one failed tick can't wedge the chain.
+  queue = run.catch(() => undefined);
+  return run;
+}
+
+async function doReceive(remoteHlc: string): Promise<void> {
+  const raw = await getSyncState(HLC_KEY);
+  const prev: HlcState = raw ? (JSON.parse(raw) as HlcState) : { phys: 0, counter: 0 };
+  const { phys, counter } = parseHlc(remoteHlc);
+  const next = receive(prev, { phys, counter }, Date.now());
+  await setSyncState(HLC_KEY, JSON.stringify(next));
+}
+
+/** Fold a remote stamp into the local clock so future local ticks sort after it. */
+export function receiveRemote(remoteHlc: string): Promise<void> {
+  const run = queue.then(() => doReceive(remoteHlc), () => doReceive(remoteHlc));
   queue = run.catch(() => undefined);
   return run;
 }
