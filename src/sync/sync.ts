@@ -8,10 +8,34 @@ import {
 } from './document';
 import { merge } from './merge';
 import { applyMerge } from './apply';
-import { compareHlc } from './hlc';
+import { compareHlc, parseHlc } from './hlc';
 import { ConflictError, type SyncRemote, type WritePrecondition } from './providers/types';
 
 export const LAST_SYNCED_KEY = 'cloud_last_synced_at';
+
+export const TOMBSTONE_RETENTION_DAYS = 90;
+const DAY_MS = 86_400_000;
+
+/** Prune tombstones whose deletion is older than the retention window. Age is
+ *  read from the HLC physical component (ms-epoch). Returns rows pruned. */
+export async function gcTombstones(
+  db: CicadaDB,
+  nowMs: number,
+  retentionDays: number = TOMBSTONE_RETENTION_DAYS
+): Promise<number> {
+  const cutoff = nowMs - retentionDays * DAY_MS;
+  const rows = await db.getAllAsync<{ entity: string; uuid: string; deleted_at: string }>(
+    'SELECT entity, uuid, deleted_at FROM tombstone'
+  );
+  let pruned = 0;
+  for (const r of rows) {
+    if (parseHlc(r.deleted_at).phys < cutoff) {
+      await db.runAsync('DELETE FROM tombstone WHERE entity = ? AND uuid = ?', [r.entity, r.uuid]);
+      pruned++;
+    }
+  }
+  return pruned;
+}
 
 export class UnsupportedRemoteError extends Error {
   constructor(message: string) {
@@ -82,6 +106,7 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     try {
       await remote.write(serializeDocument(await buildLocal()), { kind: 'ifNoneMatch' });
       await setState(LAST_SYNCED_KEY, String(now()));
+      await gcTombstones(db, now());
       return { status: 'seeded', suffixed: [] };
     } catch (e) {
       if (!(e instanceof ConflictError)) throw e;
@@ -110,6 +135,7 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     try {
       await remote.write(outDoc, pre);
       await setState(LAST_SYNCED_KEY, String(now()));
+      await gcTombstones(db, now());
       return { status: 'merged', suffixed: applied.suffixed };
     } catch (e) {
       if (e instanceof ConflictError && attempt < maxRetries) {

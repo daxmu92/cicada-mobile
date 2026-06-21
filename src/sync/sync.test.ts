@@ -4,7 +4,7 @@ import { makeMigratedDb } from './test-support/sqlite';
 import { buildDocument, serializeDocument, parseDocument, type SyncDocument } from './document';
 import { ConflictError } from './providers/types';
 import type { SyncRemote, WritePrecondition } from './providers/types';
-import { runSync, maxRemoteStamp } from './sync';
+import { runSync, maxRemoteStamp, gcTombstones, TOMBSTONE_RETENTION_DAYS } from './sync';
 import type { CicadaDB } from '../db/migrations';
 
 // ---- in-memory fake remote -------------------------------------------------
@@ -158,4 +158,36 @@ test('maxRemoteStamp returns the greatest HLC across tables and tombstones', () 
     tombstones: [{ entity: 'tran', uuid: 't', deleted_at: HLC(7, 'aaaaaa') }],
   };
   assert.equal(maxRemoteStamp(doc), HLC(9, 'aaaaaa'));
+});
+
+const DAY_MS = 86_400_000;
+
+test('gcTombstones prunes tombstones older than the retention window, keeps newer', async () => {
+  const { db } = await makeMigratedDb();
+  const nowMs = 1_000 * DAY_MS; // arbitrary "now" in ms
+  const old = HLC(nowMs - 100 * DAY_MS, 'aaaaaa'); // 100d old -> pruned
+  const fresh = HLC(nowMs - 10 * DAY_MS, 'aaaaaa'); // 10d old -> kept
+  await db.runAsync('INSERT INTO tombstone (entity, uuid, deleted_at) VALUES (?, ?, ?)', ['tran', 't-old', old]);
+  await db.runAsync('INSERT INTO tombstone (entity, uuid, deleted_at) VALUES (?, ?, ?)', ['tran', 't-new', fresh]);
+
+  const pruned = await gcTombstones(db, nowMs, TOMBSTONE_RETENTION_DAYS);
+  assert.equal(pruned, 1);
+  const rows = await db.getAllAsync<{ uuid: string }>('SELECT uuid FROM tombstone ORDER BY uuid');
+  assert.deepEqual(rows.map((r) => r.uuid), ['t-new']);
+});
+
+test('TOMBSTONE_RETENTION_DAYS is 90', () => {
+  assert.equal(TOMBSTONE_RETENTION_DAYS, 90);
+});
+
+test('runSync prunes an old tombstone after a successful sync', async () => {
+  const { db } = await makeMigratedDb();
+  const nowMs = 1_000 * DAY_MS;
+  const old = HLC(nowMs - 200 * DAY_MS, 'aaaaaa');
+  await db.runAsync('INSERT INTO tombstone (entity, uuid, deleted_at) VALUES (?, ?, ?)', ['tran', 't-old', old]);
+  const remote = makeFakeRemote();
+  const { deps } = depsFor(db, remote, 'aaaaaa', nowMs);
+  await runSync(deps);
+  const rows = await db.getAllAsync<{ uuid: string }>('SELECT uuid FROM tombstone');
+  assert.equal(rows.length, 0); // GC ran after the (seed) push
 });
