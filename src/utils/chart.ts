@@ -1,11 +1,17 @@
 // Shared helpers for the line charts (home hero + asset detail).
 
-/** Abbreviate large axis values: 1284500 → "1.3M", 38200 → "38K", -3000 → "-3K". */
+/**
+ * Abbreviate axis values: 1284500 → "1.3M", 1500 → "1.5K", 2000 → "2K",
+ * 305699 → "306K". Uses one decimal below 10× a unit so adjacent steps like
+ * 1500/2000 don't both round to "2K"; whole multiples drop the ".0".
+ */
 export function abbrev(n: number): string {
   const a = Math.abs(n);
-  if (a >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-  if (a >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (a >= 1e3) return Math.round(n / 1e3) + 'K';
+  const fmt = (v: number, suffix: string) =>
+    (Math.abs(v) < 10 ? v.toFixed(1).replace(/\.0$/, '') : String(Math.round(v))) + suffix;
+  if (a >= 1e9) return fmt(n / 1e9, 'B');
+  if (a >= 1e6) return fmt(n / 1e6, 'M');
+  if (a >= 1e3) return fmt(n / 1e3, 'K');
   return String(Math.round(n));
 }
 

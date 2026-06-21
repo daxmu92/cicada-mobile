@@ -11,8 +11,10 @@ import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Asset, AssetSnapshot } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { AssetLineChart } from '../../src/components/charts/AssetLineChart';
+import { AssetBarChart } from '../../src/components/charts/AssetBarChart';
 
 type Metric = 'netWorth' | 'profit' | 'inflow';
+type ProfitMode = 'cumulative' | 'monthly';
 
 const METRIC_LABEL_KEYS: Record<Metric, string> = {
   netWorth: 'assetDetail.netWorth',
@@ -43,6 +45,7 @@ export default function AssetDetailScreen() {
   const [accountName, setAccountName] = useState('');
   const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([]);
   const [metric, setMetric] = useState<Metric>('netWorth');
+  const [profitMode, setProfitMode] = useState<ProfitMode>('cumulative');
   const [range, setRange] = useState<TimeRange>('All');
 
   const loadData = useCallback(async () => {
@@ -82,10 +85,31 @@ export default function AssetDetailScreen() {
     return snapshots.filter((s) => s.date >= cutoff);
   }, [snapshots, range]);
 
+  // Cumulative profit = running total of monthly profit across all history.
+  const cumulativeProfit = useMemo(() => {
+    let sum = 0;
+    const m = new Map<string, number>();
+    for (const s of snapshots) {
+      sum += s.profit;
+      m.set(s.date, sum);
+    }
+    return m;
+  }, [snapshots]);
+
+  // Flows (inflow, monthly profit) render as bars; stocks (net worth,
+  // cumulative profit) render as lines.
+  const useBars = metric === 'inflow' || (metric === 'profit' && profitMode === 'monthly');
+
   const chartData = filteredSnapshots.map((s) => ({
     label: s.date,
-    value: s[metric],
+    value:
+      metric === 'profit' && profitMode === 'cumulative'
+        ? cumulativeProfit.get(s.date) ?? 0
+        : s[metric],
   }));
+
+  const lastChartValue = chartData.length ? chartData[chartData.length - 1].value : 0;
+  const lineColor = metric === 'profit' ? (lastChartValue >= 0 ? gain : loss) : colors.primary;
 
   return (
     <>
@@ -108,24 +132,44 @@ export default function AssetDetailScreen() {
 
             {snapshots.length > 0 && (
               <View style={shared.card}>
-                <View style={styles.chipRow}>
-                  {(Object.keys(METRIC_LABEL_KEYS) as Metric[]).map((m) => (
-                    <TouchableOpacity
-                      key={m}
-                      onPress={() => setMetric(m)}
-                      style={[
-                        styles.chip,
-                        metric === m && { backgroundColor: colors.primary },
-                      ]}>
-                      <Text
+                <View style={styles.chipRowOuter}>
+                  <View style={styles.chipGroup}>
+                    {(Object.keys(METRIC_LABEL_KEYS) as Metric[]).map((m) => (
+                      <TouchableOpacity
+                        key={m}
+                        onPress={() => setMetric(m)}
                         style={[
-                          styles.chipText,
-                          metric === m && { color: 'white' },
+                          styles.chip,
+                          metric === m && { backgroundColor: colors.primary },
                         ]}>
-                        {t(METRIC_LABEL_KEYS[m])}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.chipText,
+                            metric === m && { color: 'white' },
+                          ]}>
+                          {t(METRIC_LABEL_KEYS[m])}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {/* Profit-only sub-toggle, kept on this row so the chart never jumps */}
+                  {metric === 'profit' && (
+                    <View style={styles.chipGroup}>
+                      {(['cumulative', 'monthly'] as ProfitMode[]).map((pm) => (
+                        <TouchableOpacity
+                          key={pm}
+                          onPress={() => setProfitMode(pm)}
+                          style={[
+                            styles.chipSm,
+                            profitMode === pm && { backgroundColor: colors.primary },
+                          ]}>
+                          <Text style={[styles.chipText, profitMode === pm && { color: 'white' }]}>
+                            {t(pm === 'cumulative' ? 'assetDetail.cumulative' : 'assetDetail.monthly')}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
                 <View style={styles.rangeRow}>
                   {TIME_RANGES.map((r) => (
@@ -146,16 +190,13 @@ export default function AssetDetailScreen() {
                     </TouchableOpacity>
                   ))}
                 </View>
-                <AssetLineChart
-                  data={chartData}
-                  color={
-                    metric === 'profit'
-                      ? latest && latest.profit >= 0
-                        ? gain
-                        : loss
-                      : colors.primary
-                  }
-                />
+                {useBars ? (
+                  // Both flows (monthly profit, inflow) color by sign: positive
+                  // gain-color (money in), negative loss-color (money out).
+                  <AssetBarChart data={chartData} diverging />
+                ) : (
+                  <AssetLineChart data={chartData} color={lineColor} />
+                )}
               </View>
             )}
 
@@ -214,10 +255,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: spacing.xs,
   },
-  chipRow: {
+  chipRowOuter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  chipGroup: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
   },
   rangeRow: {
     flexDirection: 'row',
@@ -226,6 +272,14 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'white',
+  },
+  chipSm: {
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: 16,
     borderWidth: 1,

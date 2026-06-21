@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-gifted-charts';
 
 import { abbrev, niceAxis } from '../../utils/chart';
 import { colors, spacing } from '../../utils/theme';
+import { usePointerConfig } from './pointer';
 
 export type LinePoint = {
   label: string;
@@ -18,6 +19,10 @@ type Props = {
 };
 
 const Y_AXIS_WIDTH = 46;
+// Reserve a stable box so the card never collapses while a freshly-mounted
+// chart waits for onLayout (prevents the flicker/jump when switching metrics).
+const CHART_BOX_HEIGHT = 272;
+const WIDTH_ESTIMATE = Dimensions.get('window').width - 64; // screen + card padding
 
 /** "2024-07" → "07/24" (compact, unambiguous across years, fits one line). */
 function shortMonthYear(ym: string): string {
@@ -27,7 +32,7 @@ function shortMonthYear(ym: string): string {
 
 export function AssetLineChart({ data, color = colors.primary, height = 220 }: Props) {
   const { t } = useTranslation();
-  const [boxWidth, setBoxWidth] = useState(0);
+  const [boxWidth, setBoxWidth] = useState(WIDTH_ESTIMATE);
 
   const axis = useMemo(() => {
     const vals = data.map((p) => p.value);
@@ -43,10 +48,14 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
     const labelStep = count > 12 ? Math.ceil(count / 6) : 1;
     return data.map((p, i) => ({
       value: p.value - offset,
+      actual: p.value, // unshifted, for the tooltip
+      date: p.label, // full "YYYY-MM", for the tooltip
       label: i % labelStep === 0 ? shortMonthYear(p.label) : '',
       dataPointText: '',
     }));
   }, [data, axis]);
+
+  const pointer = usePointerConfig(color);
 
   if (data.length === 0 || !axis) {
     return (
@@ -60,7 +69,9 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
   const plotWidth = Math.max(boxWidth - Y_AXIS_WIDTH - spacing.sm, 0);
 
   return (
-    <View onLayout={(e: LayoutChangeEvent) => setBoxWidth(e.nativeEvent.layout.width)} style={{ overflow: 'hidden' }}>
+    <View
+      onLayout={(e: LayoutChangeEvent) => setBoxWidth(e.nativeEvent.layout.width)}
+      style={{ overflow: 'hidden', minHeight: CHART_BOX_HEIGHT }}>
       {plotWidth > 0 && (
       <LineChart
         data={chartData}
@@ -94,6 +105,7 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
         startFillColor={color}
         startOpacity={0.2}
         endOpacity={0.0}
+        pointerConfig={pointer}
       />
       )}
     </View>

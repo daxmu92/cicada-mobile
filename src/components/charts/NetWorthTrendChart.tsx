@@ -6,6 +6,7 @@ import { useLocale } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
 import { monthShort } from '../../utils/date';
 import { colors, spacing } from '../../utils/theme';
+import { usePointerConfig } from './pointer';
 
 export type TrendPoint = {
   label: string; // "YYYY-MM"
@@ -43,10 +44,14 @@ export function NetWorthTrendChart({ points, color = colors.accent, height = 150
       const month = Number(p.label.split('-')[1]);
       return {
         value: p.value - axis.offset,
+        actual: p.value, // unshifted, for the tooltip
+        date: p.label, // full "YYYY-MM", for the tooltip
         label: i % step === 0 ? monthShort(month, locale) : '',
       };
     });
   }, [points, locale, axis.offset]);
+
+  const pointer = usePointerConfig(color);
 
   // gifted-charts total width = plot width + y-axis labels; subtract the axis
   // (plus a small margin) from the measured box so nothing spills out.
@@ -84,6 +89,7 @@ export function NetWorthTrendChart({ points, color = colors.accent, height = 150
           initialSpacing={8}
           endSpacing={16}
           disableScroll
+          pointerConfig={pointer}
         />
       )}
     </View>

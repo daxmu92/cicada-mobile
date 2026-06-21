@@ -79,7 +79,9 @@
     "asOf": "As of {{date}}",
     "colDate": "Date",
     "colNetWorth": "Net Worth",
-    "colProfit": "Profit"
+    "colProfit": "Profit",
+    "cumulative": "Cumulative",
+    "monthly": "Monthly"
   },
   "addTransaction": {
     "type": "Type",

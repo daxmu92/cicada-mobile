@@ -79,7 +79,9 @@
     "asOf": "截至 {{date}}",
     "colDate": "日期",
     "colNetWorth": "净值",
-    "colProfit": "收益"
+    "colProfit": "收益",
+    "cumulative": "累计",
+    "monthly": "每月"
   },
   "addTransaction": {
     "type": "类型",
