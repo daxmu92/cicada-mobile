@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -132,7 +132,7 @@ export default function HomeScreen() {
       <TouchableOpacity
         style={styles.trendsLink}
         activeOpacity={0.7}
-        onPress={() => router.push('/trends')}>
+        onPress={() => router.push('/trends' as Href)}>
         <Text style={styles.trendsLinkText}>{t('home.viewTrends')} →</Text>
       </TouchableOpacity>
     </ScrollView>
