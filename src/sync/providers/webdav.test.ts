@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createWebDavRemote } from './webdav';
 import type { HttpClient, HttpResponse } from './types';
+import { ConflictError } from './types';
 
 type Recorded = { url: string; method: string; headers: Record<string, string>; body?: string };
 
@@ -91,4 +92,70 @@ test('a custom filePath overrides the default', async () => {
   const remote = createWebDavRemote({ ...config, filePath: 'foo/bar.json' }, client);
   await remote.read();
   assert.equal(calls[0].url, 'https://dav.jianguoyun.com/dav/foo/bar.json');
+});
+
+test('write(none) PUTs the file with no precondition header', async () => {
+  const { client, calls } = makeMock(() => ({ status: 200, headers: { ETag: '"v2"' } }));
+  const remote = createWebDavRemote(config, client);
+  const res = await remote.write('{"k":2}', { kind: 'none' });
+
+  const put = calls.find((c) => c.method === 'PUT')!;
+  assert.equal(put.url, 'https://dav.jianguoyun.com/dav/cicada/cicada-sync.json');
+  assert.equal(put.body, '{"k":2}');
+  assert.equal(put.headers['Content-Type'], 'application/json');
+  assert.equal(put.headers['If-Match'], undefined);
+  assert.equal(put.headers['If-None-Match'], undefined);
+  assert.deepEqual(res, { etag: '"v2"' });
+});
+
+test('write(ifMatch) sends If-Match with the etag', async () => {
+  const { client, calls } = makeMock(() => ({ status: 204, headers: { ETag: '"v3"' } }));
+  const remote = createWebDavRemote(config, client);
+  const res = await remote.write('{}', { kind: 'ifMatch', etag: '"v2"' });
+  const put = calls.find((c) => c.method === 'PUT')!;
+  assert.equal(put.headers['If-Match'], '"v2"');
+  assert.deepEqual(res, { etag: '"v3"' });
+});
+
+test('write(ifNoneMatch) MKCOLs the folder first, then PUTs with If-None-Match: *', async () => {
+  const { client, calls } = makeMock((r) => {
+    if (r.method === 'MKCOL') return { status: 201 };
+    return { status: 201, headers: { ETag: '"v1"' } };
+  });
+  const remote = createWebDavRemote(config, client);
+  const res = await remote.write('{}', { kind: 'ifNoneMatch' });
+
+  assert.equal(calls[0].method, 'MKCOL');
+  assert.equal(calls[0].url, 'https://dav.jianguoyun.com/dav/cicada/'); // parent folder of the file
+  const put = calls.find((c) => c.method === 'PUT')!;
+  assert.equal(put.headers['If-None-Match'], '*');
+  assert.deepEqual(res, { etag: '"v1"' });
+});
+
+test('write(ifNoneMatch) tolerates MKCOL 405 (folder already exists)', async () => {
+  const { client } = makeMock((r) => {
+    if (r.method === 'MKCOL') return { status: 405 };
+    return { status: 201, headers: { ETag: '"v1"' } };
+  });
+  const remote = createWebDavRemote(config, client);
+  const res = await remote.write('{}', { kind: 'ifNoneMatch' });
+  assert.deepEqual(res, { etag: '"v1"' });
+});
+
+test('write throws ConflictError on HTTP 412', async () => {
+  const { client } = makeMock(() => ({ status: 412 }));
+  const remote = createWebDavRemote(config, client);
+  await assert.rejects(() => remote.write('{}', { kind: 'ifMatch', etag: '"old"' }), ConflictError);
+});
+
+test('write returns etag:null when the PUT response has no ETag', async () => {
+  const { client } = makeMock(() => ({ status: 200 }));
+  const remote = createWebDavRemote(config, client);
+  assert.deepEqual(await remote.write('{}', { kind: 'none' }), { etag: null });
+});
+
+test('write throws on 401', async () => {
+  const { client } = makeMock(() => ({ status: 401 }));
+  const remote = createWebDavRemote(config, client);
+  await assert.rejects(() => remote.write('{}', { kind: 'none' }), /401|authentication/i);
 });

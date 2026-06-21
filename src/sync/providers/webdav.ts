@@ -24,6 +24,13 @@ function ok(status: number): boolean {
   return status >= 200 && status < 300;
 }
 
+// The parent collection URL of the sync file (with a trailing slash), e.g.
+// ".../dav/cicada/cicada-sync.json" -> ".../dav/cicada/".
+function folderUrl(fileUrl: string): string {
+  const i = fileUrl.lastIndexOf('/');
+  return fileUrl.slice(0, i + 1);
+}
+
 export function createWebDavRemote(config: WebDavConfig, http: HttpClient): SyncRemote {
   const filePath = config.filePath ?? DEFAULT_FILE_PATH;
   const fileUrl = joinUrl(config.baseUrl, filePath);
@@ -58,9 +65,32 @@ export function createWebDavRemote(config: WebDavConfig, http: HttpClient): Sync
       return { content: await res.text(), etag: res.headers.get('ETag') };
     },
 
-    async write(_content: string, _pre: WritePrecondition): Promise<{ etag: string | null }> {
-      // Implemented in Task 2.
-      throw new ConflictError('write() not implemented yet');
+    async write(content: string, pre: WritePrecondition): Promise<{ etag: string | null }> {
+      if (pre.kind === 'ifNoneMatch') {
+        // Create-only: make sure the parent folder exists first. MKCOL is
+        // idempotent for us — 201 (created) and 405 (already exists) both pass;
+        // other failures surface on the PUT below.
+        await http(folderUrl(fileUrl), { method: 'MKCOL', headers: authHeaders() });
+      }
+
+      const headers: Record<string, string> = {
+        ...authHeaders(),
+        'Content-Type': 'application/json',
+      };
+      if (pre.kind === 'ifMatch') headers['If-Match'] = pre.etag;
+      else if (pre.kind === 'ifNoneMatch') headers['If-None-Match'] = '*';
+
+      const res = await http(fileUrl, { method: 'PUT', headers, body: content });
+      if (res.status === 412) {
+        throw new ConflictError();
+      }
+      if (res.status === 401) {
+        throw new Error('WebDAV authentication failed (401) — check the account and app password');
+      }
+      if (!ok(res.status)) {
+        throw new Error(`WebDAV write failed (HTTP ${res.status})`);
+      }
+      return { etag: res.headers.get('ETag') };
     },
   };
 }
