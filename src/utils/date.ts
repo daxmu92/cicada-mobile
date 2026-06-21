@@ -42,7 +42,32 @@ export function yearMonthList(start: string, end: string): string[] {
   return result;
 }
 
-export const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
+function monthFormatter(locale: string): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' });
+}
+
+export function monthShort(month1to12: number, locale: string = 'en-US'): string {
+  // Use a fixed UTC date in the given month; day/year are irrelevant for 'short' month.
+  return monthFormatter(locale).format(new Date(Date.UTC(2000, month1to12 - 1, 1)));
+}
+
+export function formatMonthYear(ym: string, locale: string = 'en-US'): string {
+  const [y, m] = ym.split('-').map(Number);
+  if (!y || !m) return ym;
+  return new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(y, m - 1, 1)));
+}
+
+export function formatLongDate(isoDate: string, locale: string = 'en-US'): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return isoDate;
+  return new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+}

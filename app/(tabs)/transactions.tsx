@@ -10,9 +10,10 @@ import {
   currentYearMonth,
   prevYearMonth,
   nextYearMonth,
-  MONTH_NAMES,
+  formatMonthYear,
+  formatLongDate,
 } from '../../src/utils/date';
-import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useFormat, useLocale, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Transaction } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { CategoryBars } from '../../src/components/charts/CategoryBars';
@@ -22,6 +23,7 @@ type Tab = 'list' | 'breakdown';
 export default function TransactionsScreen() {
   const router = useRouter();
   const { fmt } = useFormat();
+  const locale = useLocale();
   const { gain, loss } = useSemanticColors();
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -73,26 +75,15 @@ export default function TransactionsScreen() {
         byDate.set(tx.date, [tx]);
       }
     }
-    const dateFormatter = new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const formatDate = (isoDate: string) => {
-      const [y, m, d] = isoDate.split('-').map(Number);
-      if (!y || !m || !d) return isoDate;
-      // Construct as UTC to avoid timezone shifting the day.
-      return dateFormatter.format(new Date(Date.UTC(y, m - 1, d)));
-    };
+    const formatDate = (isoDate: string) => formatLongDate(isoDate, locale);
     return Array.from(byDate.entries())
       .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
       .map(([date, items]) => ({
         title: formatDate(date),
         data: [...items].sort((a, b) => b.id - a.id),
       }));
-  }, [transactions]);
+  }, [transactions, locale]);
 
-  const [year, month] = selectedMonth.split('-').map(Number);
   const net = totals.income - totals.outlay;
 
   return (
@@ -105,7 +96,7 @@ export default function TransactionsScreen() {
             <Text style={styles.arrow}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.monthLabel}>
-            {MONTH_NAMES[month - 1]} {year}
+            {formatMonthYear(selectedMonth, locale)}
           </Text>
           <TouchableOpacity
             onPress={() => setSelectedMonth(nextYearMonth(selectedMonth))}

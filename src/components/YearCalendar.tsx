@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { getMonthlyTotals } from '../db/snapshot-repo';
-import { useFormat, useSemanticColors, useSettings } from '../hooks/SettingsContext';
-import { currentYear, currentYearMonth, MONTH_NAMES, yearMonth } from '../utils/date';
+import { useFormat, useLocale, useSemanticColors, useSettings } from '../hooks/SettingsContext';
+import { useTranslation } from 'react-i18next';
+import { currentYear, currentYearMonth, monthShort, yearMonth } from '../utils/date';
 import { colors, shared, spacing } from '../utils/theme';
 
 type Props = {
@@ -17,6 +18,8 @@ type MonthCell = {
 };
 
 export function YearCalendar({ selected, onChange }: Props) {
+  const { t } = useTranslation();
+  const locale = useLocale();
   const { fmtSignedCompact } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
@@ -77,7 +80,7 @@ export function YearCalendar({ selected, onChange }: Props) {
         <View style={styles.headerCenter}>
           <Text style={styles.yearLabel}>{displayYear}</Text>
           <TouchableOpacity onPress={goToday}>
-            <Text style={styles.todayLink}>Today</Text>
+            <Text style={styles.todayLink}>{t('common.today')}</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -113,7 +116,7 @@ export function YearCalendar({ selected, onChange }: Props) {
                     styles.monthLabel,
                     isSelected && styles.monthLabelSelected,
                   ]}>
-                  {MONTH_NAMES[c.month - 1]}
+                  {monthShort(c.month, locale)}
                 </Text>
                 <Text
                   style={[styles.growth, { color: growthColor }]}
