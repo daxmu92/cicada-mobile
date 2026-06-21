@@ -154,7 +154,11 @@ export default function AssetsScreen() {
     if (!baselines.has(assetId)) {
       const last = await getLastSnapshotBefore(assetId, selectedMonth);
       const lastNW = last?.netWorth ?? 0;
-      const existing = monthSnapshots.get(assetId);
+      // Query the snapshot directly rather than reading monthSnapshots state,
+      // which may not have loaded yet if the user taps an asset immediately
+      // after entering entry mode — a stale empty map would mis-prefill from
+      // last-known net worth and cache a wrong baseline for the session.
+      const existing = await getSnapshot(assetId, selectedMonth);
       const base: SnapshotDraft = existing
         ? {
             netWorth: String(existing.netWorth),
