@@ -1,16 +1,19 @@
 import * as SecureStore from 'expo-secure-store';
-import type { WebDavConfig } from './providers/webdav';
+import { normalizeStoredConfig, type StoredRemoteConfig } from './remote-config';
 
-// Credentials (incl. the app password) live ONLY here — never in the synced
-// sync_state table, never logged. One JSON blob under a single key.
 const KEY = 'cicada_webdav_credentials';
 
-export async function loadCredentials(): Promise<WebDavConfig | null> {
+export async function loadCredentials(): Promise<StoredRemoteConfig | null> {
   const raw = await SecureStore.getItemAsync(KEY);
-  return raw ? (JSON.parse(raw) as WebDavConfig) : null;
+  if (!raw) return null;
+  try {
+    return normalizeStoredConfig(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }
 
-export async function saveCredentials(config: WebDavConfig): Promise<void> {
+export async function saveCredentials(config: StoredRemoteConfig): Promise<void> {
   await SecureStore.setItemAsync(KEY, JSON.stringify(config));
 }
 
