@@ -1,22 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { getAsset } from '../../src/db/asset-repo';
 import { getAccount } from '../../src/db/account-repo';
 import { listSnapshotsByAsset } from '../../src/db/snapshot-repo';
 import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
-import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useFormat, useLocale, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Asset, AssetSnapshot } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { AssetLineChart } from '../../src/components/charts/AssetLineChart';
 
 type Metric = 'netWorth' | 'profit' | 'inflow';
 
-const METRIC_LABELS: Record<Metric, string> = {
-  netWorth: 'Net Worth',
-  profit: 'Profit',
-  inflow: 'Inflow',
+const METRIC_LABEL_KEYS: Record<Metric, string> = {
+  netWorth: 'assetDetail.netWorth',
+  profit: 'assetDetail.profit',
+  inflow: 'assetDetail.inflow',
 };
 
 type TimeRange = '3M' | '6M' | '1Y' | '3Y' | 'All';
@@ -33,6 +34,8 @@ const RANGE_MONTHS: Record<Exclude<TimeRange, 'All'>, number> = {
 export default function AssetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
+  const locale = useLocale();
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
   const assetId = Number(id);
@@ -87,7 +90,7 @@ export default function AssetDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: asset?.name ?? 'Asset' }} />
+      <Stack.Screen options={{ title: asset?.name ?? t('nav.asset') }} />
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
         {asset && (
           <>
@@ -100,14 +103,14 @@ export default function AssetDetailScreen() {
                 </Text>
               )}
               {latest && (
-                <Text style={shared.muted}>As of {latest.date}</Text>
+                <Text style={shared.muted}>{t('assetDetail.asOf', { date: latest.date })}</Text>
               )}
             </View>
 
             {snapshots.length > 0 && (
               <View style={shared.card}>
                 <View style={styles.chipRow}>
-                  {(Object.keys(METRIC_LABELS) as Metric[]).map((m) => (
+                  {(Object.keys(METRIC_LABEL_KEYS) as Metric[]).map((m) => (
                     <TouchableOpacity
                       key={m}
                       onPress={() => setMetric(m)}
@@ -120,7 +123,7 @@ export default function AssetDetailScreen() {
                           styles.chipText,
                           metric === m && { color: 'white' },
                         ]}>
-                        {METRIC_LABELS[m]}
+                        {t(METRIC_LABEL_KEYS[m])}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -162,20 +165,20 @@ export default function AssetDetailScreen() {
               onPress={() =>
                 router.push(`/modals/add-record?assetId=${assetId}&date=${currentYearMonth()}`)
               }>
-              <Text style={styles.actionText}>+ Record Snapshot</Text>
+              <Text style={styles.actionText}>{t('assetDetail.recordSnapshot')}</Text>
             </TouchableOpacity>
 
-            <Text style={[shared.sectionTitle, { marginTop: spacing.lg }]}>History</Text>
+            <Text style={[shared.sectionTitle, { marginTop: spacing.lg }]}>{t('assetDetail.history')}</Text>
             {snapshots.length === 0 ? (
               <View style={shared.card}>
-                <Text style={shared.muted}>No snapshots yet. Tap "Record Snapshot" above.</Text>
+                <Text style={shared.muted}>{t('assetDetail.noSnapshots')}</Text>
               </View>
             ) : (
               <View style={shared.card}>
                 <View style={styles.tableHeader}>
-                  <Text style={[styles.cell, styles.headerCell]}>Date</Text>
-                  <Text style={[styles.cell, styles.headerCell, { textAlign: 'right' }]}>Net Worth</Text>
-                  <Text style={[styles.cell, styles.headerCell, { textAlign: 'right' }]}>Profit</Text>
+                  <Text style={[styles.cell, styles.headerCell]}>{t('assetDetail.colDate')}</Text>
+                  <Text style={[styles.cell, styles.headerCell, { textAlign: 'right' }]}>{t('assetDetail.colNetWorth')}</Text>
+                  <Text style={[styles.cell, styles.headerCell, { textAlign: 'right' }]}>{t('assetDetail.colProfit')}</Text>
                 </View>
                 {reversed.map((s) => (
                   <TouchableOpacity
