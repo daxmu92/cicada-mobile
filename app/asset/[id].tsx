@@ -7,7 +7,7 @@ import { getAsset } from '../../src/db/asset-repo';
 import { getAccount } from '../../src/db/account-repo';
 import { listSnapshotsByAsset } from '../../src/db/snapshot-repo';
 import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
-import { useFormat, useLocale, useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
 import type { Asset, AssetSnapshot } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { AssetLineChart } from '../../src/components/charts/AssetLineChart';
@@ -35,7 +35,6 @@ export default function AssetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const locale = useLocale();
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
   const assetId = Number(id);
