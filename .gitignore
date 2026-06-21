@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# local WebDAV test credentials (never commit)
+.webdav-test.local.json
+
 # typescript
 *.tsbuildinfo
 
@@ -41,3 +44,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Superpowers visual brainstorm scratch
+.superpowers/
