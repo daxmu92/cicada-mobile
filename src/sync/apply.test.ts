@@ -66,18 +66,36 @@ test('first-connect: same account name with a different uuid is adopted, not dup
   assert.equal(rows[0].uuid, 'remote-uuid');
 });
 
-test('genuinely different accounts sharing a name: newer is auto-suffixed, not dropped', async () => {
+test('first-connect: same account name unifies even when the local copy is newer', async () => {
+  const { db, raw } = await makeMigratedDb();
+  // Local "Bank" is NEWER than the incoming remote record.
+  raw.prepare('INSERT INTO account (name, archived, uuid, updated_at) VALUES (?, ?, ?, ?)')
+    .run('Bank', 0, 'localUuid', ts(5));
+  const m = emptyMerge();
+  m.tables.account = [{ uuid: 'remoteUuid', name: 'Bank', archived: 0, updated_at: ts(1) }];
+  await applyMerge(db, m);
+
+  const rows = await db.getAllAsync<{ uuid: string }>('SELECT uuid FROM account');
+  assert.equal(rows.length, 1);            // unified, not two
+  assert.equal(rows[0].uuid, 'remoteUuid'); // remote uuid adopted onto the local row
+});
+
+test('genuine uuid collision auto-suffixes (adoption blocked because the uuid already exists locally)', async () => {
   const { db, raw } = await makeMigratedDb();
   raw.prepare('INSERT INTO account (name, archived, uuid, updated_at) VALUES (?, ?, ?, ?)')
-    .run('Bank', 0, 'uuidA', ts(5)); // local "Bank" is NEWER, keeps the name
+    .run('Bank', 0, 'uuidX', ts(1));
+  raw.prepare('INSERT INTO account (name, archived, uuid, updated_at) VALUES (?, ?, ?, ?)')
+    .run('Other', 0, 'uuidY', ts(1));
+  // Remote renames uuidY to "Bank" — adoption is blocked (uuidY already exists),
+  // so the upsert rename collides with uuidX's "Bank" and must auto-suffix.
   const m = emptyMerge();
-  m.tables.account = [{ uuid: 'uuidB', name: 'Bank', archived: 0, updated_at: ts(1) }]; // different uuid, older
+  m.tables.account = [{ uuid: 'uuidY', name: 'Bank', archived: 0, updated_at: ts(9) }];
   const res = await applyMerge(db, m);
 
-  const rows = await db.getAllAsync<{ name: string; uuid: string }>('SELECT name, uuid FROM account ORDER BY name');
-  assert.equal(rows.length, 2); // both kept
-  const suffixed = rows.find(r => r.uuid === 'uuidB');
-  assert.equal(suffixed?.name, 'Bank (2)');
+  const rows = await db.getAllAsync<{ uuid: string; name: string }>('SELECT uuid, name FROM account ORDER BY uuid');
+  assert.equal(rows.length, 2);
+  assert.equal(rows.find(r => r.uuid === 'uuidX')?.name, 'Bank');
+  assert.equal(rows.find(r => r.uuid === 'uuidY')?.name, 'Bank (2)');
   assert.ok(res.suffixed.includes('account:Bank'));
 });
 

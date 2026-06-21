@@ -15,10 +15,6 @@ export async function adoptAccountUuid(db: CicadaDB, rec: AccountRecord): Promis
     [rec.name]
   );
   if (!local || local.uuid === rec.uuid) return;
-  // Only adopt when the remote is at least as new as the local row.
-  // If the local is strictly newer, these are genuinely different entities that
-  // happened to share a name; the auto-suffix logic will separate them.
-  if (rec.updated_at < local.updated_at) return;
   const clash = await db.getFirstAsync<{ id: number }>(
     'SELECT id FROM account WHERE uuid = ?',
     [rec.uuid]
@@ -37,8 +33,6 @@ export async function adoptAssetUuid(
     [accountId, rec.name]
   );
   if (!local || local.uuid === rec.uuid) return;
-  // Only adopt when the remote is at least as new as the local row.
-  if (rec.updated_at < local.updated_at) return;
   const clash = await db.getFirstAsync<{ id: number }>(
     'SELECT id FROM asset WHERE uuid = ?',
     [rec.uuid]
