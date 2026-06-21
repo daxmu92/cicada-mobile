@@ -1,5 +1,5 @@
 import type { HttpClient, SyncRemote, WritePrecondition } from './types';
-import { ConflictError } from './types';
+import { ConflictError, AuthError } from './types';
 
 export type WebDavConfig = {
   baseUrl: string;        // e.g. https://dav.jianguoyun.com/dav/
@@ -48,9 +48,7 @@ export function createWebDavRemote(config: WebDavConfig, http: HttpClient): Sync
         method: 'PROPFIND',
         headers: { ...authHeaders(), Depth: '0' },
       });
-      if (res.status === 401) {
-        throw new Error('WebDAV authentication failed (401) — check the account and app password');
-      }
+      if (res.status === 401) throw new AuthError();
       if (!ok(res.status) && res.status !== 207) {
         throw new Error(`WebDAV test connection failed (HTTP ${res.status})`);
       }
@@ -59,6 +57,7 @@ export function createWebDavRemote(config: WebDavConfig, http: HttpClient): Sync
     async read(): Promise<{ content: string; etag: string | null } | null> {
       const res = await http(fileUrl, { method: 'GET', headers: authHeaders() });
       if (res.status === 404) return null;
+      if (res.status === 401) throw new AuthError();
       if (!ok(res.status)) {
         throw new Error(`WebDAV read failed (HTTP ${res.status})`);
       }
@@ -84,9 +83,7 @@ export function createWebDavRemote(config: WebDavConfig, http: HttpClient): Sync
       if (res.status === 412) {
         throw new ConflictError();
       }
-      if (res.status === 401) {
-        throw new Error('WebDAV authentication failed (401) — check the account and app password');
-      }
+      if (res.status === 401) throw new AuthError();
       if (!ok(res.status)) {
         throw new Error(`WebDAV write failed (HTTP ${res.status})`);
       }

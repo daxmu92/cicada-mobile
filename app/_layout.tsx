@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { SettingsProvider } from '../src/hooks/SettingsContext';
+import { SyncProvider } from '../src/hooks/SyncContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -18,7 +19,8 @@ export default function RootLayout() {
 
   return (
     <SettingsProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <SyncProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -43,7 +45,8 @@ export default function RootLayout() {
           />
         </Stack>
         <StatusBar style="auto" />
-      </ThemeProvider>
+        </ThemeProvider>
+      </SyncProvider>
     </SettingsProvider>
   );
 }

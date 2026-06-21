@@ -5,6 +5,7 @@ import {
   parseHlc,
   advanceLocal,
   compareHlc,
+  receive,
   HLC_COUNTER_MAX,
 } from './hlc';
 
@@ -46,4 +47,30 @@ test('advanceLocal rolls physical time on counter overflow', () => {
     advanceLocal({ phys: 100, counter: HLC_COUNTER_MAX }, 100),
     { phys: 101, counter: 0 }
   );
+});
+
+test('receive adopts a remote phys that is ahead of local and now', () => {
+  // local behind, now behind, remote ahead -> take remote.phys, counter = remote.counter + 1
+  const next = receive({ phys: 100, counter: 5 }, { phys: 200, counter: 3 }, 150);
+  assert.deepEqual(next, { phys: 200, counter: 4 });
+});
+
+test('receive uses now when now is the greatest', () => {
+  const next = receive({ phys: 100, counter: 5 }, { phys: 200, counter: 3 }, 300);
+  assert.deepEqual(next, { phys: 300, counter: 0 });
+});
+
+test('receive bumps max counter when local, remote, and now share phys', () => {
+  const next = receive({ phys: 200, counter: 5 }, { phys: 200, counter: 8 }, 200);
+  assert.deepEqual(next, { phys: 200, counter: 9 });
+});
+
+test('receive bumps local counter when only local equals the max phys', () => {
+  const next = receive({ phys: 200, counter: 5 }, { phys: 100, counter: 9 }, 150);
+  assert.deepEqual(next, { phys: 200, counter: 6 });
+});
+
+test('receive rolls phys forward on counter overflow', () => {
+  const next = receive({ phys: 200, counter: 99999 }, { phys: 200, counter: 99999 }, 200);
+  assert.deepEqual(next, { phys: 201, counter: 0 });
 });

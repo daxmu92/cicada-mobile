@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createWebDavRemote } from './webdav';
 import type { HttpClient, HttpResponse } from './types';
-import { ConflictError } from './types';
+import { ConflictError, AuthError } from './types';
 
 type Recorded = { url: string; method: string; headers: Record<string, string>; body?: string };
 
@@ -158,4 +158,19 @@ test('write throws on 401', async () => {
   const { client } = makeMock(() => ({ status: 401 }));
   const remote = createWebDavRemote(config, client);
   await assert.rejects(() => remote.write('{}', { kind: 'none' }), /401|authentication/i);
+});
+
+test('read throws AuthError on 401', async () => {
+  const { client } = makeMock(() => ({ status: 401 }));
+  const remote = createWebDavRemote(config, client);
+  await assert.rejects(() => remote.read(), (e) => e instanceof AuthError);
+});
+
+test('write throws AuthError on 401', async () => {
+  const { client } = makeMock(() => ({ status: 401 }));
+  const remote = createWebDavRemote(config, client);
+  await assert.rejects(
+    () => remote.write('{}', { kind: 'none' }),
+    (e) => e instanceof AuthError
+  );
 });

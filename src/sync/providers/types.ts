@@ -13,6 +13,13 @@ export class ConflictError extends Error {
   }
 }
 
+export class AuthError extends Error {
+  constructor(message = 'WebDAV authentication failed (HTTP 401) — check the account and app password') {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 // The minimal HTTP response shape the provider needs. Both the global `fetch`
 // Response and @tauri-apps/plugin-http's Response satisfy it.
 export type HttpResponse = {

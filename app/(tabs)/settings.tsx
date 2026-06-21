@@ -19,6 +19,7 @@ import type { GainColor } from '../../src/hooks/SettingsContext';
 import { confirmAsync, notify } from '../../src/utils/dialog';
 import { colors, shared, spacing } from '../../src/utils/theme';
 import { LANGUAGES, type Language } from '../../src/i18n';
+import CloudSyncSection from '../../src/components/CloudSyncSection';
 
 const CURRENCY_OPTIONS = ['$', '€', '£', '¥', 'R$', '₹', '₩', 'CHF'];
 
@@ -169,6 +170,8 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
+
+      <CloudSyncSection />
 
       <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.manage')}</Text>
       <Row
