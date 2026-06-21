@@ -163,7 +163,7 @@ async function applyTombstone(
 }
 
 /** Defensive sweep: remove any live orphan whose parent ended up absent. */
-async function cascadeRepair(db: CicadaDB): Promise<void> {
+export async function cascadeRepair(db: CicadaDB): Promise<void> {
   await db.runAsync('DELETE FROM asset WHERE account_id NOT IN (SELECT id FROM account)');
   await db.runAsync('DELETE FROM asset_snapshot WHERE asset_id NOT IN (SELECT id FROM asset)');
 }
@@ -185,20 +185,26 @@ export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<App
       assetId.set(rec.uuid, await upsertAsset(db, rec, accId, suffixed));
     }
 
+    const appliedSnapshot = new Set<string>();
     for (const rec of merged.tables.snapshot) {
       const asId = assetId.get(rec.assetUuid);
       if (asId === undefined) continue; // orphan snapshot — skip
       await upsertSnapshot(db, rec, asId);
+      appliedSnapshot.add(`${rec.assetUuid}|${rec.date}`);
     }
 
-    for (const rec of merged.tables.tran) await upsertTran(db, rec);
+    const appliedTran = new Set<string>();
+    for (const rec of merged.tables.tran) {
+      await upsertTran(db, rec);
+      appliedTran.add(rec.uuid);
+    }
     for (const rec of merged.tables.setting) await upsertSetting(db, rec);
 
     const live = {
-      account: new Set(merged.tables.account.map((r) => r.uuid)),
-      asset: new Set(merged.tables.asset.map((r) => r.uuid)),
-      snapshot: new Set(merged.tables.snapshot.map((r) => `${r.assetUuid}|${r.date}`)),
-      tran: new Set(merged.tables.tran.map((r) => r.uuid)),
+      account: new Set(accountId.keys()),
+      asset: new Set(assetId.keys()),
+      snapshot: appliedSnapshot,
+      tran: appliedTran,
     };
     for (const t of merged.tombstones) await applyTombstone(db, t, live);
 

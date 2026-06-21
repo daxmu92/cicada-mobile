@@ -10,8 +10,8 @@ import type { AccountRecord, AssetRecord } from './document';
 // key already IS the upsert key.
 
 export async function adoptAccountUuid(db: CicadaDB, rec: AccountRecord): Promise<void> {
-  const local = await db.getFirstAsync<{ id: number; uuid: string; updated_at: string }>(
-    'SELECT id, uuid, updated_at FROM account WHERE name = ?',
+  const local = await db.getFirstAsync<{ id: number; uuid: string }>(
+    'SELECT id, uuid FROM account WHERE name = ?',
     [rec.name]
   );
   if (!local || local.uuid === rec.uuid) return;
@@ -28,8 +28,8 @@ export async function adoptAssetUuid(
   rec: AssetRecord,
   accountId: number
 ): Promise<void> {
-  const local = await db.getFirstAsync<{ id: number; uuid: string; updated_at: string }>(
-    'SELECT id, uuid, updated_at FROM asset WHERE account_id = ? AND name = ?',
+  const local = await db.getFirstAsync<{ id: number; uuid: string }>(
+    'SELECT id, uuid FROM asset WHERE account_id = ? AND name = ?',
     [accountId, rec.name]
   );
   if (!local || local.uuid === rec.uuid) return;

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeMigratedDb } from './test-support/sqlite';
-import { applyMerge } from './apply';
+import { applyMerge, cascadeRepair } from './apply';
 import type { MergeResult } from './merge';
 
 const ts = (p: number, c = 0, d = 'aaaaaa') =>
@@ -181,6 +181,23 @@ test('a snapshot tombstone deletes the correct cell via its composite key', asyn
   const rows = await db.getAllAsync<{ date: string }>('SELECT date FROM asset_snapshot ORDER BY date');
   assert.equal(rows.length, 1);
   assert.equal(rows[0].date, '2026-07'); // only the June cell removed
+});
+
+test('cascadeRepair deletes assets whose account is absent and snapshots whose asset is absent', async () => {
+  const { db, raw } = await makeMigratedDb();
+  raw.pragma('foreign_keys = OFF');
+  // account id 1 exists; asset 10 -> account 1 (ok); asset 11 -> account 99 (orphan)
+  raw.prepare('INSERT INTO account (id, name, archived, uuid, updated_at) VALUES (1, ?, 0, ?, ?)').run('Cash', 'acc-1', '000000000000010-00000-aaaaaa');
+  raw.prepare('INSERT INTO asset (id, account_id, name, categories, archived, uuid, updated_at) VALUES (10, 1, ?, ?, 0, ?, ?)').run('A', '{}', 'as-10', '000000000000010-00000-aaaaaa');
+  raw.prepare('INSERT INTO asset (id, account_id, name, categories, archived, uuid, updated_at) VALUES (11, 99, ?, ?, 0, ?, ?)').run('Orphan', '{}', 'as-11', '000000000000010-00000-aaaaaa');
+  raw.prepare('INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit, updated_at) VALUES (11, ?, 1, 0, 1, ?)').run('2026-01', '000000000000010-00000-aaaaaa');
+
+  await cascadeRepair(db);
+
+  const assets = await db.getAllAsync<{ id: number }>('SELECT id FROM asset ORDER BY id');
+  assert.deepEqual(assets.map((a) => a.id), [10]); // orphan asset 11 gone
+  const snaps = await db.getAllAsync<{ asset_id: number }>('SELECT asset_id FROM asset_snapshot');
+  assert.equal(snaps.length, 0); // orphan snapshot gone with its asset
 });
 
 test('parent-delete wins over a concurrent child edit (cascade-repair removes the live orphan)', async () => {
