@@ -42,6 +42,21 @@
     "noAccountsBody": "前往设置创建账户并添加资产。",
     "noAssets": "暂无资产"
   },
+  "batchEntry": {
+    "enter": "录入",
+    "submit": "提交 ({{count}})",
+    "lastNetWorth": "上月净值：{{value}}",
+    "recorded": "已有",
+    "edited": "已改",
+    "reset": "重置",
+    "collapse": "收起",
+    "switchTitle": "放弃改动？",
+    "switchBody": "有未提交的录入，切换月份将丢弃它们？",
+    "cancelTitle": "放弃改动？",
+    "cancelBody": "放弃所有未提交的录入？",
+    "skippedTitle": "部分未保存",
+    "skippedBody": "数字非法，已跳过：{{names}}"
+  },
   "transactions": {
     "income": "收入",
     "outlay": "支出",

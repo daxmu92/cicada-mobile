@@ -42,6 +42,21 @@
     "noAccountsBody": "Go to Settings to create an account and add assets.",
     "noAssets": "No assets"
   },
+  "batchEntry": {
+    "enter": "Enter data",
+    "submit": "Submit ({{count}})",
+    "lastNetWorth": "Last net worth: {{value}}",
+    "recorded": "Recorded",
+    "edited": "Edited",
+    "reset": "Reset",
+    "collapse": "Collapse",
+    "switchTitle": "Discard changes?",
+    "switchBody": "You have unsaved entries. Switch month and discard them?",
+    "cancelTitle": "Discard changes?",
+    "cancelBody": "Discard all unsaved entries?",
+    "skippedTitle": "Some entries not saved",
+    "skippedBody": "Invalid numbers, skipped: {{names}}"
+  },
   "transactions": {
     "income": "Income",
     "outlay": "Outlay",
