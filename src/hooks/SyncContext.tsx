@@ -92,7 +92,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setLastError(message);
     } finally {
       inFlight.current = false;
-      await refreshMeta();
+      await refreshMeta().catch(() => {});
     }
   }, [available, refreshMeta]);
 
@@ -146,7 +146,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setLastError(message);
     } finally {
       inFlight.current = false;
-      await refreshMeta();
+      await refreshMeta().catch(() => {});
     }
   }, [available, refreshMeta]);
 
