@@ -36,7 +36,7 @@ export async function recordTombstones(
   for (const uuid of uuids) {
     await db.runAsync(
       `INSERT INTO tombstone (entity, uuid, deleted_at) VALUES (?, ?, ?)
-         ON CONFLICT(entity, uuid) DO UPDATE SET deleted_at = excluded.deleted_at`,
+         ON CONFLICT(entity, uuid) DO UPDATE SET deleted_at = MAX(deleted_at, excluded.deleted_at)`,
       [entity, uuid, deletedAt]
     );
   }

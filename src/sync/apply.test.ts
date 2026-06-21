@@ -162,6 +162,27 @@ test('deleting an account explicitly removes its assets and snapshots (no FK rel
   assert.equal((await db.getAllAsync('SELECT * FROM asset_snapshot')).length, 0);
 });
 
+test('a snapshot tombstone deletes the correct cell via its composite key', async () => {
+  const { db, raw } = await makeMigratedDb();
+  raw.pragma('foreign_keys = OFF');
+  const seed = emptyMerge();
+  seed.tables.account = [{ uuid: 'acc1', name: 'Bank', archived: 0, updated_at: ts(1) }];
+  seed.tables.asset = [{ uuid: 'as1', accountUuid: 'acc1', name: 'S', categories: '{}', archived: 0, updated_at: ts(2) }];
+  seed.tables.snapshot = [
+    { assetUuid: 'as1', date: '2026-06', netWorth: 1, inflow: 0, profit: 0, updated_at: ts(3) },
+    { assetUuid: 'as1', date: '2026-07', netWorth: 2, inflow: 0, profit: 0, updated_at: ts(3) },
+  ];
+  await applyMerge(db, seed);
+
+  const del = emptyMerge();
+  del.tombstones = [{ entity: 'snapshot', uuid: 'as1|2026-06', deleted_at: ts(9) }];
+  await applyMerge(db, del);
+
+  const rows = await db.getAllAsync<{ date: string }>('SELECT date FROM asset_snapshot ORDER BY date');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].date, '2026-07'); // only the June cell removed
+});
+
 test('parent-delete wins over a concurrent child edit (cascade-repair removes the live orphan)', async () => {
   const { db, raw } = await makeMigratedDb();
   raw.pragma('foreign_keys = OFF');

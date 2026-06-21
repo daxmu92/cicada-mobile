@@ -137,7 +137,7 @@ async function applyTombstone(
   // Always persist the tombstone locally (max deleted_at) so it keeps propagating.
   await db.runAsync(
     `INSERT INTO tombstone (entity, uuid, deleted_at) VALUES (?, ?, ?)
-     ON CONFLICT(entity, uuid) DO UPDATE SET deleted_at = excluded.deleted_at`,
+     ON CONFLICT(entity, uuid) DO UPDATE SET deleted_at = MAX(deleted_at, excluded.deleted_at)`,
     [t.entity, t.uuid, t.deleted_at]
   );
   // If the merge kept the record alive (resurrection), do not delete it.
