@@ -19,6 +19,7 @@ export function MonthSelector({ value, onChange }: Props) {
     <View style={styles.row}>
       <TouchableOpacity
         style={styles.arrow}
+        hitSlop={8}
         onPress={() => onChange(prevYearMonth(value))}>
         <Text style={styles.arrowText}>‹</Text>
       </TouchableOpacity>
@@ -27,6 +28,7 @@ export function MonthSelector({ value, onChange }: Props) {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.arrow}
+        hitSlop={8}
         onPress={() => onChange(nextYearMonth(value))}>
         <Text style={styles.arrowText}>›</Text>
       </TouchableOpacity>
