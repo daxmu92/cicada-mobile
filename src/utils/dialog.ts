@@ -1,4 +1,5 @@
 import { Alert, Platform } from 'react-native';
+import i18n from '../i18n';
 
 // react-native-web's Alert is a no-op (`static alert() {}`), so dialogs silently
 // do nothing on web/desktop. These helpers fall back to the browser's native
@@ -13,17 +14,18 @@ import { Alert, Platform } from 'react-native';
 export function confirmAsync(
   title: string,
   message: string,
-  confirmLabel = 'OK',
+  confirmLabel?: string,
   destructive = false
 ): Promise<boolean> {
   if (Platform.OS === 'web') {
     return Promise.resolve(window.confirm(message ? `${title}\n\n${message}` : title));
   }
+  const confirm = confirmLabel ?? i18n.t('common.ok');
   return new Promise((resolve) => {
     Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: i18n.t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
       {
-        text: confirmLabel,
+        text: confirm,
         style: destructive ? 'destructive' : 'default',
         onPress: () => resolve(true),
       },

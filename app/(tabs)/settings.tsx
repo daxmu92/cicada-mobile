@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { resetDatabase } from '../../src/db/database';
 import { exportBackup, importBackup } from '../../src/services/backup';
@@ -17,16 +18,23 @@ import { useSettings } from '../../src/hooks/SettingsContext';
 import type { GainColor } from '../../src/hooks/SettingsContext';
 import { confirmAsync, notify } from '../../src/utils/dialog';
 import { colors, shared, spacing } from '../../src/utils/theme';
+import { LANGUAGES, type Language } from '../../src/i18n';
 
 const CURRENCY_OPTIONS = ['$', '€', '£', '¥', 'R$', '₹', '₩', 'CHF'];
 
-const GAIN_COLOR_OPTIONS: { value: GainColor; label: string; color: string }[] = [
-  { value: 'green', label: 'Green', color: colors.positive },
-  { value: 'red', label: 'Red', color: colors.negative },
+const GAIN_COLOR_OPTIONS: { value: GainColor; labelKey: string; color: string }[] = [
+  { value: 'green', labelKey: 'settings.green', color: colors.positive },
+  { value: 'red', labelKey: 'settings.red', color: colors.negative },
 ];
+
+const LANGUAGE_LABELS: Record<Language, string> = {
+  en: 'English',
+  zh: '中文',
+};
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     currency,
     setCurrency,
@@ -34,35 +42,37 @@ export default function SettingsScreen() {
     setForwardFill,
     gainColor,
     setGainColor,
+    language,
+    setLanguage,
   } = useSettings();
   const [loading, setLoading] = useState(false);
 
   const confirmReset = async () => {
     const ok = await confirmAsync(
-      'Reset Database',
-      'This will permanently delete all accounts, assets, snapshots, and transactions. This cannot be undone.',
-      'Reset',
+      t('settings.resetTitle'),
+      t('settings.resetBody'),
+      t('settings.resetConfirm'),
       true
     );
     if (!ok) return;
     await resetDatabase();
-    notify('Done', 'Database has been reset.');
+    notify(t('settings.doneTitle'), t('settings.resetDone'));
   };
 
   const confirmLoadSample = async () => {
     const ok = await confirmAsync(
-      'Load Sample Data',
-      'This will replace all current data with generated sample accounts, assets, snapshots, and transactions.',
-      'Load',
+      t('settings.loadSampleTitle'),
+      t('settings.loadSampleBody'),
+      t('settings.loadConfirm'),
       true
     );
     if (!ok) return;
     setLoading(true);
     try {
       await loadSampleData();
-      notify('Done', 'Sample data loaded. Check the Home and Assets tabs.');
+      notify(t('settings.doneTitle'), t('settings.sampleLoaded'));
     } catch (e: any) {
-      notify('Error', e?.message ?? 'Failed to load sample data');
+      notify(t('common.error'), e?.message ?? t('settings.loadSampleFailed'));
     } finally {
       setLoading(false);
     }
@@ -70,21 +80,21 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
-      <Text style={shared.sectionTitle}>Preferences</Text>
+      <Text style={shared.sectionTitle}>{t('settings.preferences')}</Text>
       <View style={shared.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleText}>
-            <Text style={styles.rowTitle}>Forward-fill missing months</Text>
+            <Text style={styles.rowTitle}>{t('settings.forwardFillTitle')}</Text>
             <Text style={shared.muted}>
-              Use the last known value when a snapshot is missing
+              {t('settings.forwardFillHelp')}
             </Text>
           </View>
           <Switch value={forwardFill} onValueChange={setForwardFill} />
         </View>
       </View>
       <View style={shared.card}>
-        <Text style={styles.rowTitle}>Currency</Text>
-        <Text style={shared.muted}>Displayed before all amounts</Text>
+        <Text style={styles.rowTitle}>{t('settings.currency')}</Text>
+        <Text style={shared.muted}>{t('settings.currencyHelp')}</Text>
         <View style={styles.currencyRow}>
           {CURRENCY_OPTIONS.map((symbol) => (
             <TouchableOpacity
@@ -106,9 +116,9 @@ export default function SettingsScreen() {
         </View>
       </View>
       <View style={shared.card}>
-        <Text style={styles.rowTitle}>Color for gains</Text>
+        <Text style={styles.rowTitle}>{t('settings.colorForGains')}</Text>
         <Text style={shared.muted}>
-          Red for gains matches Chinese/HK stock market convention
+          {t('settings.colorForGainsHelp')}
         </Text>
         <View style={styles.currencyRow}>
           {GAIN_COLOR_OPTIONS.map((opt) => {
@@ -127,7 +137,7 @@ export default function SettingsScreen() {
                     styles.currencyChipText,
                     { color: active ? 'white' : opt.color },
                   ]}>
-                  {opt.label} {'\u25B2'}
+                  {t(opt.labelKey)} {'\u25B2'}
                 </Text>
               </TouchableOpacity>
             );
@@ -135,23 +145,48 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>Manage</Text>
+      <View style={shared.card}>
+        <Text style={styles.rowTitle}>{t('settings.language')}</Text>
+        <Text style={shared.muted}>{t('settings.languageHelp')}</Text>
+        <View style={styles.currencyRow}>
+          {LANGUAGES.map((lang) => (
+            <TouchableOpacity
+              key={lang}
+              onPress={() => setLanguage(lang)}
+              style={[
+                styles.currencyChip,
+                styles.gainChip,
+                language === lang && styles.currencyChipActive,
+              ]}>
+              <Text
+                style={[
+                  styles.currencyChipText,
+                  language === lang && { color: 'white' },
+                ]}>
+                {LANGUAGE_LABELS[lang]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.manage')}</Text>
       <Row
-        title="Accounts & Assets"
-        subtitle="Add, rename, or delete accounts and assets"
+        title={t('settings.accountsAssets')}
+        subtitle={t('settings.accountsAssetsSub')}
         onPress={() => router.push('/modals/manage-accounts')}
       />
 
-      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>Backup</Text>
+      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.backup')}</Text>
       <Row
-        title="Export Data"
-        subtitle="Save a JSON backup file"
+        title={t('settings.exportData')}
+        subtitle={t('settings.exportDataSub')}
         onPress={async () => {
           setLoading(true);
           try {
             await exportBackup();
           } catch (e: any) {
-            notify('Export Failed', e?.message ?? 'Unable to export');
+            notify(t('settings.exportFailedTitle'), e?.message ?? t('settings.exportFailedBody'));
           } finally {
             setLoading(false);
           }
@@ -159,15 +194,15 @@ export default function SettingsScreen() {
         disabled={loading}
       />
       <Row
-        title="Import Data"
-        subtitle="Replace all data from a backup file"
+        title={t('settings.importData')}
+        subtitle={t('settings.importDataSub')}
         onPress={async () => {
           // Confirm synchronously on web so the file picker stays within the
           // user gesture that importBackup() needs.
           const proceed = await confirmAsync(
-            'Import Backup',
-            'This will replace all existing data. Continue?',
-            'Import',
+            t('settings.importTitle'),
+            t('settings.importBody'),
+            t('settings.importConfirm'),
             true
           );
           if (!proceed) return;
@@ -175,12 +210,12 @@ export default function SettingsScreen() {
           try {
             const counts = await importBackup();
             notify(
-              'Imported',
-              `Accounts: ${counts.accounts}\nAssets: ${counts.assets}\nSnapshots: ${counts.snapshots}\nTransactions: ${counts.transactions}`
+              t('settings.importedTitle'),
+              t('settings.importedBody', { accounts: counts.accounts, assets: counts.assets, snapshots: counts.snapshots, transactions: counts.transactions })
             );
           } catch (e: any) {
             if (e?.message !== 'CANCELLED') {
-              notify('Import Failed', e?.message ?? 'Unable to import');
+              notify(t('settings.importFailedTitle'), e?.message ?? t('settings.importFailedBody'));
             }
           } finally {
             setLoading(false);
@@ -189,16 +224,16 @@ export default function SettingsScreen() {
         disabled={loading}
       />
 
-      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>Data</Text>
+      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.data')}</Text>
       <Row
-        title="Load Sample Data"
-        subtitle="Populate with 24 months of sample accounts and transactions"
+        title={t('settings.loadSample')}
+        subtitle={t('settings.loadSampleSub')}
         onPress={confirmLoadSample}
         disabled={loading}
       />
       <Row
-        title="Reset Database"
-        subtitle="Delete all data"
+        title={t('settings.resetDb')}
+        subtitle={t('settings.resetDbSub')}
         onPress={confirmReset}
         destructive
         disabled={loading}
@@ -207,7 +242,7 @@ export default function SettingsScreen() {
       {loading && (
         <View style={styles.loading}>
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[shared.muted, { marginTop: spacing.sm }]}>Working…</Text>
+          <Text style={[shared.muted, { marginTop: spacing.sm }]}>{t('common.working')}</Text>
         </View>
       )}
     </ScrollView>
