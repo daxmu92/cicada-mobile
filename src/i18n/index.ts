@@ -25,6 +25,7 @@ export function detectDeviceLanguage(): Language {
   return code === 'zh' ? 'zh' : 'en';
 }
 
+// eslint-disable-next-line import/no-named-as-default-member -- canonical i18next init; `i18n.use` is the documented API
 i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
