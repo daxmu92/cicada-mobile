@@ -5,7 +5,7 @@ import { getMonthlyTotals } from '../db/snapshot-repo';
 import { useFormat, useLocale, useSemanticColors, useSettings } from '../hooks/SettingsContext';
 import { useTranslation } from 'react-i18next';
 import { currentYear, currentYearMonth, monthShort, yearMonth } from '../utils/date';
-import { colors, shared, spacing } from '../utils/theme';
+import { colors, radius, spacing } from '../utils/theme';
 
 type Props = {
   selected: string;
@@ -143,12 +143,15 @@ function emptyCells(): MonthCell[] {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xs,
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    shadowColor: '#3a3530',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
   cellSelected: {
     borderColor: colors.primary,
     borderWidth: 2,
-    backgroundColor: '#eff4ff',
+    backgroundColor: colors.accentSoft,
   },
   monthLabel: {
     fontSize: 15,
@@ -215,8 +218,9 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   growth: {
-    fontSize: 26,
+    fontSize: 15,
     fontWeight: '700',
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
 });

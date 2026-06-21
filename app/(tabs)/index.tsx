@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Text, View, StyleSheet } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -10,22 +10,42 @@ import {
 } from '../../src/db/snapshot-repo';
 import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
 import { useFormat, useSemanticColors, useSettings } from '../../src/hooks/SettingsContext';
-import { shared, spacing } from '../../src/utils/theme';
+import { colors, shared, spacing } from '../../src/utils/theme';
 import { AllocationBarList } from '../../src/components/charts/AllocationBarList';
-import { Sparkline } from '../../src/components/charts/Sparkline';
-import { YearCalendar } from '../../src/components/YearCalendar';
+import { NetWorthTrendChart, type TrendPoint } from '../../src/components/charts/NetWorthTrendChart';
+import { ChangePill } from '../../src/components/ChangePill';
+import { MetricCard } from '../../src/components/MetricCard';
+import { MonthSelector } from '../../src/components/MonthSelector';
+import { SectionCard } from '../../src/components/SectionCard';
 import type { SnapshotWithAsset } from '../../src/utils/types';
+
+function greetingKey(hour: number): string {
+  if (hour < 12) return 'home.greetingMorning';
+  if (hour < 18) return 'home.greetingAfternoon';
+  return 'home.greetingEvening';
+}
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const { fmt, fmtSigned } = useFormat();
+  const router = useRouter();
+  const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
+
+  // The Trends screen's year calendar deep-links back here with a ?month param.
+  const params = useLocalSearchParams<{ month?: string }>();
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  useEffect(() => {
+    if (params.month && params.month !== selectedMonth) {
+      setSelectedMonth(params.month);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.month]);
+
   const [totals, setTotals] = useState({ netWorth: 0, inflow: 0, profit: 0 });
   const [prevNetWorth, setPrevNetWorth] = useState(0);
   const [allocations, setAllocations] = useState<SnapshotWithAsset[]>([]);
-  const [trend, setTrend] = useState<number[]>([]);
+  const [trend, setTrend] = useState<TrendPoint[]>([]);
 
   const loadData = useCallback(async () => {
     const [cur, prev, snaps] = await Promise.all([
@@ -41,7 +61,7 @@ export default function HomeScreen() {
     let start = selectedMonth;
     for (let i = 0; i < 11; i++) start = prevYearMonth(start);
     const months = await getMonthlyTotals(start, selectedMonth);
-    setTrend(months.map((m) => m.netWorth));
+    setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
   }, [selectedMonth, forwardFill]);
 
   useEffect(() => {
@@ -55,82 +75,101 @@ export default function HomeScreen() {
   );
 
   const netGrowth = totals.netWorth - prevNetWorth;
+  const growthPct = prevNetWorth !== 0 ? (netGrowth / Math.abs(prevNetWorth)) * 100 : null;
+  const greeting = t(greetingKey(new Date().getHours()));
+
   const allocationItems = allocations.map((s) => ({
     label: `${s.accountName} · ${s.assetName}`,
     value: s.netWorth,
   }));
 
-  // NOTE: YearCalendar computes each month's net growth from raw SQL sums via
-  // getMonthlyTotals. Forward-fill (when enabled in settings) is intentionally
-  // NOT applied to the year-view cells yet — getMonthlyTotals has no
-  // forward-fill support and we chose not to add it as part of this change.
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
-      <YearCalendar selected={selectedMonth} onChange={setSelectedMonth} />
+    <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
+      {/* Greeting + month selector */}
+      <View style={styles.topRow}>
+        <Text style={styles.greeting}>{greeting} 👋</Text>
+        <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
+      </View>
 
+      {/* Hero: net worth + change + trend */}
       <View style={shared.card}>
-        <View style={styles.worthHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={shared.sectionTitle}>{t('home.totalNetWorth')}</Text>
-            <Text style={shared.bigNumber}>{fmt(totals.netWorth)}</Text>
-          </View>
-          {trend.length > 1 && (
-            <Sparkline
-              values={trend}
-              width={100}
-              height={40}
-              color={trend[trend.length - 1] >= trend[0] ? gain : loss}
+        <Text style={shared.sectionTitle}>{t('home.totalNetWorth')}</Text>
+        <Text style={shared.bigNumber}>{fmt(totals.netWorth)}</Text>
+        <View style={{ marginTop: spacing.sm }}>
+          <ChangePill value={netGrowth} percent={growthPct} caption={t('home.thisMonth')} />
+        </View>
+        {trend.length > 1 && (
+          <View style={styles.heroTrend}>
+            <NetWorthTrendChart
+              points={trend}
+              height={150}
+              color={trend[trend.length - 1].value >= trend[0].value ? gain : loss}
             />
-          )}
-        </View>
+          </View>
+        )}
       </View>
 
+      {/* Two metrics */}
       <View style={styles.metricsRow}>
-        <View style={[shared.card, styles.metric]}>
-          <Text style={shared.sectionTitle}>{t('home.netGrowth')}</Text>
-          <Text
-            style={[
-              styles.metricValue,
-              { color: netGrowth >= 0 ? gain : loss },
-            ]}>
-            {fmtSigned(netGrowth)}
-          </Text>
-        </View>
-        <View style={[shared.card, styles.metric]}>
-          <Text style={shared.sectionTitle}>{t('home.profit')}</Text>
-          <Text
-            style={[
-              styles.metricValue,
-              { color: totals.profit >= 0 ? gain : loss },
-            ]}>
-            {fmtSigned(totals.profit)}
-          </Text>
-        </View>
+        <MetricCard
+          label={t('home.netGrowth')}
+          value={fmt(netGrowth)}
+          valueColor={netGrowth >= 0 ? gain : loss}
+        />
+        <MetricCard
+          label={t('home.profit')}
+          value={fmt(totals.profit)}
+          valueColor={totals.profit >= 0 ? gain : loss}
+        />
       </View>
 
-      <View style={shared.card}>
-        <Text style={[shared.sectionTitle, { marginBottom: spacing.md }]}>{t('home.allocation')}</Text>
+      {/* Allocation */}
+      <SectionCard title={t('home.allocation')}>
         <AllocationBarList items={allocationItems} />
-      </View>
+      </SectionCard>
+
+      {/* Trends entry */}
+      <TouchableOpacity
+        style={styles.trendsLink}
+        activeOpacity={0.7}
+        onPress={() => router.push('/trends')}>
+        <Text style={styles.trendsLinkText}>{t('home.viewTrends')} →</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  metricsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  metric: {
-    flex: 1,
-  },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  worthHeader: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  greeting: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  heroTrend: {
+    marginTop: spacing.lg,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  trendsLink: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  trendsLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent,
   },
 });

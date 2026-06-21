@@ -23,13 +23,19 @@
     "recordSnapshot": "记录快照",
     "addTransaction": "添加交易",
     "manageAccounts": "管理账户",
-    "editAsset": "编辑资产"
+    "editAsset": "编辑资产",
+    "trends": "趋势"
   },
   "home": {
     "totalNetWorth": "总净值",
     "netGrowth": "净增长",
     "profit": "收益",
-    "allocation": "资产配置"
+    "allocation": "资产配置",
+    "greetingMorning": "早上好",
+    "greetingAfternoon": "下午好",
+    "greetingEvening": "晚上好",
+    "thisMonth": "本月",
+    "viewTrends": "查看全年趋势"
   },
   "assets": {
     "noAccountsTitle": "还没有账户",
@@ -197,5 +203,8 @@
     "noData": "暂无数据",
     "noDataToDisplay": "暂无数据显示",
     "noDataYet": "暂无数据"
+  },
+  "trends": {
+    "yearIntro": "点击某个月份可在首页查看该月。每格显示当月净增长。"
   }
 }

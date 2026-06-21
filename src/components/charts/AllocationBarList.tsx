@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useFormat } from '../../hooks/SettingsContext';
-import { colors, spacing } from '../../utils/theme';
+import { categoryPalette, colors, spacing } from '../../utils/theme';
 
 export type AllocationItem = {
   label: string;
@@ -10,10 +10,7 @@ export type AllocationItem = {
   color?: string;
 };
 
-const PALETTE = [
-  '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
-  '#06b6d4', '#f43f5e', '#84cc16', '#6366f1', '#d946ef',
-];
+const PALETTE = categoryPalette;
 
 type Props = {
   items: AllocationItem[];
@@ -71,21 +68,24 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
+    color: colors.inkSoft,
     marginRight: spacing.sm,
   },
   value: {
     fontSize: 14,
     fontWeight: '600',
+    color: colors.ink,
+    fontVariant: ['tabular-nums'],
   },
   barTrack: {
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: 3,
+    height: 7,
+    backgroundColor: colors.track,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   bar: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
   },
   pct: {
     fontSize: 12,
