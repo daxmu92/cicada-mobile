@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   getIncomeOutlayTotalsForMonth,
@@ -22,6 +23,7 @@ type Tab = 'list' | 'breakdown';
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
@@ -107,19 +109,19 @@ export default function TransactionsScreen() {
 
         <View style={styles.totalsRow}>
           <View style={[shared.card, styles.totalCard]}>
-            <Text style={shared.sectionTitle}>Income</Text>
+            <Text style={shared.sectionTitle}>{t('transactions.income')}</Text>
             <Text style={[styles.totalValue, { color: gain }]}>
               {fmt(totals.income)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>
-            <Text style={shared.sectionTitle}>Outlay</Text>
+            <Text style={shared.sectionTitle}>{t('transactions.outlay')}</Text>
             <Text style={[styles.totalValue, { color: loss }]}>
               {fmt(totals.outlay)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>
-            <Text style={shared.sectionTitle}>Net</Text>
+            <Text style={shared.sectionTitle}>{t('transactions.net')}</Text>
             <Text
               style={[
                 styles.totalValue,
@@ -131,13 +133,13 @@ export default function TransactionsScreen() {
         </View>
 
         <View style={styles.tabRow}>
-          {(['list', 'breakdown'] as const).map((t) => (
+          {(['list', 'breakdown'] as const).map((tabKey) => (
             <TouchableOpacity
-              key={t}
-              onPress={() => setTab(t)}
-              style={[styles.tab, tab === t && styles.tabActive]}>
-              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                {t === 'list' ? 'List' : 'Breakdown'}
+              key={tabKey}
+              onPress={() => setTab(tabKey)}
+              style={[styles.tab, tab === tabKey && styles.tabActive]}>
+              <Text style={[styles.tabText, tab === tabKey && styles.tabTextActive]}>
+                {tabKey === 'list' ? t('transactions.list') : t('transactions.breakdown')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -153,7 +155,7 @@ export default function TransactionsScreen() {
           stickySectionHeadersEnabled={false}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={shared.muted}>No transactions this month</Text>
+              <Text style={shared.muted}>{t('transactions.noTransactions')}</Text>
             </View>
           }
           renderSectionHeader={({ section: { title } }) => (
@@ -193,22 +195,22 @@ export default function TransactionsScreen() {
             <View>
               <View style={shared.card}>
                 <Text style={[shared.sectionTitle, { marginBottom: spacing.sm }]}>
-                  Income by Category
+                  {t('transactions.incomeByCategory')}
                 </Text>
                 <CategoryBars
                   items={breakdowns.income}
                   color={gain}
-                  emptyText="No income this month"
+                  emptyText={t('transactions.noIncome')}
                 />
               </View>
               <View style={shared.card}>
                 <Text style={[shared.sectionTitle, { marginBottom: spacing.sm }]}>
-                  Outlay by Category
+                  {t('transactions.outlayByCategory')}
                 </Text>
                 <CategoryBars
                   items={breakdowns.outlay}
                   color={loss}
-                  emptyText="No outlay this month"
+                  emptyText={t('transactions.noOutlay')}
                 />
               </View>
             </View>
