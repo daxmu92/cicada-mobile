@@ -25,6 +25,7 @@ import {
 } from '../../src/db/snapshot-repo';
 import { useFormat } from '../../src/hooks/SettingsContext';
 import { colors, shared, spacing } from '../../src/utils/theme';
+import { computeInflow, computeProfit } from '../../src/utils/snapshot-calc';
 
 function formatYM(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -94,7 +95,7 @@ export default function AddRecordModal() {
     if (autoFill && !hasExisting) {
       const n = parseFloat(v) || 0;
       const i = parseFloat(inflow) || 0;
-      setProfit(String(n - lastNetWorth - i));
+      setProfit(String(computeProfit(n, lastNetWorth, i)));
     }
   };
 
@@ -103,7 +104,7 @@ export default function AddRecordModal() {
     if (autoFill) {
       const n = parseFloat(netWorth) || 0;
       const i = parseFloat(v) || 0;
-      setProfit(String(n - lastNetWorth - i));
+      setProfit(String(computeProfit(n, lastNetWorth, i)));
     }
   };
 
@@ -112,7 +113,7 @@ export default function AddRecordModal() {
     if (autoFill) {
       const n = parseFloat(netWorth) || 0;
       const p = parseFloat(v) || 0;
-      setInflow(String(n - lastNetWorth - p));
+      setInflow(String(computeInflow(n, lastNetWorth, p)));
     }
   };
 
