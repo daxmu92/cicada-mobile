@@ -118,3 +118,64 @@ test('asset re-parenting moves the asset to the new account', async () => {
   const accB = await db.getFirstAsync<{ id: number }>("SELECT id FROM account WHERE uuid = 'accB'");
   assert.equal(row?.account_id, accB?.id);
 });
+
+test('a tombstone deletes the matching local row and is persisted for propagation', async () => {
+  const { db } = await makeMigratedDb();
+  const seed = emptyMerge();
+  seed.tables.tran = [{ uuid: 'tr1', date: 'd', type: 'INCOME', value: 1, cat: '', note: '', updated_at: ts(1) }];
+  await applyMerge(db, seed);
+
+  const del = emptyMerge();
+  del.tombstones = [{ entity: 'tran', uuid: 'tr1', deleted_at: ts(2) }];
+  await applyMerge(db, del);
+
+  assert.equal((await db.getAllAsync('SELECT * FROM tran')).length, 0);
+  const tomb = await db.getFirstAsync<{ deleted_at: string }>("SELECT deleted_at FROM tombstone WHERE entity='tran' AND uuid='tr1'");
+  assert.equal(tomb?.deleted_at, ts(2)); // kept locally so it keeps propagating
+});
+
+test('a tombstone does NOT delete a resurrected (newer) live record', async () => {
+  const { db } = await makeMigratedDb();
+  const m = emptyMerge();
+  // merge already decided the record is live (newer than the tombstone); apply must keep it.
+  m.tables.tran = [{ uuid: 'tr1', date: 'd', type: 'INCOME', value: 1, cat: '', note: '', updated_at: ts(5) }];
+  m.tombstones = [{ entity: 'tran', uuid: 'tr1', deleted_at: ts(2) }];
+  await applyMerge(db, m);
+  assert.equal((await db.getAllAsync('SELECT * FROM tran')).length, 1);
+});
+
+test('deleting an account explicitly removes its assets and snapshots (no FK reliance)', async () => {
+  const { db, raw } = await makeMigratedDb();
+  raw.pragma('foreign_keys = OFF'); // simulate Tauri, where ON DELETE CASCADE may not fire
+  const seed = emptyMerge();
+  seed.tables.account = [{ uuid: 'acc1', name: 'Bank', archived: 0, updated_at: ts(1) }];
+  seed.tables.asset = [{ uuid: 'as1', accountUuid: 'acc1', name: 'S', categories: '{}', archived: 0, updated_at: ts(2) }];
+  seed.tables.snapshot = [{ assetUuid: 'as1', date: '2026-06', netWorth: 1, inflow: 0, profit: 0, updated_at: ts(3) }];
+  await applyMerge(db, seed);
+
+  const del = emptyMerge();
+  del.tombstones = [{ entity: 'account', uuid: 'acc1', deleted_at: ts(9) }];
+  await applyMerge(db, del);
+
+  assert.equal((await db.getAllAsync('SELECT * FROM account')).length, 0);
+  assert.equal((await db.getAllAsync('SELECT * FROM asset')).length, 0);       // explicit delete, not FK
+  assert.equal((await db.getAllAsync('SELECT * FROM asset_snapshot')).length, 0);
+});
+
+test('parent-delete wins over a concurrent child edit (cascade-repair removes the live orphan)', async () => {
+  const { db, raw } = await makeMigratedDb();
+  raw.pragma('foreign_keys = OFF');
+  const seed = emptyMerge();
+  seed.tables.account = [{ uuid: 'acc1', name: 'Bank', archived: 0, updated_at: ts(1) }];
+  seed.tables.asset = [{ uuid: 'as1', accountUuid: 'acc1', name: 'S', categories: '{}', archived: 0, updated_at: ts(2) }];
+  await applyMerge(db, seed);
+
+  // The account is tombstoned, but the asset survives the merge as "live" (edited concurrently).
+  const m = emptyMerge();
+  m.tables.asset = [{ uuid: 'as1', accountUuid: 'acc1', name: 'S-edited', categories: '{}', archived: 0, updated_at: ts(8) }];
+  m.tombstones = [{ entity: 'account', uuid: 'acc1', deleted_at: ts(9) }];
+  await applyMerge(db, m);
+
+  assert.equal((await db.getAllAsync('SELECT * FROM account')).length, 0);
+  assert.equal((await db.getAllAsync('SELECT * FROM asset')).length, 0); // orphan removed — parent delete wins
+});

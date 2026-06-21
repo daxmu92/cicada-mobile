@@ -6,6 +6,7 @@ import type {
   SnapshotRecord,
   TranRecord,
   SettingRecord,
+  TombstoneRecord,
 } from './document';
 import { adoptAccountUuid, adoptAssetUuid } from './reconcile';
 
@@ -109,6 +110,64 @@ async function upsertSetting(db: CicadaDB, rec: SettingRecord): Promise<void> {
   );
 }
 
+/** Explicitly delete an account and ALL descendants (never relies on FK cascade). */
+async function deleteAccountTree(db: CicadaDB, uuid: string): Promise<void> {
+  const acc = await db.getFirstAsync<{ id: number }>('SELECT id FROM account WHERE uuid = ?', [uuid]);
+  if (!acc) return;
+  await db.runAsync(
+    'DELETE FROM asset_snapshot WHERE asset_id IN (SELECT id FROM asset WHERE account_id = ?)',
+    [acc.id]
+  );
+  await db.runAsync('DELETE FROM asset WHERE account_id = ?', [acc.id]);
+  await db.runAsync('DELETE FROM account WHERE id = ?', [acc.id]);
+}
+
+async function deleteAssetTree(db: CicadaDB, uuid: string): Promise<void> {
+  const a = await db.getFirstAsync<{ id: number }>('SELECT id FROM asset WHERE uuid = ?', [uuid]);
+  if (!a) return;
+  await db.runAsync('DELETE FROM asset_snapshot WHERE asset_id = ?', [a.id]);
+  await db.runAsync('DELETE FROM asset WHERE id = ?', [a.id]);
+}
+
+async function applyTombstone(
+  db: CicadaDB,
+  t: TombstoneRecord,
+  live: { account: Set<string>; asset: Set<string>; snapshot: Set<string>; tran: Set<string> }
+): Promise<void> {
+  // Always persist the tombstone locally (max deleted_at) so it keeps propagating.
+  await db.runAsync(
+    `INSERT INTO tombstone (entity, uuid, deleted_at) VALUES (?, ?, ?)
+     ON CONFLICT(entity, uuid) DO UPDATE SET deleted_at = excluded.deleted_at`,
+    [t.entity, t.uuid, t.deleted_at]
+  );
+  // If the merge kept the record alive (resurrection), do not delete it.
+  if (t.entity === 'account') {
+    if (live.account.has(t.uuid)) return;
+    await deleteAccountTree(db, t.uuid);
+  } else if (t.entity === 'asset') {
+    if (live.asset.has(t.uuid)) return;
+    await deleteAssetTree(db, t.uuid);
+  } else if (t.entity === 'tran') {
+    if (live.tran.has(t.uuid)) return;
+    await db.runAsync('DELETE FROM tran WHERE uuid = ?', [t.uuid]);
+  } else if (t.entity === 'snapshot') {
+    if (live.snapshot.has(t.uuid)) return;
+    const sep = t.uuid.indexOf('|');
+    const assetUuid = t.uuid.slice(0, sep);
+    const date = t.uuid.slice(sep + 1);
+    await db.runAsync(
+      'DELETE FROM asset_snapshot WHERE date = ? AND asset_id = (SELECT id FROM asset WHERE uuid = ?)',
+      [date, assetUuid]
+    );
+  }
+}
+
+/** Defensive sweep: remove any live orphan whose parent ended up absent. */
+async function cascadeRepair(db: CicadaDB): Promise<void> {
+  await db.runAsync('DELETE FROM asset WHERE account_id NOT IN (SELECT id FROM account)');
+  await db.runAsync('DELETE FROM asset_snapshot WHERE asset_id NOT IN (SELECT id FROM asset)');
+}
+
 export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<ApplyResult> {
   const suffixed: string[] = [];
   await db.withTransactionAsync(async () => {
@@ -135,7 +194,15 @@ export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<App
     for (const rec of merged.tables.tran) await upsertTran(db, rec);
     for (const rec of merged.tables.setting) await upsertSetting(db, rec);
 
-    // Tombstone application + cascade-repair are added in Task 3.
+    const live = {
+      account: new Set(merged.tables.account.map((r) => r.uuid)),
+      asset: new Set(merged.tables.asset.map((r) => r.uuid)),
+      snapshot: new Set(merged.tables.snapshot.map((r) => `${r.assetUuid}|${r.date}`)),
+      tran: new Set(merged.tables.tran.map((r) => r.uuid)),
+    };
+    for (const t of merged.tombstones) await applyTombstone(db, t, live);
+
+    await cascadeRepair(db);
   });
   return { suffixed };
 }
