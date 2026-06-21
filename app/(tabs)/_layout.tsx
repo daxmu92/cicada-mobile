@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Colors } from '@/constants/theme';
@@ -8,6 +9,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -23,28 +25,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('nav.home'),
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="assets"
         options={{
-          title: 'Assets',
+          title: t('nav.assets'),
           tabBarIcon: ({ color, size }) => <Ionicons name="pie-chart" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
-          title: 'Transactions',
+          title: t('nav.transactions'),
           tabBarIcon: ({ color, size }) => <Ionicons name="swap-horizontal" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('nav.settings'),
           tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
         }}
       />
