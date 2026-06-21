@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useFormat } from '../../hooks/SettingsContext';
 import { colors, spacing } from '../../utils/theme';
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function AllocationBarList({ items, maxItems = 8 }: Props) {
+  const { t } = useTranslation();
   const { fmt } = useFormat();
   const sorted = [...items].sort((a, b) => b.value - a.value);
   const visible = sorted.slice(0, maxItems);
@@ -27,7 +29,7 @@ export function AllocationBarList({ items, maxItems = 8 }: Props) {
   const maxValue = visible[0]?.value ?? 0;
 
   if (total <= 0 || visible.length === 0) {
-    return <Text style={{ color: colors.muted }}>No data to display</Text>;
+    return <Text style={{ color: colors.muted }}>{t('charts.noDataToDisplay')}</Text>;
   }
 
   return (

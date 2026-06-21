@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-gifted-charts';
 
 import { colors, spacing } from '../../utils/theme';
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function AssetLineChart({ data, color = colors.primary, height = 220 }: Props) {
+  const { t } = useTranslation();
   const { chartData, maxLabelCount } = useMemo(() => {
     const count = data.length;
     const labelStep = count > 12 ? Math.ceil(count / 6) : 1;
@@ -32,7 +34,7 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
   if (data.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={{ color: colors.muted }}>No data yet</Text>
+        <Text style={{ color: colors.muted }}>{t('charts.noDataYet')}</Text>
       </View>
     );
   }

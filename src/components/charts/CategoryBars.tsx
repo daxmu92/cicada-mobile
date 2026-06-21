@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useFormat } from '../../hooks/SettingsContext';
 import { colors, spacing } from '../../utils/theme';
@@ -14,14 +15,15 @@ type Props = {
   emptyText?: string;
 };
 
-export function CategoryBars({ items, color, emptyText = 'No data' }: Props) {
+export function CategoryBars({ items, color, emptyText }: Props) {
+  const { t } = useTranslation();
   const { fmt } = useFormat();
   const sorted = [...items].sort((a, b) => b.value - a.value);
   const total = sorted.reduce((sum, i) => sum + i.value, 0);
   const maxValue = sorted[0]?.value ?? 0;
 
   if (total <= 0 || sorted.length === 0) {
-    return <Text style={{ color: colors.muted }}>{emptyText}</Text>;
+    return <Text style={{ color: colors.muted }}>{emptyText ?? t('charts.noData')}</Text>;
   }
 
   return (
