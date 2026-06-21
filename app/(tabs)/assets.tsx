@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { listAccounts } from '../../src/db/account-repo';
 import { listAssets } from '../../src/db/asset-repo';
@@ -26,6 +27,7 @@ type AccountGroup = {
 };
 
 export default function AssetsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
@@ -63,8 +65,8 @@ export default function AssetsScreen() {
   if (groups.length === 0) {
     return (
       <View style={[shared.screen, styles.empty]}>
-        <Text style={shared.heading}>No accounts yet</Text>
-        <Text style={shared.muted}>Go to Settings to create an account and add assets.</Text>
+        <Text style={shared.heading}>{t('assets.noAccountsTitle')}</Text>
+        <Text style={shared.muted}>{t('assets.noAccountsBody')}</Text>
       </View>
     );
   }
@@ -79,7 +81,7 @@ export default function AssetsScreen() {
         <View style={shared.card}>
           <Text style={styles.accountName}>{item.account.name}</Text>
           {item.assets.length === 0 ? (
-            <Text style={shared.muted}>No assets</Text>
+            <Text style={shared.muted}>{t('assets.noAssets')}</Text>
           ) : (
             item.assets.map((asset) => {
               const trendColor =

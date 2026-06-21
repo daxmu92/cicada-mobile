@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   getMonthlyTotals,
@@ -16,6 +17,7 @@ import { YearCalendar } from '../../src/components/YearCalendar';
 import type { SnapshotWithAsset } from '../../src/utils/types';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const { fmt, fmtSigned } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
@@ -69,7 +71,7 @@ export default function HomeScreen() {
       <View style={shared.card}>
         <View style={styles.worthHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={shared.sectionTitle}>Total Net Worth</Text>
+            <Text style={shared.sectionTitle}>{t('home.totalNetWorth')}</Text>
             <Text style={shared.bigNumber}>{fmt(totals.netWorth)}</Text>
           </View>
           {trend.length > 1 && (
@@ -85,7 +87,7 @@ export default function HomeScreen() {
 
       <View style={styles.metricsRow}>
         <View style={[shared.card, styles.metric]}>
-          <Text style={shared.sectionTitle}>Net Growth</Text>
+          <Text style={shared.sectionTitle}>{t('home.netGrowth')}</Text>
           <Text
             style={[
               styles.metricValue,
@@ -95,7 +97,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={[shared.card, styles.metric]}>
-          <Text style={shared.sectionTitle}>Profit</Text>
+          <Text style={shared.sectionTitle}>{t('home.profit')}</Text>
           <Text
             style={[
               styles.metricValue,
@@ -107,7 +109,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={shared.card}>
-        <Text style={[shared.sectionTitle, { marginBottom: spacing.md }]}>Allocation</Text>
+        <Text style={[shared.sectionTitle, { marginBottom: spacing.md }]}>{t('home.allocation')}</Text>
         <AllocationBarList items={allocationItems} />
       </View>
     </ScrollView>
