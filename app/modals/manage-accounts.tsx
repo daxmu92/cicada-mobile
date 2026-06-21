@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   createAccount,
@@ -28,6 +29,7 @@ import type { Account, AssetWithAccount } from '../../src/utils/types';
 import { colors, shared, spacing } from '../../src/utils/theme';
 
 export default function ManageAccountsModal() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<AssetWithAccount[]>([]);
@@ -64,19 +66,19 @@ export default function ManageAccountsModal() {
       setNewAccountName('');
       loadData();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to create account';
-      Alert.alert('Error', message);
+      const message = e instanceof Error ? e.message : t('manageAccounts.createAccountFailed');
+      Alert.alert(t('common.error'), message);
     }
   };
 
   const removeAccount = (acc: Account) => {
     Alert.alert(
-      'Delete Account',
-      `Delete "${acc.name}" and all its assets/snapshots?`,
+      t('manageAccounts.deleteAccountTitle'),
+      t('manageAccounts.deleteAccountBody', { name: acc.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             await deleteAccount(acc.id);
@@ -90,12 +92,12 @@ export default function ManageAccountsModal() {
 
   const archiveAccount = (acc: Account) => {
     Alert.alert(
-      'Archive Account',
-      `Hide "${acc.name}" and all its assets from default views? History is preserved.`,
+      t('manageAccounts.archiveAccountTitle'),
+      t('manageAccounts.archiveAccountBody', { name: acc.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Archive',
+          text: t('common.archive'),
           onPress: async () => {
             await setAccountArchived(acc.id, true);
             loadData();
@@ -123,8 +125,8 @@ export default function ManageAccountsModal() {
       setNewAssetName('');
       loadData();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to create asset';
-      Alert.alert('Error', message);
+      const message = e instanceof Error ? e.message : t('manageAccounts.createAssetFailed');
+      Alert.alert(t('common.error'), message);
     }
   };
 
@@ -137,21 +139,21 @@ export default function ManageAccountsModal() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
         <View style={[shared.card, styles.toggleRow]}>
-          <Text style={styles.toggleLabel}>Show archived</Text>
+          <Text style={styles.toggleLabel}>{t('manageAccounts.showArchived')}</Text>
           <Switch value={showArchived} onValueChange={setShowArchived} />
         </View>
 
-        <Text style={shared.sectionTitle}>Accounts</Text>
+        <Text style={shared.sectionTitle}>{t('manageAccounts.accounts')}</Text>
         <View style={shared.card}>
           <View style={styles.addRow}>
             <TextInput
               style={[styles.input, { flex: 1 }]}
               value={newAccountName}
               onChangeText={setNewAccountName}
-              placeholder="New account name"
+              placeholder={t('manageAccounts.newAccountPlaceholder')}
             />
             <TouchableOpacity style={styles.addBtn} onPress={addAccount}>
-              <Text style={styles.addBtnText}>Add</Text>
+              <Text style={styles.addBtnText}>{t('common.add')}</Text>
             </TouchableOpacity>
           </View>
           {accounts.map((acc) => (
@@ -167,18 +169,18 @@ export default function ManageAccountsModal() {
                 <Text style={styles.listRowText}>{acc.name}</Text>
                 {acc.archived && (
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Archived</Text>
+                    <Text style={styles.badgeText}>{t('common.archived')}</Text>
                   </View>
                 )}
               </View>
               <View style={styles.rowActions}>
                 {acc.archived ? (
                   <TouchableOpacity onPress={() => unarchiveAccount(acc)}>
-                    <Text style={styles.unarchiveBtn}>Unarchive</Text>
+                    <Text style={styles.unarchiveBtn}>{t('common.unarchive')}</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => archiveAccount(acc)}>
-                    <Text style={styles.archiveBtn}>Archive</Text>
+                    <Text style={styles.archiveBtn}>{t('common.archive')}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => removeAccount(acc)}>
@@ -192,7 +194,7 @@ export default function ManageAccountsModal() {
         {selectedAccount && (
           <>
             <Text style={shared.sectionTitle}>
-              Assets in {selectedAccount.name}
+              {t('manageAccounts.assetsIn', { name: selectedAccount.name })}
             </Text>
             <View style={shared.card}>
               {!selectedAccount.archived && (
@@ -201,15 +203,15 @@ export default function ManageAccountsModal() {
                     style={[styles.input, { flex: 1 }]}
                     value={newAssetName}
                     onChangeText={setNewAssetName}
-                    placeholder="New asset name"
+                    placeholder={t('manageAccounts.newAssetPlaceholder')}
                   />
                   <TouchableOpacity style={styles.addBtn} onPress={addAsset}>
-                    <Text style={styles.addBtnText}>Add</Text>
+                    <Text style={styles.addBtnText}>{t('common.add')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
               {assetsForSelected.length === 0 ? (
-                <Text style={shared.muted}>No assets yet</Text>
+                <Text style={shared.muted}>{t('manageAccounts.noAssetsYet')}</Text>
               ) : (
                 assetsForSelected.map((asset) => {
                   const catStr = Object.entries(asset.categories)
@@ -228,7 +230,7 @@ export default function ManageAccountsModal() {
                           <Text style={styles.listRowText}>{asset.name}</Text>
                           {asset.archived && (
                             <View style={styles.badge}>
-                              <Text style={styles.badgeText}>Archived</Text>
+                              <Text style={styles.badgeText}>{t('common.archived')}</Text>
                             </View>
                           )}
                         </View>
@@ -236,7 +238,7 @@ export default function ManageAccountsModal() {
                       </View>
                       {asset.archived ? (
                         <TouchableOpacity onPress={() => unarchiveAsset(asset.id)}>
-                          <Text style={styles.unarchiveBtn}>Unarchive</Text>
+                          <Text style={styles.unarchiveBtn}>{t('common.unarchive')}</Text>
                         </TouchableOpacity>
                       ) : (
                         <Text style={styles.editArrow}>›</Text>

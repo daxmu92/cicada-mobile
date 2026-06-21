@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { getAccount } from '../../src/db/account-repo';
 import {
@@ -25,6 +26,7 @@ import { colors, shared, spacing } from '../../src/utils/theme';
 type Category = { key: string; value: string };
 
 export default function EditAssetModal() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const assetId = Number(params.id);
@@ -66,7 +68,7 @@ export default function EditAssetModal() {
 
   const save = async () => {
     if (!name.trim()) {
-      Alert.alert('Invalid input', 'Asset name cannot be empty');
+      Alert.alert(t('editAsset.invalidTitle'), t('editAsset.emptyName'));
       return;
     }
     const catMap: Record<string, string> = {};
@@ -79,22 +81,20 @@ export default function EditAssetModal() {
       await updateAsset(assetId, name.trim(), catMap);
       router.back();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to save';
-      Alert.alert('Error', message);
+      const message = e instanceof Error ? e.message : t('editAsset.saveFailed');
+      Alert.alert(t('common.error'), message);
     }
   };
 
   const toggleArchive = async () => {
     if (!asset) return;
     const nextArchived = !asset.archived;
-    const title = nextArchived ? 'Archive Asset' : 'Unarchive Asset';
-    const message = nextArchived
-      ? `Hide "${asset.name}" from default views? History is preserved and can be restored later.`
-      : `Restore "${asset.name}" to default views?`;
+    const title = nextArchived ? t('editAsset.archiveTitle') : t('editAsset.unarchiveTitle');
+    const message = nextArchived ? t('editAsset.archiveBody', { name: asset.name }) : t('editAsset.unarchiveBody', { name: asset.name });
     Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: nextArchived ? 'Archive' : 'Unarchive',
+        text: nextArchived ? t('common.archive') : t('common.unarchive'),
         onPress: async () => {
           await setAssetArchived(assetId, nextArchived);
           router.back();
@@ -105,12 +105,12 @@ export default function EditAssetModal() {
 
   const confirmDelete = () => {
     Alert.alert(
-      'Delete Asset',
-      `Delete "${asset?.name}" and all its snapshots?`,
+      t('editAsset.deleteTitle'),
+      t('editAsset.deleteBody', { name: asset?.name ?? '' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             await deleteAsset(assetId);
@@ -133,20 +133,20 @@ export default function EditAssetModal() {
                 <Text style={shared.sectionTitle}>{accountName}</Text>
                 {asset.archived && (
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Archived</Text>
+                    <Text style={styles.badgeText}>{t('common.archived')}</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.label}>Asset Name</Text>
+              <Text style={styles.label}>{t('editAsset.assetName')}</Text>
               <TextInput style={styles.input} value={name} onChangeText={setName} />
             </View>
 
             <View style={shared.card}>
               <Text style={[shared.sectionTitle, { marginBottom: spacing.sm }]}>
-                Categories
+                {t('editAsset.categories')}
               </Text>
               <Text style={shared.muted}>
-                Key/value pairs (e.g. Risk: High, Type: Stock)
+                {t('editAsset.categoriesHelp')}
               </Text>
 
               {categories.map((cat, index) => (
@@ -154,14 +154,14 @@ export default function EditAssetModal() {
                   <TextInput
                     style={[styles.input, styles.catKey]}
                     value={cat.key}
-                    onChangeText={(t) => updateCategory(index, 'key', t)}
-                    placeholder="Key"
+                    onChangeText={(txt) => updateCategory(index, 'key', txt)}
+                    placeholder={t('editAsset.keyPlaceholder')}
                   />
                   <TextInput
                     style={[styles.input, styles.catValue]}
                     value={cat.value}
-                    onChangeText={(t) => updateCategory(index, 'value', t)}
-                    placeholder="Value"
+                    onChangeText={(txt) => updateCategory(index, 'value', txt)}
+                    placeholder={t('editAsset.valuePlaceholder')}
                   />
                   <TouchableOpacity
                     onPress={() => removeCategory(index)}
@@ -172,22 +172,22 @@ export default function EditAssetModal() {
               ))}
 
               <TouchableOpacity onPress={addCategory} style={styles.addCatBtn}>
-                <Text style={styles.addCatBtnText}>+ Add Category</Text>
+                <Text style={styles.addCatBtnText}>{t('editAsset.addCategory')}</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.saveBtn} onPress={save}>
-              <Text style={styles.saveBtnText}>Save</Text>
+              <Text style={styles.saveBtnText}>{t('common.save')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.archiveBtn} onPress={toggleArchive}>
               <Text style={styles.archiveBtnText}>
-                {asset.archived ? 'Unarchive Asset' : 'Archive Asset'}
+                {asset.archived ? t('editAsset.unarchiveAsset') : t('editAsset.archiveAsset')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete}>
-              <Text style={styles.deleteBtnText}>Delete Asset</Text>
+              <Text style={styles.deleteBtnText}>{t('editAsset.deleteAsset')}</Text>
             </TouchableOpacity>
           </>
         )}
