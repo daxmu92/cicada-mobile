@@ -24,24 +24,26 @@ export type BackupFile = {
 export type ImportCounts = { accounts: number; assets: number; snapshots: number; transactions: number };
 
 export async function buildBackupDoc(db: CicadaDB, exportedAt: string): Promise<BackupFile> {
-  const accounts = await db.getAllAsync<{ id: number; name: string; archived: number; uuid: string; updated_at: string }>(
-    'SELECT id, name, archived, uuid, updated_at FROM account'
-  );
-  const assets = await db.getAllAsync<{ id: number; account_id: number; name: string; categories: string; archived: number; uuid: string; updated_at: string }>(
-    'SELECT id, account_id, name, categories, archived, uuid, updated_at FROM asset'
-  );
-  const snapshots = await db.getAllAsync<{ asset_id: number; date: string; net_worth: number; inflow: number; profit: number; updated_at: string }>(
-    'SELECT asset_id, date, net_worth, inflow, profit, updated_at FROM asset_snapshot'
-  );
-  const transactions = await db.getAllAsync<BackupTran>(
-    'SELECT id, date, type, value, cat, note, uuid, updated_at FROM tran'
-  );
-  const settingsRaw = await db.getAllAsync<{ key: string; value: string; updated_at: string }>(
-    'SELECT key, value, updated_at FROM setting'
-  );
-  const tombstones = await db.getAllAsync<BackupTombstone>(
-    'SELECT entity, uuid, deleted_at FROM tombstone'
-  );
+  const [accounts, assets, snapshots, transactions, settingsRaw, tombstones] = await Promise.all([
+    db.getAllAsync<{ id: number; name: string; archived: number; uuid: string; updated_at: string }>(
+      'SELECT id, name, archived, uuid, updated_at FROM account'
+    ),
+    db.getAllAsync<{ id: number; account_id: number; name: string; categories: string; archived: number; uuid: string; updated_at: string }>(
+      'SELECT id, account_id, name, categories, archived, uuid, updated_at FROM asset'
+    ),
+    db.getAllAsync<{ asset_id: number; date: string; net_worth: number; inflow: number; profit: number; updated_at: string }>(
+      'SELECT asset_id, date, net_worth, inflow, profit, updated_at FROM asset_snapshot'
+    ),
+    db.getAllAsync<BackupTran>(
+      'SELECT id, date, type, value, cat, note, uuid, updated_at FROM tran'
+    ),
+    db.getAllAsync<{ key: string; value: string; updated_at: string }>(
+      'SELECT key, value, updated_at FROM setting'
+    ),
+    db.getAllAsync<BackupTombstone>(
+      'SELECT entity, uuid, deleted_at FROM tombstone'
+    ),
+  ]);
 
   return {
     version: BACKUP_VERSION,
