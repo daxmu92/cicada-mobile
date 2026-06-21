@@ -40,7 +40,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
   -Branch "$BRANCH" -WslRemote "$WSL_UNC"
 
 # Surface the installers on the Linux side for convenience.
-BUNDLE="$WIN_REPO_MNT/src-tauri/target/release/bundle"
+RELEASE="$WIN_REPO_MNT/src-tauri/target/release"
+BUNDLE="$RELEASE/bundle"
 mkdir -p "$BUILDS_DIR"
 shopt -s nullglob
 copied=0
@@ -50,6 +51,14 @@ for f in "$BUNDLE"/msi/*.msi "$BUNDLE"/nsis/*.exe; do
   copied=1
 done
 shopt -u nullglob
+
+# Portable (no-install) build: the standalone main binary. Runs without an
+# installer; relies on the WebView2 runtime that ships with Windows 10/11.
+if [ -f "$RELEASE/CicadaFinScape.exe" ]; then
+  cp -f "$RELEASE/CicadaFinScape.exe" "$BUILDS_DIR/CicadaFinScape-portable.exe"
+  echo "    copied CicadaFinScape-portable.exe"
+  copied=1
+fi
 
 if [ "$copied" -eq 1 ]; then
   echo "==> Installers copied to $BUILDS_DIR"
