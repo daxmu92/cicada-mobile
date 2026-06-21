@@ -4,7 +4,7 @@ import { makeMigratedDb } from './test-support/sqlite';
 import { buildDocument, serializeDocument, parseDocument, type SyncDocument } from './document';
 import { ConflictError } from './providers/types';
 import type { SyncRemote, WritePrecondition } from './providers/types';
-import { runSync, maxRemoteStamp, gcTombstones, TOMBSTONE_RETENTION_DAYS } from './sync';
+import { runSync, maxRemoteStamp, gcTombstones, TOMBSTONE_RETENTION_DAYS, SYNC_IN_PROGRESS_KEY } from './sync';
 import type { CicadaDB } from '../db/migrations';
 
 // ---- in-memory fake remote -------------------------------------------------
@@ -190,4 +190,37 @@ test('runSync prunes an old tombstone after a successful sync', async () => {
   await runSync(deps);
   const rows = await db.getAllAsync<{ uuid: string }>('SELECT uuid FROM tombstone');
   assert.equal(rows.length, 0); // GC ran after the (seed) push
+});
+
+test('runSync clears sync_in_progress after a successful merge', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  // seed remote with a different account so we take the merge path (not seed)
+  const seedDoc = {
+    syncFormatVersion: 1, enc: 'none', schemaVersion: 2, generatedAt: 'x', generatedBy: 'b',
+    tables: { account: [{ uuid: 'acc-b', name: 'Brokerage', archived: 0, updated_at: HLC(11, 'bbbbbb') }], asset: [], snapshot: [], tran: [], setting: [] },
+    tombstones: [],
+  };
+  remote._seed(JSON.stringify(seedDoc));
+  const { deps } = depsFor(db, remote, 'aaaaaa');
+  await runSync(deps);
+  const flag = await deps.getState(SYNC_IN_PROGRESS_KEY);
+  assert.equal(flag, '0');
+});
+
+test('runSync leaves sync_in_progress set when the push ultimately fails', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  remote._seed(JSON.stringify({
+    syncFormatVersion: 1, enc: 'none', schemaVersion: 2, generatedAt: 'x', generatedBy: 'b',
+    tables: { account: [], asset: [], snapshot: [], tran: [], setting: [] }, tombstones: [],
+  }));
+  // every ifMatch write throws ConflictError -> retries exhausted -> runSync throws
+  remote.write = async () => { throw new ConflictError(); };
+  const { deps } = depsFor(db, remote, 'aaaaaa');
+  await assert.rejects(() => runSync({ ...deps, maxRetries: 1 }));
+  const flag = await deps.getState(SYNC_IN_PROGRESS_KEY);
+  assert.equal(flag, '1'); // left set so the next launch recovers
 });

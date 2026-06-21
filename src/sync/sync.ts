@@ -12,6 +12,7 @@ import { compareHlc, parseHlc } from './hlc';
 import { ConflictError, type SyncRemote, type WritePrecondition } from './providers/types';
 
 export const LAST_SYNCED_KEY = 'cloud_last_synced_at';
+export const SYNC_IN_PROGRESS_KEY = 'sync_in_progress';
 
 export const TOMBSTONE_RETENTION_DAYS = 90;
 const DAY_MS = 86_400_000;
@@ -105,8 +106,9 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
   if (pulled === null) {
     try {
       await remote.write(serializeDocument(await buildLocal()), { kind: 'ifNoneMatch' });
-      await setState(LAST_SYNCED_KEY, String(now()));
-      await gcTombstones(db, now());
+      const t = now();
+      await setState(LAST_SYNCED_KEY, String(t));
+      await gcTombstones(db, t);
       return { status: 'seeded', suffixed: [] };
     } catch (e) {
       if (!(e instanceof ConflictError)) throw e;
@@ -120,6 +122,7 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     const remoteDoc = parseDocument(pulled.content);
     assertCompatible(remoteDoc);
 
+    await setState(SYNC_IN_PROGRESS_KEY, '1');
     const merged = merge(await buildLocal(), remoteDoc);
     const applied = await applyMerge(db, merged);
 
@@ -134,8 +137,10 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
 
     try {
       await remote.write(outDoc, pre);
-      await setState(LAST_SYNCED_KEY, String(now()));
-      await gcTombstones(db, now());
+      const t = now();
+      await setState(LAST_SYNCED_KEY, String(t));
+      await setState(SYNC_IN_PROGRESS_KEY, '0');
+      await gcTombstones(db, t);
       return { status: 'merged', suffixed: applied.suffixed };
     } catch (e) {
       if (e instanceof ConflictError && attempt < maxRetries) {
