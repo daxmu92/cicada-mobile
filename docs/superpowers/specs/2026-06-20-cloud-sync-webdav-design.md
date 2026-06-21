@@ -314,4 +314,28 @@ Phase 1 is **complete**. Each remaining phase is independently mergeable and ver
   first-connect Merge and Replace; **empirically confirm whether 坚果云 honors `If-Match`**
   (a `PUT` with a stale `If-Match` should return 412 if supported) and that convergence
   holds either way; 401 handling on a wrong app password.
+
+### 11.1 坚果云 empirical results (2026-06-21, RESOLVED)
+
+Ran the real provider (`createWebDavRemote` + Node global `fetch`) against live
+坚果云 via `scripts/test-webdav.ts`. Findings:
+
+- **Auth + PROPFIND**: ✅ Basic auth with an app password works.
+- **MKCOL + PUT**: ✅ first `ifNoneMatch` write creates the `cicada/` collection.
+- **GET returns `ETag`**: ✅ (e.g. `1v5Q743Hsb9Jo1ykreJPig`) — usable for `If-Match`.
+- **`If-Match`**: ✅ **HONORED** — a `PUT` with a stale `If-Match` returns **412**
+  (→ `ConflictError`); a correct `If-Match` succeeds.
+- **`If-None-Match`**: ❌ **IGNORED** — a create-only `PUT` to an existing file
+  succeeds instead of 412.
+- **PUT returns no `ETag`** — after a write, must `read()` (or the next pull) to
+  get the fresh etag.
+
+**Decision for Phase 4:** use standard optimistic concurrency on `If-Match`
+(read → merge → `write(ifMatch, etag)`; on 412 re-pull/merge/retry). The
+pessimistic self-healing fallback is **not needed**. The first write (no remote
+file) goes through `ifNoneMatch` (which also triggers MKCOL); 坚果云 ignoring
+If-None-Match only affects a simultaneous-first-write race, which the union LWW
+merge converges on the next sync. Note the provider only MKCOLs on the
+`ifNoneMatch` path, so the orchestrator's **first write must use `ifNoneMatch`**;
+subsequent writes use `ifMatch`.
 </content>
