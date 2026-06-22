@@ -48,6 +48,10 @@ fi
 RELEASE="$WIN_REPO_MNT/src-tauri/target/release"
 BUNDLE="$RELEASE/bundle"
 mkdir -p "$BUILDS_DIR"
+# Clear prior installers/portable so this dir always reflects ONLY the current
+# build — otherwise older-version artifacts (e.g. a past 0.1.0) linger here
+# forever after a version bump. rm -f ignores the no-match case.
+rm -f "$BUILDS_DIR"/*.msi "$BUILDS_DIR"/*.exe
 shopt -s nullglob
 copied=0
 for f in "$BUNDLE"/msi/*.msi "$BUNDLE"/nsis/*.exe; do
