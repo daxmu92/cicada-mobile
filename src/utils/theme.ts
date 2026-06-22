@@ -81,22 +81,3 @@ export function makeShared(c: ThemeColors) {
     muted: { color: c.muted },
   });
 }
-
-// ─── Back-compat during migration (REMOVED in the final task) ──────────────
-// Unconverted components still import these. They render the default theme.
-export const colors = {
-  primary: '#c4663a',
-  accent: '#c4663a',
-  accentSoft: 'rgba(196,102,58,0.12)',
-  positive: '#16a34a',
-  negative: '#dc2626',
-  ink: '#2b2b33',
-  inkSoft: '#5a564e',
-  muted: '#9a9488',
-  bg: '#f7f4ef',
-  card: '#ffffff',
-  border: '#ece9e2',
-  track: '#eceae4',
-};
-
-export const shared = makeShared(resolveTheme(themes.warmSlate));
