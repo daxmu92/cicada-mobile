@@ -213,7 +213,15 @@
     "cloudOverwrite": "Overwrite cloud with this device",
     "cloudOverwriteSub": "Replace the cloud copy with this device's data. Use only if the cloud copy is broken.",
     "cloudOverwriteConfirm": "Overwrite the cloud copy with this device's data?",
-    "cloudMissingFields": "Enter the server address, account, and app password."
+    "cloudMissingFields": "Enter the server address, account, and app password.",
+    "theme": "Theme",
+    "themeHelp": "Choose the app color palette",
+    "themeWarmSlate": "Warm Slate",
+    "themeNordic": "Nordic",
+    "themeSeaGlass": "Sea Glass",
+    "themeDuskBlue": "Dusk Blue",
+    "themeSky": "Sky",
+    "themeLilac": "Lilac"
   },
   "charts": {
     "noData": "No data",

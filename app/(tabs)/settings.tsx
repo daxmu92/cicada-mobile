@@ -17,7 +17,7 @@ import { loadSampleData } from '../../src/services/sample-data';
 import { useSettings, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { GainColor } from '../../src/hooks/SettingsContext';
 import { confirmAsync, notify } from '../../src/utils/dialog';
-import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
+import { radius, semantic, spacing, themes, type ThemeColors, type ThemeName } from '../../src/utils/theme';
 import { LANGUAGES, type Language } from '../../src/i18n';
 import CloudSyncSection from '../../src/components/CloudSyncSection';
 
@@ -33,6 +33,15 @@ const LANGUAGE_LABELS: Record<Language, string> = {
   zh: '中文',
 };
 
+const THEME_LABEL_KEYS: Record<ThemeName, string> = {
+  warmSlate: 'settings.themeWarmSlate',
+  nordic: 'settings.themeNordic',
+  seaGlass: 'settings.themeSeaGlass',
+  duskBlue: 'settings.themeDuskBlue',
+  sky: 'settings.themeSky',
+  lilac: 'settings.themeLilac',
+};
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -45,6 +54,8 @@ export default function SettingsScreen() {
     setGainColor,
     language,
     setLanguage,
+    theme,
+    setTheme,
   } = useSettings();
   const c = useTheme();
   const shared = useShared();
@@ -171,6 +182,32 @@ export default function SettingsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+      </View>
+
+      <View style={shared.card}>
+        <Text style={styles.rowTitle}>{t('settings.theme')}</Text>
+        <Text style={shared.muted}>{t('settings.themeHelp')}</Text>
+        <View style={styles.themeGrid}>
+          {(Object.keys(themes) as ThemeName[]).map((name) => {
+            const p = themes[name];
+            const active = theme === name;
+            return (
+              <TouchableOpacity
+                key={name}
+                onPress={() => setTheme(name)}
+                style={[
+                  styles.themeSwatch,
+                  { backgroundColor: p.bg, borderColor: active ? p.accent : c.border },
+                  active && styles.themeSwatchActive,
+                ]}>
+                <View style={[styles.themeDot, { backgroundColor: p.accent }]}>
+                  {active ? <Text style={[styles.themeCheck, { color: p.onAccent }]}>{'✓'}</Text> : null}
+                </View>
+                <Text style={[styles.themeLabel, { color: p.ink }]}>{t(THEME_LABEL_KEYS[name])}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -335,4 +372,10 @@ const makeStyles = (c: ThemeColors) =>
     toggleText: {
       flex: 1,
     },
+    themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+    themeSwatch: { flexBasis: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
+    themeSwatchActive: { borderWidth: 2 },
+    themeDot: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    themeCheck: { fontSize: 13, fontWeight: '800', lineHeight: 15 },
+    themeLabel: { fontSize: 14, fontWeight: '600' },
   });

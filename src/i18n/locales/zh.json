@@ -213,7 +213,15 @@
     "cloudOverwrite": "用本设备覆盖云端",
     "cloudOverwriteSub": "用本设备的数据替换云端副本。仅在云端副本损坏时使用。",
     "cloudOverwriteConfirm": "确定用本设备的数据覆盖云端副本吗?",
-    "cloudMissingFields": "请填写服务器地址、账户和应用密码。"
+    "cloudMissingFields": "请填写服务器地址、账户和应用密码。",
+    "theme": "主题",
+    "themeHelp": "选择应用配色",
+    "themeWarmSlate": "暖石板",
+    "themeNordic": "极简灰",
+    "themeSeaGlass": "海玻璃",
+    "themeDuskBlue": "暮蓝",
+    "themeSky": "天青白",
+    "themeLilac": "藕荷白"
   },
   "charts": {
     "noData": "暂无数据",
