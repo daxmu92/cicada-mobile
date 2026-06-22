@@ -9,9 +9,10 @@ import { colors, spacing } from '../utils/theme';
 type Props = {
   value: string;
   onChange: (ym: string) => void;
+  disablePicker?: boolean;
 };
 
-export function MonthSelector({ value, onChange }: Props) {
+export function MonthSelector({ value, onChange, disablePicker = false }: Props) {
   const locale = useLocale();
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -23,7 +24,10 @@ export function MonthSelector({ value, onChange }: Props) {
         onPress={() => onChange(prevYearMonth(value))}>
         <Text style={styles.arrowText}>‹</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.label} onPress={() => setPickerOpen(true)}>
+      <TouchableOpacity
+        style={styles.label}
+        disabled={disablePicker}
+        onPress={() => setPickerOpen(true)}>
         <Text style={styles.labelText}>{formatMonthYear(value, locale)}</Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -33,26 +37,28 @@ export function MonthSelector({ value, onChange }: Props) {
         <Text style={styles.arrowText}>›</Text>
       </TouchableOpacity>
 
-      <Modal
-        visible={pickerOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPickerOpen(false)}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={() => setPickerOpen(false)}>
-          <View style={styles.sheet}>
-            <YearCalendar
-              selected={value}
-              onChange={(ym) => {
-                setPickerOpen(false);
-                onChange(ym);
-              }}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {!disablePicker && (
+        <Modal
+          visible={pickerOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPickerOpen(false)}>
+          <TouchableOpacity
+            style={styles.backdrop}
+            activeOpacity={1}
+            onPress={() => setPickerOpen(false)}>
+            <View style={styles.sheet}>
+              <YearCalendar
+                selected={value}
+                onChange={(ym) => {
+                  setPickerOpen(false);
+                  onChange(ym);
+                }}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </View>
   );
 }
