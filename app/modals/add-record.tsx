@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,6 +14,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { confirmAsync, notify } from '../../src/utils/dialog';
 import { getAsset } from '../../src/db/asset-repo';
 import { getAccount } from '../../src/db/account-repo';
 import {
@@ -124,25 +124,23 @@ export default function AddRecordModal() {
     const i = parseFloat(inflow) || 0;
     const p = parseFloat(profit) || 0;
     if (isNaN(n)) {
-      Alert.alert(t('addRecord.invalidTitle'), t('addRecord.invalidNetWorth'));
+      notify(t('addRecord.invalidTitle'), t('addRecord.invalidNetWorth'));
       return;
     }
     await upsertSnapshot(assetId, date, n, i, p);
     router.back();
   };
 
-  const confirmDelete = () => {
-    Alert.alert(t('addRecord.deleteTitle'), t('addRecord.deleteBody', { date }), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          await deleteSnapshot(assetId, date);
-          router.back();
-        },
-      },
-    ]);
+  const confirmDelete = async () => {
+    const ok = await confirmAsync(
+      t('addRecord.deleteTitle'),
+      t('addRecord.deleteBody', { date }),
+      t('common.delete'),
+      true
+    );
+    if (!ok) return;
+    await deleteSnapshot(assetId, date);
+    router.back();
   };
 
   return (

@@ -1,0 +1,6198 @@
+{
+  "version": 1,
+  "exportedAt": "2026-06-21T01:28:53.903Z",
+  "accounts": [
+    {
+      "id": 1,
+      "name": "同花顺"
+    },
+    {
+      "id": 2,
+      "name": "NVIDIA"
+    },
+    {
+      "id": 3,
+      "name": "OCBC"
+    },
+    {
+      "id": 4,
+      "name": "Pionex"
+    },
+    {
+      "id": 5,
+      "name": "Wise"
+    },
+    {
+      "id": 6,
+      "name": "且慢"
+    },
+    {
+      "id": 7,
+      "name": "中国银行"
+    },
+    {
+      "id": 8,
+      "name": "住房公积金"
+    },
+    {
+      "id": 9,
+      "name": "招商银行"
+    },
+    {
+      "id": 10,
+      "name": "支付宝"
+    },
+    {
+      "id": 11,
+      "name": "盈透证券"
+    },
+    {
+      "id": 12,
+      "name": "在途交易"
+    }
+  ],
+  "assets": [
+    {
+      "id": 1,
+      "accountId": 1,
+      "name": "A股",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 2,
+      "accountId": 2,
+      "name": "NVIDIA",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 3,
+      "accountId": 3,
+      "name": "现金",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 4,
+      "accountId": 4,
+      "name": "Crypto",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 5,
+      "accountId": 5,
+      "name": "现金",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 6,
+      "accountId": 6,
+      "name": "低风险投顾",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 7,
+      "accountId": 6,
+      "name": "高风险投顾",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 8,
+      "accountId": 7,
+      "name": "现金",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 9,
+      "accountId": 7,
+      "name": "美元理财",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 10,
+      "accountId": 8,
+      "name": "住房公积金",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 11,
+      "accountId": 9,
+      "name": "低风险投资",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 12,
+      "accountId": 9,
+      "name": "信用卡",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 13,
+      "accountId": 9,
+      "name": "基金",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 14,
+      "accountId": 9,
+      "name": "现金",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 15,
+      "accountId": 10,
+      "name": "基金",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 16,
+      "accountId": 10,
+      "name": "余额",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 17,
+      "accountId": 10,
+      "name": "花呗",
+      "categories": "{\"风险\":\"低风险\"}"
+    },
+    {
+      "id": 18,
+      "accountId": 11,
+      "name": "股票",
+      "categories": "{\"风险\":\"高风险\"}"
+    },
+    {
+      "id": 19,
+      "accountId": 12,
+      "name": "在途交易",
+      "categories": "{\"风险\":\"低风险\"}"
+    }
+  ],
+  "snapshots": [
+    {
+      "assetId": 2,
+      "date": "2022-01",
+      "netWorth": 263916.8,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2022-07",
+      "netWorth": 262883.55,
+      "inflow": 129986.7,
+      "profit": -131019.95
+    },
+    {
+      "assetId": 2,
+      "date": "2022-08",
+      "netWorth": 343389.52,
+      "inflow": 0,
+      "profit": 80505.97
+    },
+    {
+      "assetId": 2,
+      "date": "2022-09",
+      "netWorth": 322775.1,
+      "inflow": 40607.19,
+      "profit": -61221.61
+    },
+    {
+      "assetId": 2,
+      "date": "2022-10",
+      "netWorth": 320641.68,
+      "inflow": 53440.28,
+      "profit": -55573.7
+    },
+    {
+      "assetId": 2,
+      "date": "2022-11",
+      "netWorth": 366606,
+      "inflow": 0,
+      "profit": 45964.32
+    },
+    {
+      "assetId": 2,
+      "date": "2022-12",
+      "netWorth": 447739.2,
+      "inflow": 0,
+      "profit": 81133.2
+    },
+    {
+      "assetId": 2,
+      "date": "2023-01",
+      "netWorth": 424115.4,
+      "inflow": 49362.6,
+      "profit": -72986.4
+    },
+    {
+      "assetId": 2,
+      "date": "2023-02",
+      "netWorth": 576875.25,
+      "inflow": 0,
+      "profit": 152759.85
+    },
+    {
+      "assetId": 2,
+      "date": "2023-03",
+      "netWorth": 754039.44,
+      "inflow": 77172.48,
+      "profit": 99991.71
+    },
+    {
+      "assetId": 2,
+      "date": "2023-04",
+      "netWorth": 996946.92,
+      "inflow": 101222.58,
+      "profit": 141684.9
+    },
+    {
+      "assetId": 2,
+      "date": "2023-05",
+      "netWorth": 1004555.07,
+      "inflow": 0,
+      "profit": 7608.15
+    },
+    {
+      "assetId": 2,
+      "date": "2023-06",
+      "netWorth": 1081571.4,
+      "inflow": -294039.4,
+      "profit": 371055.73
+    },
+    {
+      "assetId": 2,
+      "date": "2023-07",
+      "netWorth": 1361637,
+      "inflow": 125736.75,
+      "profit": 154328.85
+    },
+    {
+      "assetId": 2,
+      "date": "2023-08",
+      "netWorth": 1480464.72,
+      "inflow": 0,
+      "profit": 118827.72
+    },
+    {
+      "assetId": 2,
+      "date": "2023-09",
+      "netWorth": 1599893.46,
+      "inflow": 10737.54,
+      "profit": 108691.2
+    },
+    {
+      "assetId": 2,
+      "date": "2023-10",
+      "netWorth": 1571872.5,
+      "inflow": 152424,
+      "profit": -180444.96
+    },
+    {
+      "assetId": 2,
+      "date": "2023-11",
+      "netWorth": 1463467.5,
+      "inflow": 0,
+      "profit": -108405
+    },
+    {
+      "assetId": 2,
+      "date": "2023-12",
+      "netWorth": 1329032,
+      "inflow": -326482.7,
+      "profit": 192047.2
+    },
+    {
+      "assetId": 2,
+      "date": "2024-01",
+      "netWorth": 1566556.2,
+      "inflow": 164716.2,
+      "profit": 72808
+    },
+    {
+      "assetId": 2,
+      "date": "2024-02",
+      "netWorth": 1977921.36,
+      "inflow": 0,
+      "profit": 411365.16
+    },
+    {
+      "assetId": 2,
+      "date": "2024-03",
+      "netWorth": 2509928.34,
+      "inflow": -21742.56,
+      "profit": 553749.54
+    },
+    {
+      "assetId": 2,
+      "date": "2024-04",
+      "netWorth": 3160949.47,
+      "inflow": 318042.14,
+      "profit": 332978.99
+    },
+    {
+      "assetId": 2,
+      "date": "2024-05",
+      "netWorth": 2992858.5,
+      "inflow": 0,
+      "profit": -168090.97
+    },
+    {
+      "assetId": 3,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2023-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2024-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2024-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2024-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2024-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2024-05",
+      "netWorth": 8614.46,
+      "inflow": 8614.46,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2022-01",
+      "netWorth": 41894,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2022-07",
+      "netWorth": 13100,
+      "inflow": 0,
+      "profit": -28794
+    },
+    {
+      "assetId": 4,
+      "date": "2022-08",
+      "netWorth": 19537,
+      "inflow": 0,
+      "profit": 6437
+    },
+    {
+      "assetId": 4,
+      "date": "2022-09",
+      "netWorth": 26992,
+      "inflow": 10000,
+      "profit": -2545
+    },
+    {
+      "assetId": 4,
+      "date": "2022-10",
+      "netWorth": 25708,
+      "inflow": 0,
+      "profit": -1284
+    },
+    {
+      "assetId": 4,
+      "date": "2022-11",
+      "netWorth": 29156,
+      "inflow": 0,
+      "profit": 3448
+    },
+    {
+      "assetId": 4,
+      "date": "2022-12",
+      "netWorth": 23787,
+      "inflow": 0,
+      "profit": -5369
+    },
+    {
+      "assetId": 4,
+      "date": "2023-01",
+      "netWorth": 22106,
+      "inflow": 0,
+      "profit": -1681
+    },
+    {
+      "assetId": 4,
+      "date": "2023-02",
+      "netWorth": 29765,
+      "inflow": 0,
+      "profit": 7659
+    },
+    {
+      "assetId": 4,
+      "date": "2023-03",
+      "netWorth": 31005,
+      "inflow": 0,
+      "profit": 1240
+    },
+    {
+      "assetId": 4,
+      "date": "2023-04",
+      "netWorth": 36660,
+      "inflow": 0,
+      "profit": 5655
+    },
+    {
+      "assetId": 4,
+      "date": "2023-05",
+      "netWorth": 36453,
+      "inflow": 0,
+      "profit": -207
+    },
+    {
+      "assetId": 4,
+      "date": "2023-06",
+      "netWorth": 36796,
+      "inflow": 0,
+      "profit": 343
+    },
+    {
+      "assetId": 4,
+      "date": "2023-07",
+      "netWorth": 16800,
+      "inflow": -25251,
+      "profit": 5255
+    },
+    {
+      "assetId": 4,
+      "date": "2023-08",
+      "netWorth": 15939,
+      "inflow": 0,
+      "profit": -861
+    },
+    {
+      "assetId": 4,
+      "date": "2023-09",
+      "netWorth": 14393,
+      "inflow": 0,
+      "profit": -1546
+    },
+    {
+      "assetId": 4,
+      "date": "2023-10",
+      "netWorth": 14550,
+      "inflow": 0,
+      "profit": 157
+    },
+    {
+      "assetId": 4,
+      "date": "2023-11",
+      "netWorth": 16887,
+      "inflow": 0,
+      "profit": 2337
+    },
+    {
+      "assetId": 4,
+      "date": "2023-12",
+      "netWorth": 18622,
+      "inflow": 0,
+      "profit": 1735
+    },
+    {
+      "assetId": 4,
+      "date": "2024-01",
+      "netWorth": 20645,
+      "inflow": 0,
+      "profit": 2023
+    },
+    {
+      "assetId": 4,
+      "date": "2024-02",
+      "netWorth": 20262,
+      "inflow": 0,
+      "profit": -383
+    },
+    {
+      "assetId": 4,
+      "date": "2024-03",
+      "netWorth": 30547,
+      "inflow": 0,
+      "profit": 10285
+    },
+    {
+      "assetId": 4,
+      "date": "2024-04",
+      "netWorth": 33810,
+      "inflow": 0,
+      "profit": 3263
+    },
+    {
+      "assetId": 4,
+      "date": "2024-05",
+      "netWorth": 28307,
+      "inflow": 0,
+      "profit": -5503
+    },
+    {
+      "assetId": 5,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2023-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2024-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2024-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2024-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2024-04",
+      "netWorth": 7262,
+      "inflow": 7262,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2024-05",
+      "netWorth": 159,
+      "inflow": -7103,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2023-01",
+      "netWorth": 4530,
+      "inflow": 4602.96,
+      "profit": -72.96
+    },
+    {
+      "assetId": 7,
+      "date": "2023-02",
+      "netWorth": 10064,
+      "inflow": 5201,
+      "profit": 333
+    },
+    {
+      "assetId": 7,
+      "date": "2023-03",
+      "netWorth": 13256,
+      "inflow": 3494.9,
+      "profit": -302.9
+    },
+    {
+      "assetId": 7,
+      "date": "2023-04",
+      "netWorth": 17253,
+      "inflow": 4001.3,
+      "profit": -4.3
+    },
+    {
+      "assetId": 7,
+      "date": "2023-05",
+      "netWorth": 20504,
+      "inflow": 3701.1,
+      "profit": -450.1
+    },
+    {
+      "assetId": 7,
+      "date": "2023-06",
+      "netWorth": 24163,
+      "inflow": 4441.8,
+      "profit": -782.8
+    },
+    {
+      "assetId": 7,
+      "date": "2023-07",
+      "netWorth": 28213,
+      "inflow": 3760.59,
+      "profit": 289.41
+    },
+    {
+      "assetId": 7,
+      "date": "2023-08",
+      "netWorth": 31129,
+      "inflow": 2170,
+      "profit": 746
+    },
+    {
+      "assetId": 7,
+      "date": "2023-09",
+      "netWorth": 29509,
+      "inflow": -136,
+      "profit": -1484
+    },
+    {
+      "assetId": 7,
+      "date": "2023-10",
+      "netWorth": 28822,
+      "inflow": -62,
+      "profit": -625
+    },
+    {
+      "assetId": 7,
+      "date": "2023-11",
+      "netWorth": 28301,
+      "inflow": 0,
+      "profit": -521
+    },
+    {
+      "assetId": 7,
+      "date": "2023-12",
+      "netWorth": 28468,
+      "inflow": 0,
+      "profit": 167
+    },
+    {
+      "assetId": 7,
+      "date": "2024-01",
+      "netWorth": 27861,
+      "inflow": 0,
+      "profit": -607
+    },
+    {
+      "assetId": 7,
+      "date": "2024-02",
+      "netWorth": 24883,
+      "inflow": 0,
+      "profit": -2978
+    },
+    {
+      "assetId": 7,
+      "date": "2024-03",
+      "netWorth": 27173,
+      "inflow": 0,
+      "profit": 2290
+    },
+    {
+      "assetId": 7,
+      "date": "2024-04",
+      "netWorth": 27093,
+      "inflow": 0,
+      "profit": -80
+    },
+    {
+      "assetId": 7,
+      "date": "2024-05",
+      "netWorth": 27820,
+      "inflow": 0,
+      "profit": 727
+    },
+    {
+      "assetId": 8,
+      "date": "2022-01",
+      "netWorth": 53153,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2022-07",
+      "netWorth": 5548,
+      "inflow": -47605,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2022-08",
+      "netWorth": 36446,
+      "inflow": 30898,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2022-09",
+      "netWorth": 38293,
+      "inflow": 1847,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2022-10",
+      "netWorth": 21665,
+      "inflow": -16628,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2022-11",
+      "netWorth": 41381,
+      "inflow": 19716,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2022-12",
+      "netWorth": 34378,
+      "inflow": -7003,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-01",
+      "netWorth": 44869,
+      "inflow": 10491,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-02",
+      "netWorth": 32937,
+      "inflow": -11932,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-03",
+      "netWorth": 27938,
+      "inflow": -4999,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-04",
+      "netWorth": 37893,
+      "inflow": 9955,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-05",
+      "netWorth": 61721,
+      "inflow": 23828,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-06",
+      "netWorth": 30194,
+      "inflow": -31527,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-07",
+      "netWorth": 45667,
+      "inflow": 15473,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-08",
+      "netWorth": 92084,
+      "inflow": 46417,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-09",
+      "netWorth": 27778,
+      "inflow": -64306,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-10",
+      "netWorth": 0,
+      "inflow": -27778,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-11",
+      "netWorth": 68815,
+      "inflow": 68815,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2023-12",
+      "netWorth": 51002,
+      "inflow": -17813,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2024-01",
+      "netWorth": 7262,
+      "inflow": -43740,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2024-02",
+      "netWorth": 42684,
+      "inflow": 35422,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2024-03",
+      "netWorth": 8414,
+      "inflow": -34270,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2024-04",
+      "netWorth": 162126,
+      "inflow": 153712,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2024-05",
+      "netWorth": 182647,
+      "inflow": 20521,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-06",
+      "netWorth": 294039.4,
+      "inflow": 294039.4,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2023-07",
+      "netWorth": 300570.5,
+      "inflow": 0,
+      "profit": 6531.1
+    },
+    {
+      "assetId": 9,
+      "date": "2023-08",
+      "netWorth": 297076.69,
+      "inflow": 0,
+      "profit": -3493.81
+    },
+    {
+      "assetId": 9,
+      "date": "2023-09",
+      "netWorth": 392685.41,
+      "inflow": 89478.77,
+      "profit": 6129.95
+    },
+    {
+      "assetId": 9,
+      "date": "2023-10",
+      "netWorth": 395827.17,
+      "inflow": 0,
+      "profit": 3141.76
+    },
+    {
+      "assetId": 9,
+      "date": "2023-11",
+      "netWorth": 307089.1,
+      "inflow": -89971.77,
+      "profit": 1233.7
+    },
+    {
+      "assetId": 9,
+      "date": "2023-12",
+      "netWorth": 626420.41,
+      "inflow": 326482.7,
+      "profit": -7151.39
+    },
+    {
+      "assetId": 9,
+      "date": "2024-01",
+      "netWorth": 299632.68,
+      "inflow": -328819,
+      "profit": 2031.27
+    },
+    {
+      "assetId": 9,
+      "date": "2024-02",
+      "netWorth": 304235.56,
+      "inflow": 0,
+      "profit": 4602.88
+    },
+    {
+      "assetId": 9,
+      "date": "2024-03",
+      "netWorth": 306552.84,
+      "inflow": 0,
+      "profit": 2317.28
+    },
+    {
+      "assetId": 9,
+      "date": "2024-04",
+      "netWorth": 307944,
+      "inflow": 0,
+      "profit": 1391.16
+    },
+    {
+      "assetId": 9,
+      "date": "2024-05",
+      "netWorth": 166.29,
+      "inflow": -309227.1,
+      "profit": 1449.39
+    },
+    {
+      "assetId": 10,
+      "date": "2022-01",
+      "netWorth": 242512,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2022-07",
+      "netWorth": 286761,
+      "inflow": 44249,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2022-08",
+      "netWorth": 293535,
+      "inflow": 6774,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2022-09",
+      "netWorth": 302065,
+      "inflow": 8530,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2022-10",
+      "netWorth": 309717,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2022-11",
+      "netWorth": 317369,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2022-12",
+      "netWorth": 325021,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-01",
+      "netWorth": 332673,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-02",
+      "netWorth": 340325,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-03",
+      "netWorth": 347977,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-04",
+      "netWorth": 355629,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-05",
+      "netWorth": 363281,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-06",
+      "netWorth": 370933,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-07",
+      "netWorth": 378585,
+      "inflow": 7652,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-08",
+      "netWorth": 391725,
+      "inflow": 13140,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-09",
+      "netWorth": 399859,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-10",
+      "netWorth": 407993,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-11",
+      "netWorth": 416127,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2023-12",
+      "netWorth": 424261,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2024-01",
+      "netWorth": 432395,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2024-02",
+      "netWorth": 440529,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2024-03",
+      "netWorth": 448663,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2024-04",
+      "netWorth": 456797,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2024-05",
+      "netWorth": 464931,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2023-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2024-01",
+      "netWorth": 435826,
+      "inflow": 435391,
+      "profit": 435
+    },
+    {
+      "assetId": 11,
+      "date": "2024-02",
+      "netWorth": 437040,
+      "inflow": 51,
+      "profit": 1163
+    },
+    {
+      "assetId": 11,
+      "date": "2024-03",
+      "netWorth": 408038,
+      "inflow": -29976,
+      "profit": 974
+    },
+    {
+      "assetId": 11,
+      "date": "2024-04",
+      "netWorth": 408827,
+      "inflow": 0,
+      "profit": 789
+    },
+    {
+      "assetId": 11,
+      "date": "2024-05",
+      "netWorth": 453536,
+      "inflow": 43830,
+      "profit": 879
+    },
+    {
+      "assetId": 12,
+      "date": "2022-01",
+      "netWorth": -10000,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2022-07",
+      "netWorth": -8330,
+      "inflow": 1670,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2022-08",
+      "netWorth": -11404,
+      "inflow": -3074,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2022-09",
+      "netWorth": -12770,
+      "inflow": -1366,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2022-10",
+      "netWorth": -8727,
+      "inflow": 4043,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2022-11",
+      "netWorth": -7269,
+      "inflow": 1458,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2022-12",
+      "netWorth": -11232,
+      "inflow": -3963,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-01",
+      "netWorth": -14015,
+      "inflow": -2783,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-02",
+      "netWorth": -4349,
+      "inflow": 9666,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-03",
+      "netWorth": -1164,
+      "inflow": 3185,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-04",
+      "netWorth": -2777,
+      "inflow": -1613,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-05",
+      "netWorth": -2739,
+      "inflow": 38,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-06",
+      "netWorth": -5352,
+      "inflow": -2613,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-07",
+      "netWorth": -2555,
+      "inflow": 2797,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-08",
+      "netWorth": -3167.85,
+      "inflow": -612.85,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-09",
+      "netWorth": -2015.27,
+      "inflow": 1152.58,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-10",
+      "netWorth": -4301,
+      "inflow": -2285.73,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-11",
+      "netWorth": -3191,
+      "inflow": 1110,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2023-12",
+      "netWorth": -45994.68,
+      "inflow": -42803.68,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-01",
+      "netWorth": -15389,
+      "inflow": 30605.68,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-02",
+      "netWorth": -16758,
+      "inflow": -1369,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-03",
+      "netWorth": -68822,
+      "inflow": -52064,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-04",
+      "netWorth": -20314.1,
+      "inflow": 48507.9,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-05",
+      "netWorth": -12011,
+      "inflow": 8303.1,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2023-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2024-01",
+      "netWorth": 22352,
+      "inflow": 22000,
+      "profit": 352
+    },
+    {
+      "assetId": 13,
+      "date": "2024-02",
+      "netWorth": 50509,
+      "inflow": 29970,
+      "profit": -1813
+    },
+    {
+      "assetId": 13,
+      "date": "2024-03",
+      "netWorth": 79335,
+      "inflow": 23970,
+      "profit": 4856
+    },
+    {
+      "assetId": 13,
+      "date": "2024-04",
+      "netWorth": 103582,
+      "inflow": 23962,
+      "profit": 285
+    },
+    {
+      "assetId": 13,
+      "date": "2024-05",
+      "netWorth": 129779,
+      "inflow": 23971,
+      "profit": 2226
+    },
+    {
+      "assetId": 14,
+      "date": "2023-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2023-09",
+      "netWorth": 50058,
+      "inflow": 50058,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2023-10",
+      "netWorth": 100211,
+      "inflow": 50153,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2023-11",
+      "netWorth": 139474,
+      "inflow": 39263,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2023-12",
+      "netWorth": 174816,
+      "inflow": 35342,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-01",
+      "netWorth": 100654,
+      "inflow": -74162,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-02",
+      "netWorth": 60499,
+      "inflow": -40155,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-03",
+      "netWorth": 106588,
+      "inflow": 46089,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-04",
+      "netWorth": 34281,
+      "inflow": -72307,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-05",
+      "netWorth": 96404,
+      "inflow": 62123,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2022-01",
+      "netWorth": 433116,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2022-07",
+      "netWorth": 563961,
+      "inflow": 153099,
+      "profit": -22254
+    },
+    {
+      "assetId": 15,
+      "date": "2022-08",
+      "netWorth": 531936,
+      "inflow": 80,
+      "profit": -32105
+    },
+    {
+      "assetId": 15,
+      "date": "2022-09",
+      "netWorth": 529330,
+      "inflow": 6951,
+      "profit": -9557
+    },
+    {
+      "assetId": 15,
+      "date": "2022-10",
+      "netWorth": 513103,
+      "inflow": 25633,
+      "profit": -41860
+    },
+    {
+      "assetId": 15,
+      "date": "2022-11",
+      "netWorth": 488064,
+      "inflow": 1212,
+      "profit": -26251
+    },
+    {
+      "assetId": 15,
+      "date": "2022-12",
+      "netWorth": 504019,
+      "inflow": -11977,
+      "profit": 27932
+    },
+    {
+      "assetId": 15,
+      "date": "2023-01",
+      "netWorth": 507083,
+      "inflow": 2930.1,
+      "profit": 133.9
+    },
+    {
+      "assetId": 15,
+      "date": "2023-02",
+      "netWorth": 548685,
+      "inflow": 3870,
+      "profit": 37732
+    },
+    {
+      "assetId": 15,
+      "date": "2023-03",
+      "netWorth": 541421,
+      "inflow": 10920,
+      "profit": -18184
+    },
+    {
+      "assetId": 15,
+      "date": "2023-04",
+      "netWorth": 553130,
+      "inflow": 13160,
+      "profit": -1451
+    },
+    {
+      "assetId": 15,
+      "date": "2023-05",
+      "netWorth": 551296,
+      "inflow": 9969,
+      "profit": -11803
+    },
+    {
+      "assetId": 15,
+      "date": "2023-06",
+      "netWorth": 548378,
+      "inflow": 11827,
+      "profit": -14745
+    },
+    {
+      "assetId": 15,
+      "date": "2023-07",
+      "netWorth": 556660,
+      "inflow": 8384,
+      "profit": -102
+    },
+    {
+      "assetId": 15,
+      "date": "2023-08",
+      "netWorth": 555554,
+      "inflow": -9980,
+      "profit": 8874
+    },
+    {
+      "assetId": 15,
+      "date": "2023-09",
+      "netWorth": 533194,
+      "inflow": 9294,
+      "profit": -31654
+    },
+    {
+      "assetId": 15,
+      "date": "2023-10",
+      "netWorth": 528307,
+      "inflow": 8144,
+      "profit": -13031
+    },
+    {
+      "assetId": 15,
+      "date": "2023-11",
+      "netWorth": 520412,
+      "inflow": 11463,
+      "profit": -19358
+    },
+    {
+      "assetId": 15,
+      "date": "2023-12",
+      "netWorth": 537427,
+      "inflow": 11627,
+      "profit": 5388
+    },
+    {
+      "assetId": 15,
+      "date": "2024-01",
+      "netWorth": 537129,
+      "inflow": 11442,
+      "profit": -11740
+    },
+    {
+      "assetId": 15,
+      "date": "2024-02",
+      "netWorth": 483923,
+      "inflow": 4859,
+      "profit": -58065
+    },
+    {
+      "assetId": 15,
+      "date": "2024-03",
+      "netWorth": 552276,
+      "inflow": 12601,
+      "profit": 55752
+    },
+    {
+      "assetId": 15,
+      "date": "2024-04",
+      "netWorth": 571460,
+      "inflow": 12197,
+      "profit": 6987
+    },
+    {
+      "assetId": 15,
+      "date": "2024-05",
+      "netWorth": 587916,
+      "inflow": 5248,
+      "profit": 11208
+    },
+    {
+      "assetId": 16,
+      "date": "2022-01",
+      "netWorth": 24863,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2022-07",
+      "netWorth": 25185,
+      "inflow": 322,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2022-08",
+      "netWorth": 24750,
+      "inflow": -435,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2022-09",
+      "netWorth": 26959,
+      "inflow": 2209,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2022-10",
+      "netWorth": 24551,
+      "inflow": -2408,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2022-11",
+      "netWorth": 27054,
+      "inflow": 2503,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2022-12",
+      "netWorth": 29379,
+      "inflow": 2325,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-01",
+      "netWorth": 23930,
+      "inflow": -5449,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-02",
+      "netWorth": 23571,
+      "inflow": -359,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-03",
+      "netWorth": 11056,
+      "inflow": -12515,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-04",
+      "netWorth": 7581,
+      "inflow": -3475,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-05",
+      "netWorth": 12370,
+      "inflow": 4789,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-06",
+      "netWorth": 13934,
+      "inflow": 1564,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-07",
+      "netWorth": 10170,
+      "inflow": -3764,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-08",
+      "netWorth": 24405,
+      "inflow": 14235,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-09",
+      "netWorth": 19731,
+      "inflow": -4674,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-10",
+      "netWorth": 16207,
+      "inflow": -3524,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-11",
+      "netWorth": 14603,
+      "inflow": -1604,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2023-12",
+      "netWorth": 7050,
+      "inflow": -7553,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2024-01",
+      "netWorth": 25017,
+      "inflow": 17967,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2024-02",
+      "netWorth": 24577,
+      "inflow": -440,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2024-03",
+      "netWorth": 16603,
+      "inflow": -7974,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2024-04",
+      "netWorth": 6102,
+      "inflow": -10501,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2024-05",
+      "netWorth": 25214,
+      "inflow": 19112,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-05",
+      "netWorth": 311750.4,
+      "inflow": 307275,
+      "profit": 4475.4
+    },
+    {
+      "assetId": 6,
+      "date": "2022-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2022-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2022-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2022-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2022-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2022-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2022-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2023-01",
+      "netWorth": 16007,
+      "inflow": 15994.76,
+      "profit": 11.96
+    },
+    {
+      "assetId": 6,
+      "date": "2023-02",
+      "netWorth": 42156,
+      "inflow": 25992.3,
+      "profit": 155
+    },
+    {
+      "assetId": 6,
+      "date": "2023-03",
+      "netWorth": 38683,
+      "inflow": -3494.9,
+      "profit": 20.9
+    },
+    {
+      "assetId": 6,
+      "date": "2023-04",
+      "netWorth": 34711,
+      "inflow": -4001.3,
+      "profit": 31.3
+    },
+    {
+      "assetId": 6,
+      "date": "2023-05",
+      "netWorth": 41062,
+      "inflow": 6298.9,
+      "profit": 54.1
+    },
+    {
+      "assetId": 6,
+      "date": "2023-06",
+      "netWorth": 46534,
+      "inflow": 5558.2,
+      "profit": -130.2
+    },
+    {
+      "assetId": 6,
+      "date": "2023-07",
+      "netWorth": 42828,
+      "inflow": -3760.59,
+      "profit": 91.39
+    },
+    {
+      "assetId": 6,
+      "date": "2023-08",
+      "netWorth": 41091,
+      "inflow": -2170,
+      "profit": 234
+    },
+    {
+      "assetId": 6,
+      "date": "2023-09",
+      "netWorth": 40257,
+      "inflow": 136,
+      "profit": -67
+    },
+    {
+      "assetId": 6,
+      "date": "2023-10",
+      "netWorth": 1231,
+      "inflow": -38951,
+      "profit": -11
+    },
+    {
+      "assetId": 6,
+      "date": "2023-11",
+      "netWorth": 0,
+      "inflow": -1231,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2023-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2022-01",
+      "netWorth": 58408,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2022-07",
+      "netWorth": 57479,
+      "inflow": 10000,
+      "profit": -10929
+    },
+    {
+      "assetId": 1,
+      "date": "2022-08",
+      "netWorth": 56535,
+      "inflow": 0,
+      "profit": -944
+    },
+    {
+      "assetId": 1,
+      "date": "2022-09",
+      "netWorth": 57473,
+      "inflow": 0,
+      "profit": 938
+    },
+    {
+      "assetId": 1,
+      "date": "2022-10",
+      "netWorth": 50971,
+      "inflow": 0,
+      "profit": -6502
+    },
+    {
+      "assetId": 1,
+      "date": "2022-11",
+      "netWorth": 48900,
+      "inflow": 0,
+      "profit": -2071
+    },
+    {
+      "assetId": 1,
+      "date": "2022-12",
+      "netWorth": 54378,
+      "inflow": 0,
+      "profit": 5478
+    },
+    {
+      "assetId": 1,
+      "date": "2023-01",
+      "netWorth": 55018,
+      "inflow": 0,
+      "profit": 640
+    },
+    {
+      "assetId": 1,
+      "date": "2023-02",
+      "netWorth": 55732,
+      "inflow": -1880,
+      "profit": 2594
+    },
+    {
+      "assetId": 1,
+      "date": "2023-03",
+      "netWorth": 54008,
+      "inflow": 0,
+      "profit": -1724
+    },
+    {
+      "assetId": 1,
+      "date": "2023-04",
+      "netWorth": 57316,
+      "inflow": 0,
+      "profit": 3308
+    },
+    {
+      "assetId": 1,
+      "date": "2023-05",
+      "netWorth": 54993,
+      "inflow": 0,
+      "profit": -2323
+    },
+    {
+      "assetId": 1,
+      "date": "2023-06",
+      "netWorth": 56053,
+      "inflow": 0,
+      "profit": 1060
+    },
+    {
+      "assetId": 1,
+      "date": "2023-07",
+      "netWorth": 59045,
+      "inflow": 0,
+      "profit": 2992
+    },
+    {
+      "assetId": 1,
+      "date": "2023-08",
+      "netWorth": 63770,
+      "inflow": 0,
+      "profit": 4725
+    },
+    {
+      "assetId": 1,
+      "date": "2023-09",
+      "netWorth": 61458,
+      "inflow": 0,
+      "profit": -2312
+    },
+    {
+      "assetId": 1,
+      "date": "2023-10",
+      "netWorth": 58256,
+      "inflow": 0,
+      "profit": -3202
+    },
+    {
+      "assetId": 1,
+      "date": "2023-11",
+      "netWorth": 57423,
+      "inflow": 0,
+      "profit": -833
+    },
+    {
+      "assetId": 1,
+      "date": "2023-12",
+      "netWorth": 59996,
+      "inflow": 0,
+      "profit": 2573
+    },
+    {
+      "assetId": 1,
+      "date": "2024-01",
+      "netWorth": 36863,
+      "inflow": -23022,
+      "profit": -111
+    },
+    {
+      "assetId": 1,
+      "date": "2024-02",
+      "netWorth": 33994,
+      "inflow": 0,
+      "profit": -2869
+    },
+    {
+      "assetId": 1,
+      "date": "2024-03",
+      "netWorth": 35541,
+      "inflow": 0,
+      "profit": 1547
+    },
+    {
+      "assetId": 1,
+      "date": "2024-04",
+      "netWorth": 22208,
+      "inflow": -14315,
+      "profit": 982
+    },
+    {
+      "assetId": 1,
+      "date": "2024-05",
+      "netWorth": 24168,
+      "inflow": 0,
+      "profit": 1960
+    },
+    {
+      "assetId": 19,
+      "date": "2024-03",
+      "netWorth": 220798,
+      "inflow": 220798,
+      "profit": 0
+    },
+    {
+      "assetId": 19,
+      "date": "2024-04",
+      "netWorth": 94897,
+      "inflow": -125901,
+      "profit": 0
+    },
+    {
+      "assetId": 19,
+      "date": "2024-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 19,
+      "date": "2024-05",
+      "netWorth": 0,
+      "inflow": -94897,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2024-06",
+      "netWorth": 25052,
+      "inflow": 0,
+      "profit": 884
+    },
+    {
+      "assetId": 2,
+      "date": "2024-06",
+      "netWorth": 3422898,
+      "inflow": -406325,
+      "profit": 836364.5
+    },
+    {
+      "assetId": 3,
+      "date": "2024-06",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 78.54
+    },
+    {
+      "assetId": 4,
+      "date": "2024-06",
+      "netWorth": 34210.9,
+      "inflow": 0,
+      "profit": 5903.9
+    },
+    {
+      "assetId": 5,
+      "date": "2024-06",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 1
+    },
+    {
+      "assetId": 6,
+      "date": "2024-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 1
+    },
+    {
+      "assetId": 7,
+      "date": "2024-06",
+      "netWorth": 27557,
+      "inflow": 0,
+      "profit": -263
+    },
+    {
+      "assetId": 8,
+      "date": "2024-06",
+      "netWorth": 201500,
+      "inflow": 18853,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-06",
+      "netWorth": 198442,
+      "inflow": 198278.71,
+      "profit": -3
+    },
+    {
+      "assetId": 10,
+      "date": "2024-06",
+      "netWorth": 473065,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2024-06",
+      "netWorth": 454905,
+      "inflow": 48,
+      "profit": 1321
+    },
+    {
+      "assetId": 12,
+      "date": "2024-06",
+      "netWorth": -43472,
+      "inflow": -31461,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2024-06",
+      "netWorth": 158832,
+      "inflow": 29654,
+      "profit": -601
+    },
+    {
+      "assetId": 14,
+      "date": "2024-06",
+      "netWorth": 66523,
+      "inflow": -29999,
+      "profit": 118
+    },
+    {
+      "assetId": 15,
+      "date": "2024-06",
+      "netWorth": 589879,
+      "inflow": 14449,
+      "profit": -12486
+    },
+    {
+      "assetId": 16,
+      "date": "2024-06",
+      "netWorth": 15337,
+      "inflow": -9877,
+      "profit": 0
+    },
+    {
+      "assetId": 19,
+      "date": "2024-06",
+      "netWorth": 204182,
+      "inflow": 204182,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2024-06",
+      "netWorth": -119,
+      "inflow": -119,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-06",
+      "netWorth": 313427,
+      "inflow": 0,
+      "profit": 1676.63
+    },
+    {
+      "assetId": 2,
+      "date": "2024-07",
+      "netWorth": 4100516.19,
+      "inflow": 0,
+      "profit": 677618.19
+    },
+    {
+      "assetId": 1,
+      "date": "2024-07",
+      "netWorth": 24115,
+      "inflow": 0,
+      "profit": -937
+    },
+    {
+      "assetId": 3,
+      "date": "2024-07",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2024-07",
+      "netWorth": 31712,
+      "inflow": 0,
+      "profit": -2498.9
+    },
+    {
+      "assetId": 5,
+      "date": "2024-07",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2024-07",
+      "netWorth": 26670,
+      "inflow": 0,
+      "profit": -887
+    },
+    {
+      "assetId": 8,
+      "date": "2024-07",
+      "netWorth": 225532,
+      "inflow": 24032,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-07",
+      "netWorth": 402804,
+      "inflow": 204196,
+      "profit": 166
+    },
+    {
+      "assetId": 10,
+      "date": "2024-07",
+      "netWorth": 487743,
+      "inflow": 14678,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2024-07",
+      "netWorth": 454569,
+      "inflow": 0,
+      "profit": -336
+    },
+    {
+      "assetId": 13,
+      "date": "2024-07",
+      "netWorth": 179676,
+      "inflow": 24000,
+      "profit": -3156
+    },
+    {
+      "assetId": 14,
+      "date": "2024-07",
+      "netWorth": 7969,
+      "inflow": -58554,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-07",
+      "netWorth": -13191,
+      "inflow": 30281,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2024-07",
+      "netWorth": 584659,
+      "inflow": 9931,
+      "profit": -15151
+    },
+    {
+      "assetId": 16,
+      "date": "2024-07",
+      "netWorth": 10244,
+      "inflow": -5093,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2024-07",
+      "netWorth": -8336,
+      "inflow": -8217,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-07",
+      "netWorth": 314519.46,
+      "inflow": 0,
+      "profit": 1092.46
+    },
+    {
+      "assetId": 19,
+      "date": "2024-07",
+      "netWorth": 0,
+      "inflow": -204182,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2024-08",
+      "netWorth": 3933828.54,
+      "inflow": 0,
+      "profit": -166687.65
+    },
+    {
+      "assetId": 1,
+      "date": "2024-08",
+      "netWorth": 23949,
+      "inflow": 0,
+      "profit": -166
+    },
+    {
+      "assetId": 3,
+      "date": "2024-08",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2024-08",
+      "netWorth": 30109,
+      "inflow": 0,
+      "profit": -1603
+    },
+    {
+      "assetId": 5,
+      "date": "2024-08",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2024-08",
+      "netWorth": 26459,
+      "inflow": 0,
+      "profit": -211
+    },
+    {
+      "assetId": 8,
+      "date": "2024-08",
+      "netWorth": 217207,
+      "inflow": -8325,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-08",
+      "netWorth": 403723.2,
+      "inflow": 0,
+      "profit": 919.2
+    },
+    {
+      "assetId": 10,
+      "date": "2024-08",
+      "netWorth": 495877,
+      "inflow": 8134,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2024-08",
+      "netWorth": 404752,
+      "inflow": -50823,
+      "profit": 1006
+    },
+    {
+      "assetId": 13,
+      "date": "2024-08",
+      "netWorth": 209394,
+      "inflow": 30000,
+      "profit": -282
+    },
+    {
+      "assetId": 14,
+      "date": "2024-08",
+      "netWorth": 29194,
+      "inflow": 21225,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-08",
+      "netWorth": -7451,
+      "inflow": 5740,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2024-08",
+      "netWorth": 585011,
+      "inflow": 9589,
+      "profit": -9237
+    },
+    {
+      "assetId": 16,
+      "date": "2024-08",
+      "netWorth": 5291,
+      "inflow": -4953,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2024-08",
+      "netWorth": -90,
+      "inflow": 8246,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-08",
+      "netWorth": 315661.8,
+      "inflow": 0,
+      "profit": 1142.34
+    },
+    {
+      "assetId": 19,
+      "date": "2024-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2024-09",
+      "netWorth": 23998,
+      "inflow": 0,
+      "profit": 49
+    },
+    {
+      "assetId": 2,
+      "date": "2024-09",
+      "netWorth": 3627432.27,
+      "inflow": -324457,
+      "profit": 18060.73
+    },
+    {
+      "assetId": 19,
+      "date": "2024-09",
+      "netWorth": 598598,
+      "inflow": 598598,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2024-09",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2024-09",
+      "netWorth": 25983.89,
+      "inflow": 0,
+      "profit": -4125.11
+    },
+    {
+      "assetId": 5,
+      "date": "2024-09",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2024-09",
+      "netWorth": 25743,
+      "inflow": 0,
+      "profit": -716
+    },
+    {
+      "assetId": 8,
+      "date": "2024-09",
+      "netWorth": 236720,
+      "inflow": 19513,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-09",
+      "netWorth": 398145,
+      "inflow": 0,
+      "profit": -5578.2
+    },
+    {
+      "assetId": 10,
+      "date": "2024-09",
+      "netWorth": 504679,
+      "inflow": 8802,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2024-09",
+      "netWorth": 404854,
+      "inflow": 0,
+      "profit": 102
+    },
+    {
+      "assetId": 13,
+      "date": "2024-09",
+      "netWorth": 226828,
+      "inflow": 24000,
+      "profit": -6566
+    },
+    {
+      "assetId": 14,
+      "date": "2024-09",
+      "netWorth": 5197,
+      "inflow": -23997,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-09",
+      "netWorth": -41675,
+      "inflow": -34224,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2024-09",
+      "netWorth": 489584,
+      "inflow": -76186,
+      "profit": -19241
+    },
+    {
+      "assetId": 16,
+      "date": "2024-09",
+      "netWorth": 86364,
+      "inflow": 81073,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2024-09",
+      "netWorth": -188,
+      "inflow": 0,
+      "profit": -98
+    },
+    {
+      "assetId": 18,
+      "date": "2024-09",
+      "netWorth": 311937.03,
+      "inflow": 0,
+      "profit": -3724.77
+    },
+    {
+      "assetId": 1,
+      "date": "2024-10",
+      "netWorth": 31134,
+      "inflow": 0,
+      "profit": 7136
+    },
+    {
+      "assetId": 2,
+      "date": "2024-10",
+      "netWorth": 3952376.52,
+      "inflow": 298373,
+      "profit": 26571.25
+    },
+    {
+      "assetId": 3,
+      "date": "2024-10",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2024-10",
+      "netWorth": 24136,
+      "inflow": 0,
+      "profit": -1847.89
+    },
+    {
+      "assetId": 5,
+      "date": "2024-10",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2024-10",
+      "netWorth": 30521,
+      "inflow": 0,
+      "profit": 4778
+    },
+    {
+      "assetId": 8,
+      "date": "2024-10",
+      "netWorth": 81032,
+      "inflow": -155688,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-10",
+      "netWorth": 988409,
+      "inflow": 598598,
+      "profit": -8334
+    },
+    {
+      "assetId": 10,
+      "date": "2024-10",
+      "netWorth": 513148,
+      "inflow": 8469,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2024-10",
+      "netWorth": 405136,
+      "inflow": 0,
+      "profit": 282
+    },
+    {
+      "assetId": 13,
+      "date": "2024-10",
+      "netWorth": 299356,
+      "inflow": 24000,
+      "profit": 48528
+    },
+    {
+      "assetId": 14,
+      "date": "2024-10",
+      "netWorth": 95894,
+      "inflow": 90697,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2024-10",
+      "netWorth": -26158,
+      "inflow": 15517,
+      "profit": 0
+    },
+    {
+      "assetId": 19,
+      "date": "2024-10",
+      "netWorth": 0,
+      "inflow": -598598,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2024-10",
+      "netWorth": 551974,
+      "inflow": -27221,
+      "profit": 89611
+    },
+    {
+      "assetId": 16,
+      "date": "2024-10",
+      "netWorth": 118540,
+      "inflow": 32176,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2024-10",
+      "netWorth": -752,
+      "inflow": -564,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-10",
+      "netWorth": 310302.08,
+      "inflow": 0,
+      "profit": -1634.95
+    },
+    {
+      "assetId": 1,
+      "date": "2024-11",
+      "netWorth": 30912,
+      "inflow": 0,
+      "profit": -222
+    },
+    {
+      "assetId": 2,
+      "date": "2024-11",
+      "netWorth": 3298708.56,
+      "inflow": -1111376,
+      "profit": 457708.04
+    },
+    {
+      "assetId": 3,
+      "date": "2024-11",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2024-11",
+      "netWorth": 26430,
+      "inflow": 0,
+      "profit": 2294
+    },
+    {
+      "assetId": 5,
+      "date": "2024-11",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2024-11",
+      "netWorth": 30257,
+      "inflow": 0,
+      "profit": -264
+    },
+    {
+      "assetId": 6,
+      "date": "2024-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2024-11",
+      "netWorth": 54947,
+      "inflow": -26085,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-11",
+      "netWorth": 663284,
+      "inflow": -342184,
+      "profit": 17059
+    },
+    {
+      "assetId": 10,
+      "date": "2024-11",
+      "netWorth": 521616,
+      "inflow": 8468,
+      "profit": 0
+    },
+    {
+      "assetId": 16,
+      "date": "2024-11",
+      "netWorth": 217618,
+      "inflow": 99078,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2024-11",
+      "netWorth": 460615,
+      "inflow": -94556,
+      "profit": 3197
+    },
+    {
+      "assetId": 17,
+      "date": "2024-11",
+      "netWorth": -476,
+      "inflow": 276,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-11",
+      "netWorth": 662927.58,
+      "inflow": 342184,
+      "profit": 10441.5
+    },
+    {
+      "assetId": 19,
+      "date": "2024-11",
+      "netWorth": 1111376,
+      "inflow": 1111376,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-11",
+      "netWorth": 125599,
+      "inflow": 29705,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2024-11",
+      "netWorth": 262374,
+      "inflow": -29172,
+      "profit": -7810
+    },
+    {
+      "assetId": 11,
+      "date": "2024-11",
+      "netWorth": 405215,
+      "inflow": -586,
+      "profit": 665
+    },
+    {
+      "assetId": 12,
+      "date": "2024-11",
+      "netWorth": -22874,
+      "inflow": 3284,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2024-12",
+      "netWorth": 30912,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2024-12",
+      "netWorth": 3382452.15,
+      "inflow": -118984,
+      "profit": 202727.59
+    },
+    {
+      "assetId": 3,
+      "date": "2024-12",
+      "netWorth": 8693,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2024-12",
+      "netWorth": 38928,
+      "inflow": 0,
+      "profit": 12498
+    },
+    {
+      "assetId": 5,
+      "date": "2024-12",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2024-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2024-12",
+      "netWorth": 31354,
+      "inflow": 0,
+      "profit": 1097
+    },
+    {
+      "assetId": 8,
+      "date": "2024-12",
+      "netWorth": 503585,
+      "inflow": 448638,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2024-12",
+      "netWorth": 1255839,
+      "inflow": 590251,
+      "profit": 2304
+    },
+    {
+      "assetId": 10,
+      "date": "2024-12",
+      "netWorth": 530083,
+      "inflow": 8467,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2024-12",
+      "netWorth": 401519,
+      "inflow": -63497,
+      "profit": 4401
+    },
+    {
+      "assetId": 16,
+      "date": "2024-12",
+      "netWorth": 285948,
+      "inflow": 68330,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2024-12",
+      "netWorth": -31,
+      "inflow": 445,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2024-12",
+      "netWorth": 125724,
+      "inflow": 125,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2024-12",
+      "netWorth": 259630,
+      "inflow": -773,
+      "profit": -1971
+    },
+    {
+      "assetId": 11,
+      "date": "2024-12",
+      "netWorth": 406523,
+      "inflow": 0,
+      "profit": 1308
+    },
+    {
+      "assetId": 12,
+      "date": "2024-12",
+      "netWorth": -19532,
+      "inflow": 3342,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2024-12",
+      "netWorth": 678860,
+      "inflow": 0,
+      "profit": 15932.42
+    },
+    {
+      "assetId": 19,
+      "date": "2024-12",
+      "netWorth": 118984,
+      "inflow": -1008889,
+      "profit": 16497
+    },
+    {
+      "assetId": 1,
+      "date": "2025-01",
+      "netWorth": 30919,
+      "inflow": 0,
+      "profit": 7
+    },
+    {
+      "assetId": 2,
+      "date": "2025-01",
+      "netWorth": 3625489,
+      "inflow": 317076,
+      "profit": -74039.15
+    },
+    {
+      "assetId": 3,
+      "date": "2025-01",
+      "netWorth": 0,
+      "inflow": -7400,
+      "profit": -1293
+    },
+    {
+      "assetId": 4,
+      "date": "2025-01",
+      "netWorth": 36419,
+      "inflow": 0,
+      "profit": -2509
+    },
+    {
+      "assetId": 5,
+      "date": "2025-01",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-01",
+      "netWorth": 31334,
+      "inflow": 0,
+      "profit": -20
+    },
+    {
+      "assetId": 6,
+      "date": "2025-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2025-01",
+      "netWorth": 244347,
+      "inflow": -259238,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-01",
+      "netWorth": 1402204,
+      "inflow": 119810,
+      "profit": 26555
+    },
+    {
+      "assetId": 19,
+      "date": "2025-01",
+      "netWorth": 0,
+      "inflow": -119810,
+      "profit": 826
+    },
+    {
+      "assetId": 10,
+      "date": "2025-01",
+      "netWorth": 538552,
+      "inflow": 8469,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-01",
+      "netWorth": 304929,
+      "inflow": -90781,
+      "profit": -5809
+    },
+    {
+      "assetId": 16,
+      "date": "2025-01",
+      "netWorth": 388990,
+      "inflow": 102932,
+      "profit": 110
+    },
+    {
+      "assetId": 17,
+      "date": "2025-01",
+      "netWorth": -106,
+      "inflow": -75,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-01",
+      "netWorth": 685232,
+      "inflow": 0,
+      "profit": 6372
+    },
+    {
+      "assetId": 14,
+      "date": "2025-01",
+      "netWorth": 427033,
+      "inflow": 301309,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2025-01",
+      "netWorth": 260490,
+      "inflow": 0,
+      "profit": 860
+    },
+    {
+      "assetId": 11,
+      "date": "2025-01",
+      "netWorth": 407113,
+      "inflow": 0,
+      "profit": 590
+    },
+    {
+      "assetId": 12,
+      "date": "2025-01",
+      "netWorth": -53836,
+      "inflow": -34304,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-02",
+      "netWorth": 30919,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-02",
+      "netWorth": 3232517,
+      "inflow": 0,
+      "profit": -392972
+    },
+    {
+      "assetId": 3,
+      "date": "2025-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-02",
+      "netWorth": 37268,
+      "inflow": 0,
+      "profit": 849
+    },
+    {
+      "assetId": 5,
+      "date": "2025-02",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-02",
+      "netWorth": 31280,
+      "inflow": 0,
+      "profit": -54
+    },
+    {
+      "assetId": 8,
+      "date": "2025-02",
+      "netWorth": 98255,
+      "inflow": -146092,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-02",
+      "netWorth": 1402364,
+      "inflow": 0,
+      "profit": 160
+    },
+    {
+      "assetId": 11,
+      "date": "2025-02",
+      "netWorth": 657048,
+      "inflow": 250000,
+      "profit": -65
+    },
+    {
+      "assetId": 12,
+      "date": "2025-02",
+      "netWorth": -14222,
+      "inflow": 39614,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2025-02",
+      "netWorth": 267877,
+      "inflow": 13950,
+      "profit": -6563
+    },
+    {
+      "assetId": 14,
+      "date": "2025-02",
+      "netWorth": 254925,
+      "inflow": -172108,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-02",
+      "netWorth": 302909,
+      "inflow": 10,
+      "profit": -2030
+    },
+    {
+      "assetId": 16,
+      "date": "2025-02",
+      "netWorth": 381132,
+      "inflow": -8201,
+      "profit": 343
+    },
+    {
+      "assetId": 17,
+      "date": "2025-02",
+      "netWorth": -233,
+      "inflow": -127,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-02",
+      "netWorth": 692353.17,
+      "inflow": 0,
+      "profit": 7121.17
+    },
+    {
+      "assetId": 19,
+      "date": "2025-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-03",
+      "netWorth": 30919,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-03",
+      "netWorth": 3716313.2,
+      "inflow": 346750,
+      "profit": 137046.2
+    },
+    {
+      "assetId": 3,
+      "date": "2025-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-03",
+      "netWorth": 28843,
+      "inflow": 0,
+      "profit": -8425
+    },
+    {
+      "assetId": 5,
+      "date": "2025-03",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-03",
+      "netWorth": 32552,
+      "inflow": 0,
+      "profit": 1272
+    },
+    {
+      "assetId": 8,
+      "date": "2025-03",
+      "netWorth": 104252,
+      "inflow": 5997,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-03",
+      "netWorth": 1409213,
+      "inflow": 0,
+      "profit": 6849
+    },
+    {
+      "assetId": 10,
+      "date": "2025-03",
+      "netWorth": 555487,
+      "inflow": 8468,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2025-03",
+      "netWorth": 151671,
+      "inflow": -103254,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-03",
+      "netWorth": 657849,
+      "inflow": 0,
+      "profit": 801
+    },
+    {
+      "assetId": 12,
+      "date": "2025-03",
+      "netWorth": -43963,
+      "inflow": -29741,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2025-03",
+      "netWorth": 386197,
+      "inflow": 113367,
+      "profit": 4953
+    },
+    {
+      "assetId": 16,
+      "date": "2025-03",
+      "netWorth": 420269,
+      "inflow": 39049,
+      "profit": 88
+    },
+    {
+      "assetId": 15,
+      "date": "2025-03",
+      "netWorth": 277397,
+      "inflow": -34560,
+      "profit": 9048
+    },
+    {
+      "assetId": 17,
+      "date": "2025-03",
+      "netWorth": -780,
+      "inflow": -547,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-03",
+      "netWorth": 720145,
+      "inflow": 0,
+      "profit": 27791.83
+    },
+    {
+      "assetId": 19,
+      "date": "2025-03",
+      "netWorth": -4832.6,
+      "inflow": -4832,
+      "profit": -0.6
+    },
+    {
+      "assetId": 1,
+      "date": "2025-04",
+      "netWorth": 30919,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-04",
+      "netWorth": 3461297.84,
+      "inflow": 292182,
+      "profit": -547197.36
+    },
+    {
+      "assetId": 3,
+      "date": "2025-04",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-04",
+      "netWorth": 25321,
+      "inflow": 0,
+      "profit": -3522
+    },
+    {
+      "assetId": 5,
+      "date": "2025-04",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-04",
+      "netWorth": 32591,
+      "inflow": 0,
+      "profit": 39
+    },
+    {
+      "assetId": 8,
+      "date": "2025-04",
+      "netWorth": 94285,
+      "inflow": -9967,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-04",
+      "netWorth": 1045429,
+      "inflow": -364000,
+      "profit": 216
+    },
+    {
+      "assetId": 10,
+      "date": "2025-02",
+      "netWorth": 547019,
+      "inflow": 8467,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2025-04",
+      "netWorth": 563956,
+      "inflow": 8469,
+      "profit": 0
+    },
+    {
+      "assetId": 14,
+      "date": "2025-04",
+      "netWorth": 212175,
+      "inflow": 60504,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2025-04",
+      "netWorth": 493337,
+      "inflow": 103457,
+      "profit": 3683
+    },
+    {
+      "assetId": 11,
+      "date": "2025-04",
+      "netWorth": 454350,
+      "inflow": -204448,
+      "profit": 949
+    },
+    {
+      "assetId": 12,
+      "date": "2025-04",
+      "netWorth": -63691,
+      "inflow": -19728,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-04",
+      "netWorth": 353075,
+      "inflow": 80252,
+      "profit": -4574
+    },
+    {
+      "assetId": 16,
+      "date": "2025-04",
+      "netWorth": 345075,
+      "inflow": -75606,
+      "profit": 412
+    },
+    {
+      "assetId": 17,
+      "date": "2025-04",
+      "netWorth": -582,
+      "inflow": 198,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-04",
+      "netWorth": 1035842,
+      "inflow": 327600,
+      "profit": -11903
+    },
+    {
+      "assetId": 19,
+      "date": "2025-04",
+      "netWorth": 36400,
+      "inflow": 41232,
+      "profit": 0.6
+    },
+    {
+      "assetId": 1,
+      "date": "2025-05",
+      "netWorth": 30919,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-05",
+      "netWorth": 2715468.59,
+      "inflow": -867943,
+      "profit": 122113.75
+    },
+    {
+      "assetId": 3,
+      "date": "2025-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-05",
+      "netWorth": 27826,
+      "inflow": 0,
+      "profit": 2505
+    },
+    {
+      "assetId": 5,
+      "date": "2025-05",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-05",
+      "netWorth": 32134,
+      "inflow": 0,
+      "profit": -457
+    },
+    {
+      "assetId": 8,
+      "date": "2025-05",
+      "netWorth": 140665,
+      "inflow": 46380,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-05",
+      "netWorth": 1047468.87,
+      "inflow": 0,
+      "profit": 2039.87
+    },
+    {
+      "assetId": 10,
+      "date": "2025-05",
+      "netWorth": 572423,
+      "inflow": 0,
+      "profit": 8467
+    },
+    {
+      "assetId": 11,
+      "date": "2025-05",
+      "netWorth": 454781,
+      "inflow": 0,
+      "profit": 431
+    },
+    {
+      "assetId": 13,
+      "date": "2025-05",
+      "netWorth": 592632,
+      "inflow": 103508,
+      "profit": -4213
+    },
+    {
+      "assetId": 14,
+      "date": "2025-05",
+      "netWorth": 53466,
+      "inflow": -158709,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2025-05",
+      "netWorth": -46112,
+      "inflow": 17579,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-05",
+      "netWorth": 264352,
+      "inflow": -80116,
+      "profit": -8607
+    },
+    {
+      "assetId": 16,
+      "date": "2025-05",
+      "netWorth": 440782,
+      "inflow": 94998,
+      "profit": 709
+    },
+    {
+      "assetId": 17,
+      "date": "2025-05",
+      "netWorth": -325,
+      "inflow": 257,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-05",
+      "netWorth": 1124821.67,
+      "inflow": 36350,
+      "profit": 52629.67
+    },
+    {
+      "assetId": 19,
+      "date": "2025-05",
+      "netWorth": 867934,
+      "inflow": 831534,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-06",
+      "netWorth": 30919,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-06",
+      "netWorth": 1958392.8,
+      "inflow": -1299247,
+      "profit": 542171.21
+    },
+    {
+      "assetId": 3,
+      "date": "2025-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-06",
+      "netWorth": 32665,
+      "inflow": 0,
+      "profit": 4839
+    },
+    {
+      "assetId": 5,
+      "date": "2025-06",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-06",
+      "netWorth": 32731,
+      "inflow": 0,
+      "profit": 597
+    },
+    {
+      "assetId": 8,
+      "date": "2025-06",
+      "netWorth": 16153,
+      "inflow": -124512,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-06",
+      "netWorth": 1041084,
+      "inflow": 0,
+      "profit": -6384.87
+    },
+    {
+      "assetId": 10,
+      "date": "2025-06",
+      "netWorth": 580892,
+      "inflow": 0,
+      "profit": 8469
+    },
+    {
+      "assetId": 15,
+      "date": "2025-06",
+      "netWorth": 251026,
+      "inflow": -12171,
+      "profit": -1155
+    },
+    {
+      "assetId": 16,
+      "date": "2025-06",
+      "netWorth": 808353,
+      "inflow": 367102,
+      "profit": 469
+    },
+    {
+      "assetId": 17,
+      "date": "2025-06",
+      "netWorth": -2616,
+      "inflow": -2291,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-06",
+      "netWorth": 456091,
+      "inflow": 0,
+      "profit": 1310
+    },
+    {
+      "assetId": 13,
+      "date": "2025-06",
+      "netWorth": 728061,
+      "inflow": 116288,
+      "profit": 19141
+    },
+    {
+      "assetId": 14,
+      "date": "2025-06",
+      "netWorth": 551408,
+      "inflow": 497942,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2025-06",
+      "netWorth": -65009,
+      "inflow": -18897,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-06",
+      "netWorth": 1146708,
+      "inflow": 0,
+      "profit": 21886.33
+    },
+    {
+      "assetId": 19,
+      "date": "2025-06",
+      "netWorth": 1299247,
+      "inflow": 431313,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-07",
+      "netWorth": 30934,
+      "inflow": 0,
+      "profit": 15
+    },
+    {
+      "assetId": 2,
+      "date": "2025-07",
+      "netWorth": 2723194.68,
+      "inflow": 424876,
+      "profit": 339925.88
+    },
+    {
+      "assetId": 3,
+      "date": "2025-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-07",
+      "netWorth": 32973,
+      "inflow": 0,
+      "profit": 308
+    },
+    {
+      "assetId": 5,
+      "date": "2025-07",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-07",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-07",
+      "netWorth": 33067,
+      "inflow": 0,
+      "profit": 336
+    },
+    {
+      "assetId": 8,
+      "date": "2025-07",
+      "netWorth": 478613,
+      "inflow": 462460,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-07",
+      "netWorth": 1293274.41,
+      "inflow": 252627,
+      "profit": -436.59
+    },
+    {
+      "assetId": 10,
+      "date": "2025-07",
+      "netWorth": 589361,
+      "inflow": 8469,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-07",
+      "netWorth": 510245,
+      "inflow": 250000,
+      "profit": 9219
+    },
+    {
+      "assetId": 16,
+      "date": "2025-07",
+      "netWorth": 562850,
+      "inflow": -246539,
+      "profit": 1036
+    },
+    {
+      "assetId": 17,
+      "date": "2025-07",
+      "netWorth": -9279,
+      "inflow": -6663,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-07",
+      "netWorth": 457474,
+      "inflow": 0,
+      "profit": 1383
+    },
+    {
+      "assetId": 13,
+      "date": "2025-07",
+      "netWorth": 1212154,
+      "inflow": 470015,
+      "profit": 14078
+    },
+    {
+      "assetId": 14,
+      "date": "2025-07",
+      "netWorth": 605191,
+      "inflow": 53783,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-07",
+      "netWorth": 1207836.69,
+      "inflow": 0,
+      "profit": 61128.69
+    },
+    {
+      "assetId": 19,
+      "date": "2025-07",
+      "netWorth": 0,
+      "inflow": -1299247,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-08",
+      "netWorth": 0,
+      "inflow": -30934,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-08",
+      "netWorth": 3058802.06,
+      "inflow": 0,
+      "profit": 335607.38
+    },
+    {
+      "assetId": 3,
+      "date": "2025-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-08",
+      "netWorth": 26739,
+      "inflow": -15000,
+      "profit": 8766
+    },
+    {
+      "assetId": 5,
+      "date": "2025-08",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-08",
+      "netWorth": 33955,
+      "inflow": 0,
+      "profit": 888
+    },
+    {
+      "assetId": 8,
+      "date": "2025-08",
+      "netWorth": 508673,
+      "inflow": 30060,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2025-08",
+      "netWorth": 605971,
+      "inflow": 16610,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-08",
+      "netWorth": 1299407.68,
+      "inflow": 0,
+      "profit": 6133.27
+    },
+    {
+      "assetId": 11,
+      "date": "2025-08",
+      "netWorth": 553983,
+      "inflow": 94281,
+      "profit": 2228
+    },
+    {
+      "assetId": 13,
+      "date": "2025-08",
+      "netWorth": 1360451,
+      "inflow": 125240,
+      "profit": 23057
+    },
+    {
+      "assetId": 14,
+      "date": "2025-08",
+      "netWorth": 317067,
+      "inflow": -288124,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2025-08",
+      "netWorth": -52651,
+      "inflow": 12358,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-08",
+      "netWorth": 743529,
+      "inflow": 220422,
+      "profit": 12862
+    },
+    {
+      "assetId": 16,
+      "date": "2025-08",
+      "netWorth": 334031,
+      "inflow": -228819,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2025-08",
+      "netWorth": -1115,
+      "inflow": 8164,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-08",
+      "netWorth": 1209830,
+      "inflow": 0,
+      "profit": 1993.31
+    },
+    {
+      "assetId": 19,
+      "date": "2025-08",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 3,
+      "date": "2025-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 5,
+      "date": "2025-09",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-09",
+      "netWorth": 26633,
+      "inflow": 0,
+      "profit": -106
+    },
+    {
+      "assetId": 8,
+      "date": "2025-09",
+      "netWorth": 211412,
+      "inflow": -297261,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-09",
+      "netWorth": 1297996.7,
+      "inflow": 0,
+      "profit": -1410.98
+    },
+    {
+      "assetId": 10,
+      "date": "2025-09",
+      "netWorth": 614439,
+      "inflow": 8468,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-09",
+      "netWorth": 554861,
+      "inflow": 0,
+      "profit": 878
+    },
+    {
+      "assetId": 13,
+      "date": "2025-09",
+      "netWorth": 1533341,
+      "inflow": 115720,
+      "profit": 57170
+    },
+    {
+      "assetId": 14,
+      "date": "2025-09",
+      "netWorth": 456818,
+      "inflow": 139751,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2025-09",
+      "netWorth": -10352,
+      "inflow": 42299,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-09",
+      "netWorth": 785882,
+      "inflow": 15082,
+      "profit": 27271
+    },
+    {
+      "assetId": 16,
+      "date": "2025-09",
+      "netWorth": 317383,
+      "inflow": -16648,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2025-09",
+      "netWorth": -1395,
+      "inflow": -280,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-09",
+      "netWorth": 1326489.45,
+      "inflow": 0,
+      "profit": 116659.45
+    },
+    {
+      "assetId": 2,
+      "date": "2025-09",
+      "netWorth": 3120846.3,
+      "inflow": 126664,
+      "profit": -64619.76
+    },
+    {
+      "assetId": 19,
+      "date": "2025-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-09",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-09",
+      "netWorth": 34637,
+      "inflow": 0,
+      "profit": 682
+    },
+    {
+      "assetId": 1,
+      "date": "2025-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-10",
+      "netWorth": 3816532.14,
+      "inflow": 488650,
+      "profit": 207035.84
+    },
+    {
+      "assetId": 3,
+      "date": "2025-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-10",
+      "netWorth": 26208,
+      "inflow": 0,
+      "profit": -425
+    },
+    {
+      "assetId": 5,
+      "date": "2025-10",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-10",
+      "netWorth": 35554,
+      "inflow": 0,
+      "profit": 917
+    },
+    {
+      "assetId": 8,
+      "date": "2025-10",
+      "netWorth": 208905,
+      "inflow": -2507,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-10",
+      "netWorth": 1298601.16,
+      "inflow": 0,
+      "profit": 604.46
+    },
+    {
+      "assetId": 10,
+      "date": "2025-10",
+      "netWorth": 623285,
+      "inflow": 8846,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-10",
+      "netWorth": 555574,
+      "inflow": 0,
+      "profit": 713
+    },
+    {
+      "assetId": 13,
+      "date": "2025-10",
+      "netWorth": 1582452,
+      "inflow": 63190,
+      "profit": -14079
+    },
+    {
+      "assetId": 14,
+      "date": "2025-10",
+      "netWorth": 395188,
+      "inflow": -61630,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2025-10",
+      "netWorth": -70571,
+      "inflow": -60219,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-10",
+      "netWorth": 871141,
+      "inflow": 108000,
+      "profit": -22741
+    },
+    {
+      "assetId": 16,
+      "date": "2025-10",
+      "netWorth": 218226,
+      "inflow": -99157,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2025-10",
+      "netWorth": -1099,
+      "inflow": 296,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-10",
+      "netWorth": 1453928.21,
+      "inflow": 0,
+      "profit": 127438.76
+    },
+    {
+      "assetId": 19,
+      "date": "2025-10",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-11",
+      "netWorth": 4169403,
+      "inflow": 0,
+      "profit": 352870.86
+    },
+    {
+      "assetId": 3,
+      "date": "2025-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-11",
+      "netWorth": 25450,
+      "inflow": 0,
+      "profit": -758
+    },
+    {
+      "assetId": 5,
+      "date": "2025-11",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-11",
+      "netWorth": 34976,
+      "inflow": 0,
+      "profit": -578
+    },
+    {
+      "assetId": 8,
+      "date": "2025-11",
+      "netWorth": 1582,
+      "inflow": -207323,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-11",
+      "netWorth": 1304692.2,
+      "inflow": 0,
+      "profit": 6091.04
+    },
+    {
+      "assetId": 10,
+      "date": "2025-11",
+      "netWorth": 631879,
+      "inflow": 8594,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-11",
+      "netWorth": 557631,
+      "inflow": 0,
+      "profit": 2057
+    },
+    {
+      "assetId": 13,
+      "date": "2025-11",
+      "netWorth": 1673765,
+      "inflow": 63809,
+      "profit": 27504
+    },
+    {
+      "assetId": 14,
+      "date": "2025-11",
+      "netWorth": 190513,
+      "inflow": -204675,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2025-11",
+      "netWorth": -55244,
+      "inflow": 15327,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2025-11",
+      "netWorth": 968063,
+      "inflow": 67281,
+      "profit": 29641
+    },
+    {
+      "assetId": 16,
+      "date": "2025-11",
+      "netWorth": 154981,
+      "inflow": -63245,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2025-11",
+      "netWorth": -1142,
+      "inflow": -43,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2025-11",
+      "netWorth": 1614354,
+      "inflow": 0,
+      "profit": 160425.79
+    },
+    {
+      "assetId": 19,
+      "date": "2025-11",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2025-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2025-12",
+      "netWorth": 3684955.92,
+      "inflow": 0,
+      "profit": -484447.08
+    },
+    {
+      "assetId": 3,
+      "date": "2025-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2025-12",
+      "netWorth": 22315,
+      "inflow": 0,
+      "profit": -3135
+    },
+    {
+      "assetId": 5,
+      "date": "2025-12",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2025-12",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2025-12",
+      "netWorth": 34301,
+      "inflow": 0,
+      "profit": -675
+    },
+    {
+      "assetId": 8,
+      "date": "2025-12",
+      "netWorth": 2270,
+      "inflow": 688,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2025-12",
+      "netWorth": 1297679.04,
+      "inflow": 0,
+      "profit": -7013.16
+    },
+    {
+      "assetId": 10,
+      "date": "2025-12",
+      "netWorth": 640437,
+      "inflow": 8558,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2025-12",
+      "netWorth": 557877,
+      "inflow": 0,
+      "profit": 246
+    },
+    {
+      "assetId": 13,
+      "date": "2025-12",
+      "netWorth": 1746842,
+      "inflow": 81564,
+      "profit": -8487
+    },
+    {
+      "assetId": 14,
+      "date": "2025-12",
+      "netWorth": 13810,
+      "inflow": -176703,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2026-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2026-01",
+      "netWorth": 4060721.07,
+      "inflow": 300762,
+      "profit": 75003.15
+    },
+    {
+      "assetId": 3,
+      "date": "2026-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2026-01",
+      "netWorth": 21375,
+      "inflow": 0,
+      "profit": -940
+    },
+    {
+      "assetId": 5,
+      "date": "2026-01",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2026-01",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2026-01",
+      "netWorth": 34123,
+      "inflow": 0,
+      "profit": -178
+    },
+    {
+      "assetId": 8,
+      "date": "2026-01",
+      "netWorth": 48769,
+      "inflow": 46499,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2026-01",
+      "netWorth": 1230446,
+      "inflow": 0,
+      "profit": -67233.04
+    },
+    {
+      "assetId": 10,
+      "date": "2026-01",
+      "netWorth": 649067,
+      "inflow": 8630,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2026-01",
+      "netWorth": 558848,
+      "inflow": 0,
+      "profit": 971
+    },
+    {
+      "assetId": 14,
+      "date": "2026-01",
+      "netWorth": 13827,
+      "inflow": 17,
+      "profit": 0
+    },
+    {
+      "assetId": 13,
+      "date": "2026-01",
+      "netWorth": 1733329,
+      "inflow": -6974,
+      "profit": -6539
+    },
+    {
+      "assetId": 15,
+      "date": "2026-01",
+      "netWorth": 1050886,
+      "inflow": 98000,
+      "profit": -15177
+    },
+    {
+      "assetId": 16,
+      "date": "2026-01",
+      "netWorth": 13863,
+      "inflow": -141118,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2026-01",
+      "netWorth": -21,
+      "inflow": 1121,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2026-01",
+      "netWorth": 1611183,
+      "inflow": 0,
+      "profit": -3171
+    },
+    {
+      "assetId": 12,
+      "date": "2026-01",
+      "netWorth": -83707,
+      "inflow": -28463,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2026-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2026-02",
+      "netWorth": 4125312.99,
+      "inflow": 0,
+      "profit": 64591.92
+    },
+    {
+      "assetId": 3,
+      "date": "2026-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2026-02",
+      "netWorth": 19741,
+      "inflow": 0,
+      "profit": -1634
+    },
+    {
+      "assetId": 5,
+      "date": "2026-02",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2026-02",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2026-02",
+      "netWorth": 34666,
+      "inflow": 0,
+      "profit": 543
+    },
+    {
+      "assetId": 11,
+      "date": "2026-02",
+      "netWorth": 562523,
+      "inflow": 0,
+      "profit": 3675
+    },
+    {
+      "assetId": 13,
+      "date": "2026-02",
+      "netWorth": 1666030,
+      "inflow": -113608,
+      "profit": 46309
+    },
+    {
+      "assetId": 14,
+      "date": "2026-02",
+      "netWorth": 114534,
+      "inflow": 100707,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2026-02",
+      "netWorth": -42250,
+      "inflow": 41457,
+      "profit": 0
+    },
+    {
+      "assetId": 8,
+      "date": "2026-02",
+      "netWorth": 34677,
+      "inflow": -14092,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2026-02",
+      "netWorth": 1284194.62,
+      "inflow": 0,
+      "profit": 53748.62
+    },
+    {
+      "assetId": 10,
+      "date": "2026-02",
+      "netWorth": 657661,
+      "inflow": 8594,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2026-02",
+      "netWorth": 1064871,
+      "inflow": 0,
+      "profit": 13985
+    },
+    {
+      "assetId": 16,
+      "date": "2026-02",
+      "netWorth": 9579,
+      "inflow": -4284,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2026-02",
+      "netWorth": -181,
+      "inflow": -160,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2026-02",
+      "netWorth": 1741823.91,
+      "inflow": 0,
+      "profit": 130640.91
+    },
+    {
+      "assetId": 1,
+      "date": "2026-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2026-03",
+      "netWorth": 3965298.97,
+      "inflow": 148612,
+      "profit": -308626.02
+    },
+    {
+      "assetId": 3,
+      "date": "2026-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2026-03",
+      "netWorth": 17883,
+      "inflow": 0,
+      "profit": -1858
+    },
+    {
+      "assetId": 5,
+      "date": "2026-03",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2026-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2026-03",
+      "netWorth": 34018,
+      "inflow": 0,
+      "profit": -648
+    },
+    {
+      "assetId": 9,
+      "date": "2026-03",
+      "netWorth": 1274430,
+      "inflow": 0,
+      "profit": -9764.62
+    },
+    {
+      "assetId": 8,
+      "date": "2026-03",
+      "netWorth": 104058,
+      "inflow": 69381,
+      "profit": 0
+    },
+    {
+      "assetId": 10,
+      "date": "2026-03",
+      "netWorth": 666255,
+      "inflow": 8594,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2026-03",
+      "netWorth": 562682,
+      "inflow": 0,
+      "profit": 159
+    },
+    {
+      "assetId": 13,
+      "date": "2026-03",
+      "netWorth": 1665865,
+      "inflow": 0,
+      "profit": -165
+    },
+    {
+      "assetId": 14,
+      "date": "2026-03",
+      "netWorth": 76548,
+      "inflow": -37986,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2026-03",
+      "netWorth": -30997,
+      "inflow": 11253,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2026-03",
+      "netWorth": 1068080,
+      "inflow": 0,
+      "profit": 3209
+    },
+    {
+      "assetId": 16,
+      "date": "2026-03",
+      "netWorth": 14222,
+      "inflow": 4643,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2026-03",
+      "netWorth": -370,
+      "inflow": -189,
+      "profit": 0
+    },
+    {
+      "assetId": 18,
+      "date": "2026-03",
+      "netWorth": 1648858.5,
+      "inflow": 0,
+      "profit": -92965.41
+    },
+    {
+      "assetId": 19,
+      "date": "2026-03",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 1,
+      "date": "2026-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2026-05",
+      "netWorth": 4817152.9,
+      "inflow": 389080,
+      "profit": 462773.93
+    },
+    {
+      "assetId": 3,
+      "date": "2026-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2026-05",
+      "netWorth": 19029,
+      "inflow": 0,
+      "profit": 1146
+    },
+    {
+      "assetId": 5,
+      "date": "2026-05",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2026-05",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2026-05",
+      "netWorth": 33498,
+      "inflow": 0,
+      "profit": -520
+    },
+    {
+      "assetId": 8,
+      "date": "2026-05",
+      "netWorth": 160255,
+      "inflow": 56197,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2026-05",
+      "netWorth": 1271990.2,
+      "inflow": 0,
+      "profit": -2439.8
+    },
+    {
+      "assetId": 10,
+      "date": "2026-05",
+      "netWorth": 683443,
+      "inflow": 17188,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2026-05",
+      "netWorth": 305346,
+      "inflow": -258665,
+      "profit": 1329
+    },
+    {
+      "assetId": 13,
+      "date": "2026-05",
+      "netWorth": 1656486,
+      "inflow": 0,
+      "profit": -9379
+    },
+    {
+      "assetId": 14,
+      "date": "2026-05",
+      "netWorth": 289418,
+      "inflow": 212870,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2026-05",
+      "netWorth": -9660,
+      "inflow": 0,
+      "profit": 21337
+    },
+    {
+      "assetId": 15,
+      "date": "2026-05",
+      "netWorth": 1065730,
+      "inflow": 0,
+      "profit": -2350
+    },
+    {
+      "assetId": 16,
+      "date": "2026-05",
+      "netWorth": 24895,
+      "inflow": 10673,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2026-05",
+      "netWorth": -8.9,
+      "inflow": 361,
+      "profit": 0.1
+    },
+    {
+      "assetId": 18,
+      "date": "2026-05",
+      "netWorth": 2281152.75,
+      "inflow": 0,
+      "profit": 632294.25
+    },
+    {
+      "assetId": 1,
+      "date": "2026-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 2,
+      "date": "2026-06",
+      "netWorth": 5080144,
+      "inflow": 0,
+      "profit": 262991.1
+    },
+    {
+      "assetId": 3,
+      "date": "2026-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 4,
+      "date": "2026-06",
+      "netWorth": 18509,
+      "inflow": 0,
+      "profit": -520
+    },
+    {
+      "assetId": 5,
+      "date": "2026-06",
+      "netWorth": 160,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 6,
+      "date": "2026-06",
+      "netWorth": 0,
+      "inflow": 0,
+      "profit": 0
+    },
+    {
+      "assetId": 7,
+      "date": "2026-06",
+      "netWorth": 32996,
+      "inflow": 0,
+      "profit": -502
+    },
+    {
+      "assetId": 8,
+      "date": "2026-06",
+      "netWorth": 178652,
+      "inflow": 18397,
+      "profit": 0
+    },
+    {
+      "assetId": 9,
+      "date": "2026-06",
+      "netWorth": 1266071.6,
+      "inflow": 0,
+      "profit": -5918.6
+    },
+    {
+      "assetId": 10,
+      "date": "2026-06",
+      "netWorth": 692037,
+      "inflow": 8594,
+      "profit": 0
+    },
+    {
+      "assetId": 11,
+      "date": "2026-06",
+      "netWorth": 305699,
+      "inflow": 0,
+      "profit": 353
+    },
+    {
+      "assetId": 13,
+      "date": "2026-06",
+      "netWorth": 1647809,
+      "inflow": 7500,
+      "profit": -16177
+    },
+    {
+      "assetId": 14,
+      "date": "2026-06",
+      "netWorth": 282016,
+      "inflow": -7402,
+      "profit": 0
+    },
+    {
+      "assetId": 12,
+      "date": "2026-06",
+      "netWorth": -27465,
+      "inflow": -17805,
+      "profit": 0
+    },
+    {
+      "assetId": 15,
+      "date": "2026-06",
+      "netWorth": 919721,
+      "inflow": -133826,
+      "profit": -12183
+    },
+    {
+      "assetId": 16,
+      "date": "2026-06",
+      "netWorth": 158647,
+      "inflow": 133752,
+      "profit": 0
+    },
+    {
+      "assetId": 17,
+      "date": "2026-06",
+      "netWorth": -45118,
+      "inflow": -45109,
+      "profit": -0.1
+    },
+    {
+      "assetId": 18,
+      "date": "2026-06",
+      "netWorth": 2484665.6,
+      "inflow": 0,
+      "profit": 203512.85
+    }
+  ],
+  "transactions": [
+    {
+      "id": 2024050000,
+      "date": "2024-05-01",
+      "type": "INCOME",
+      "value": 96074,
+      "cat": "工资",
+      "note": "一部分股票超出35%的收入"
+    },
+    {
+      "id": 2024050001,
+      "date": "2024-05-01",
+      "type": "INCOME",
+      "value": 8134,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024050002,
+      "date": "2024-05-01",
+      "type": "OUTLAY",
+      "value": 470,
+      "cat": "佣金",
+      "note": "跨境汇款"
+    },
+    {
+      "id": 2024060000,
+      "date": "2024-06-01",
+      "type": "INCOME",
+      "value": 31177,
+      "cat": "工资",
+      "note": ""
+    },
+    {
+      "id": 2024060001,
+      "date": "2024-06-01",
+      "type": "OUTLAY",
+      "value": 29330,
+      "cat": "租房",
+      "note": ""
+    },
+    {
+      "id": 2024070000,
+      "date": "2024-07-01",
+      "type": "INCOME",
+      "value": 29003,
+      "cat": "工资",
+      "note": ""
+    },
+    {
+      "id": 2024070001,
+      "date": "2024-07-01",
+      "type": "INCOME",
+      "value": 2400,
+      "cat": "卖二手",
+      "note": "小米笔记本"
+    },
+    {
+      "id": 2024070002,
+      "date": "2024-07-01",
+      "type": "INCOME",
+      "value": 2600,
+      "cat": "卖二手",
+      "note": "3080显卡"
+    },
+    {
+      "id": 2024070003,
+      "date": "2024-07-01",
+      "type": "INCOME",
+      "value": 14678,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024070004,
+      "date": "2024-07-01",
+      "type": "OUTLAY",
+      "value": 8400,
+      "cat": "大件消费品",
+      "note": "给老妈买冰箱"
+    },
+    {
+      "id": 2024070005,
+      "date": "2024-07-01",
+      "type": "OUTLAY",
+      "value": 5050,
+      "cat": "电子产品/游戏",
+      "note": "mac mini"
+    },
+    {
+      "id": 2024080000,
+      "date": "2024-08-01",
+      "type": "INCOME",
+      "value": 8134,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024080001,
+      "date": "2024-08-01",
+      "type": "INCOME",
+      "value": 16712,
+      "cat": "收入",
+      "note": ""
+    },
+    {
+      "id": 2024090000,
+      "date": "2024-09-01",
+      "type": "INCOME",
+      "value": 274141,
+      "cat": "ESPP",
+      "note": ""
+    },
+    {
+      "id": 2024090001,
+      "date": "2024-09-01",
+      "type": "INCOME",
+      "value": 8802,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024090002,
+      "date": "2024-09-01",
+      "type": "INCOME",
+      "value": 29301,
+      "cat": "收入",
+      "note": ""
+    },
+    {
+      "id": 2024090003,
+      "date": "2024-09-01",
+      "type": "OUTLAY",
+      "value": 29330,
+      "cat": "房租",
+      "note": ""
+    },
+    {
+      "id": 2024100000,
+      "date": "2024-10-01",
+      "type": "INCOME",
+      "value": 298373,
+      "cat": "RSU",
+      "note": ""
+    },
+    {
+      "id": 2024100001,
+      "date": "2024-10-01",
+      "type": "INCOME",
+      "value": 8469,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024100002,
+      "date": "2024-10-01",
+      "type": "OUTLAY",
+      "value": 1956,
+      "cat": "旅游",
+      "note": "泰山"
+    },
+    {
+      "id": 2024100003,
+      "date": "2024-10-01",
+      "type": "OUTLAY",
+      "value": 10495,
+      "cat": "电子产品/游戏",
+      "note": "笔记本电脑"
+    },
+    {
+      "id": 2024110000,
+      "date": "2024-11-01",
+      "type": "INCOME",
+      "value": 8468,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024110001,
+      "date": "2024-11-01",
+      "type": "OUTLAY",
+      "value": 13927,
+      "cat": "房租",
+      "note": ""
+    },
+    {
+      "id": 2024120000,
+      "date": "2024-12-01",
+      "type": "INCOME",
+      "value": -85893.94,
+      "cat": "补税",
+      "note": "补税"
+    },
+    {
+      "id": 2024120001,
+      "date": "2024-12-01",
+      "type": "INCOME",
+      "value": 23543,
+      "cat": "工资",
+      "note": ""
+    },
+    {
+      "id": 2024120002,
+      "date": "2024-12-01",
+      "type": "INCOME",
+      "value": 8467,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2024120003,
+      "date": "2024-12-01",
+      "type": "OUTLAY",
+      "value": 4800,
+      "cat": "大件消费品",
+      "note": "小牛nt电动车"
+    },
+    {
+      "id": 2024120004,
+      "date": "2024-12-01",
+      "type": "OUTLAY",
+      "value": 5500,
+      "cat": "大件消费品",
+      "note": "小米15 16+1T"
+    },
+    {
+      "id": 2024120005,
+      "date": "2024-12-01",
+      "type": "OUTLAY",
+      "value": 1380,
+      "cat": ",演出",
+      "note": "最后的泽野弘之"
+    },
+    {
+      "id": 2024120006,
+      "date": "2024-12-01",
+      "type": "OUTLAY",
+      "value": 798,
+      "cat": "电子产品/游戏",
+      "note": "二狗"
+    },
+    {
+      "id": 2025010000,
+      "date": "2025-01-01",
+      "type": "INCOME",
+      "value": 8469,
+      "cat": "公积金",
+      "note": ""
+    },
+    {
+      "id": 2025010001,
+      "date": "2025-01-01",
+      "type": "INCOME",
+      "value": 64358,
+      "cat": "工资",
+      "note": ""
+    },
+    {
+      "id": 2025010002,
+      "date": "2025-01-01",
+      "type": "INCOME",
+      "value": 317076,
+      "cat": "RSU",
+      "note": ""
+    },
+    {
+      "id": 2025010003,
+      "date": "2025-01-01",
+      "type": "OUTLAY",
+      "value": 37312,
+      "cat": "房租",
+      "note": ""
+    },
+    {
+      "id": 2025010004,
+      "date": "2025-01-01",
+      "type": "INCOME",
+      "value": 2434,
+      "cat": "大件消费品",
+      "note": "洗地机"
+    },
+    {
+      "id": 2025010005,
+      "date": "2025-01-01",
+      "type": "OUTLAY",
+      "value": 2389,
+      "cat": "大件消费品",
+      "note": "洗衣机"
+    },
+    {
+      "id": 2025010006,
+      "date": "2025-01-01",
+      "type": "OUTLAY",
+      "value": 805,
+      "cat": "大件消费品",
+      "note": "货拉拉搬家"
+    },
+    {
+      "id": 2025010007,
+      "date": "2025-01-01",
+      "type": "OUTLAY",
+      "value": 797,
+      "cat": "大件消费品",
+      "note": "桌子"
+    }
+  ],
+  "settings": {}
+}

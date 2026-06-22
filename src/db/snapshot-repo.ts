@@ -1,6 +1,7 @@
 import { getDatabase } from './database';
 import { listAssets } from './asset-repo';
 import { stampWrite, recordTombstones } from '../sync/stamp';
+import { bumpDirty } from '../sync/dirty';
 import type { CicadaDB } from './migrations';
 import type { AssetSnapshot, SnapshotWithAsset } from '../utils/types';
 
@@ -171,6 +172,7 @@ export async function upsertSnapshot(
       profit = excluded.profit,
       updated_at = excluded.updated_at
   `, [assetId, date, netWorth, inflow, profit, updatedAt]);
+  bumpDirty();
 }
 
 export async function deleteSnapshot(assetId: number, date: string): Promise<void> {
@@ -186,6 +188,7 @@ export async function deleteSnapshot(assetId: number, date: string): Promise<voi
   if (asset?.uuid) {
     await recordTombstones(db, 'snapshot', [`${asset.uuid}|${date}`]);
   }
+  bumpDirty();
 }
 
 export async function getDateRange(): Promise<{ start: string; end: string } | null> {

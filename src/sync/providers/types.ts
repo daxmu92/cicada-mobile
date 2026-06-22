@@ -36,6 +36,7 @@ export type HttpClient = (
 export interface SyncRemote {
   isConnected(): boolean;
   testConnection(): Promise<void>;                                   // throws on auth/network failure
-  read(): Promise<{ content: string; etag: string | null } | null>; // null if the file is absent (404)
+  read(opts?: { ifNoneMatch?: string }):
+    Promise<{ content: string; etag: string | null } | 'not-modified' | null>; // null = absent (404); 'not-modified' = 304
   write(content: string, pre: WritePrecondition): Promise<{ etag: string | null }>; // throws ConflictError on 412
 }

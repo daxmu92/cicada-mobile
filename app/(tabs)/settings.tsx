@@ -11,7 +11,6 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { resetDatabase } from '../../src/db/database';
 import { exportBackup, importBackup } from '../../src/services/backup';
 import { loadSampleData } from '../../src/services/sample-data';
 import { useSettings, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
@@ -62,16 +61,8 @@ export default function SettingsScreen() {
   const styles = useThemedStyles(makeStyles);
   const [loading, setLoading] = useState(false);
 
-  const confirmReset = async () => {
-    const ok = await confirmAsync(
-      t('settings.resetTitle'),
-      t('settings.resetBody'),
-      t('settings.resetConfirm'),
-      true
-    );
-    if (!ok) return;
-    await resetDatabase();
-    notify(t('settings.doneTitle'), t('settings.resetDone'));
+  const confirmReset = () => {
+    router.push('/modals/erase-data');
   };
 
   const confirmLoadSample = async () => {

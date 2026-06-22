@@ -223,6 +223,15 @@
     "themeSky": "天青白",
     "themeLilac": "藕荷白"
   },
+  "eraseData": {
+    "title": "清除所有数据",
+    "warningTitle": "此操作不可撤销",
+    "warningBody": "清除将永久删除本设备、云端及所有已同步设备上的全部账户、资产、快照和交易记录。此操作无法恢复。",
+    "resetSettingsLabel": "同时将应用设置恢复为默认值",
+    "confirm": "清除所有数据",
+    "doneTitle": "数据已清除",
+    "doneBody": "所有数据已永久删除，更改已推送至云端。"
+  },
   "charts": {
     "noData": "暂无数据",
     "noDataToDisplay": "暂无数据显示",

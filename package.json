@@ -19,7 +19,7 @@
     "build:windows": "bash scripts/build-windows.sh",
     "lint": "expo lint",
     "screenshot": "node scripts/dev-screenshot.mjs",
-    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts src/utils/date.test.ts src/utils/composition.test.ts"
+    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts src/utils/date.test.ts src/utils/composition.test.ts src/sync/tombstone.test.ts src/sync/erase.test.ts src/sync/debounce.test.ts src/sync/scheduler.test.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

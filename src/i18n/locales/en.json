@@ -223,6 +223,15 @@
     "themeSky": "Sky",
     "themeLilac": "Lilac"
   },
+  "eraseData": {
+    "title": "Erase All Data",
+    "warningTitle": "This action is irreversible",
+    "warningBody": "Erasing will permanently delete all accounts, assets, snapshots, and transactions from this device, the cloud, and every other synced device. This cannot be undone.",
+    "resetSettingsLabel": "Also reset app settings to defaults",
+    "confirm": "Erase All Data",
+    "doneTitle": "Data Erased",
+    "doneBody": "All data has been permanently deleted and the change has been pushed to the cloud."
+  },
   "charts": {
     "noData": "No data",
     "noDataToDisplay": "No data to display",

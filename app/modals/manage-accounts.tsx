@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +13,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { confirmAsync, notify } from '../../src/utils/dialog';
 import {
   createAccount,
   deleteAccount,
@@ -71,44 +71,32 @@ export default function ManageAccountsModal() {
       loadData();
     } catch (e) {
       const message = e instanceof Error ? e.message : t('manageAccounts.createAccountFailed');
-      Alert.alert(t('common.error'), message);
+      notify(t('common.error'), message);
     }
   };
 
-  const removeAccount = (acc: Account) => {
-    Alert.alert(
+  const removeAccount = async (acc: Account) => {
+    const ok = await confirmAsync(
       t('manageAccounts.deleteAccountTitle'),
       t('manageAccounts.deleteAccountBody', { name: acc.name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            await deleteAccount(acc.id);
-            if (selectedAccountId === acc.id) setSelectedAccountId(null);
-            loadData();
-          },
-        },
-      ]
+      t('common.delete'),
+      true
     );
+    if (!ok) return;
+    await deleteAccount(acc.id);
+    if (selectedAccountId === acc.id) setSelectedAccountId(null);
+    loadData();
   };
 
-  const archiveAccount = (acc: Account) => {
-    Alert.alert(
+  const archiveAccount = async (acc: Account) => {
+    const ok = await confirmAsync(
       t('manageAccounts.archiveAccountTitle'),
       t('manageAccounts.archiveAccountBody', { name: acc.name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.archive'),
-          onPress: async () => {
-            await setAccountArchived(acc.id, true);
-            loadData();
-          },
-        },
-      ]
+      t('common.archive')
     );
+    if (!ok) return;
+    await setAccountArchived(acc.id, true);
+    loadData();
   };
 
   const unarchiveAccount = async (acc: Account) => {
@@ -130,7 +118,7 @@ export default function ManageAccountsModal() {
       loadData();
     } catch (e) {
       const message = e instanceof Error ? e.message : t('manageAccounts.createAssetFailed');
-      Alert.alert(t('common.error'), message);
+      notify(t('common.error'), message);
     }
   };
 

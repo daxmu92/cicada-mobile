@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +13,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { confirmAsync, notify } from '../../src/utils/dialog';
 import {
   createTransaction,
   deleteTransaction,
@@ -100,7 +100,7 @@ export default function AddTransactionModal() {
   const submit = async () => {
     const v = parseFloat(value);
     if (isNaN(v) || v <= 0) {
-      Alert.alert(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
+      notify(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
       return;
     }
     if (editingId) {
@@ -111,19 +111,17 @@ export default function AddTransactionModal() {
     router.back();
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!editingId) return;
-    Alert.alert(t('addTransaction.deleteTitle'), t('addTransaction.deleteBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          await deleteTransaction(editingId);
-          router.back();
-        },
-      },
-    ]);
+    const ok = await confirmAsync(
+      t('addTransaction.deleteTitle'),
+      t('addTransaction.deleteBody'),
+      t('common.delete'),
+      true
+    );
+    if (!ok) return;
+    await deleteTransaction(editingId);
+    router.back();
   };
 
   return (

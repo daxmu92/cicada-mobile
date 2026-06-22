@@ -2,7 +2,10 @@ import { createAccount } from '../db/account-repo';
 import { createAsset } from '../db/asset-repo';
 import { upsertSnapshot } from '../db/snapshot-repo';
 import { createTransaction } from '../db/tran-repo';
-import { resetDatabase } from '../db/database';
+import { getDatabase } from '../db/database';
+import { eraseAllData } from '../sync/erase';
+import { tick } from '../sync/clock';
+import { syncScheduler } from '../sync/scheduler';
 import { currentYearMonth, prevYearMonth } from '../utils/date';
 
 type SampleAsset = {
@@ -92,7 +95,8 @@ export async function loadSampleData(options: {
 } = {}): Promise<void> {
   const { monthsOfHistory = 24, transactionsPerMonth = 12 } = options;
 
-  await resetDatabase();
+  const db = await getDatabase();
+  await eraseAllData(db, { tick });
 
   // Create accounts
   const accountIds = new Map<string, number>();
@@ -146,4 +150,6 @@ export async function loadSampleData(options: {
       }
     }
   }
+  syncScheduler.markDirty();
+  await syncScheduler.requestSync('manual').catch(() => {});
 }

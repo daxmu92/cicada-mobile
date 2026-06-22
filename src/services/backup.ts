@@ -3,9 +3,11 @@ import { File, Paths } from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
-import { getDatabase, resetDatabase } from '../db/database';
+import { getDatabase } from '../db/database';
 import { tick } from '../sync/clock';
 import { buildBackupDoc, parseBackup, restoreBackupDoc, type ImportCounts } from './backup-core';
+import { eraseAllData } from '../sync/erase';
+import { syncScheduler } from '../sync/scheduler';
 
 // ---------------------------------------------------------------------------
 // Web (browser / Tauri webview) file I/O
@@ -110,8 +112,12 @@ export async function importBackup(): Promise<ImportCounts> {
   }
 
   const parsed = parseBackup(content);
-  await resetDatabase();
+  await syncScheduler.requestSync('manual').catch(() => {}); // pre-sync: advance clock past the cloud
   const db = await getDatabase();
-  const freshStamp = await tick();
-  return restoreBackupDoc(db, parsed, { freshStamp });
+  await eraseAllData(db, { tick }); // tombstone everything currently present
+  const freshStamp = await tick();  // newer than the tombstones just written
+  const counts = await restoreBackupDoc(db, parsed, { freshStamp, restamp: true });
+  syncScheduler.markDirty();
+  await syncScheduler.requestSync('manual').catch(() => {}); // push tombstones + the restamped import
+  return counts;
 }

@@ -78,15 +78,18 @@ export function parseBackup(content: string): BackupFile {
 export async function restoreBackupDoc(
   db: CicadaDB,
   parsed: BackupFile,
-  opts: { freshStamp: string }
+  opts: { freshStamp: string; restamp?: boolean }
 ): Promise<ImportCounts> {
   const v = parsed.version;
+  const stampOf = (backupStamp?: string) =>
+    opts.restamp ? opts.freshStamp : (backupStamp ?? opts.freshStamp);
+
   await db.withTransactionAsync(async () => {
     for (const acc of parsed.accounts) {
       const archived = v < 2 ? 0 : acc.archived ?? 0;
       if (v >= 3 && acc.uuid) {
         await db.runAsync('INSERT INTO account (id, name, archived, uuid, updated_at) VALUES (?, ?, ?, ?, ?)',
-          [acc.id, acc.name, archived, acc.uuid, acc.updated_at ?? opts.freshStamp]);
+          [acc.id, acc.name, archived, acc.uuid, stampOf(acc.updated_at)]);
       } else {
         await db.runAsync('INSERT INTO account (id, name, archived) VALUES (?, ?, ?)', [acc.id, acc.name, archived]);
       }
@@ -95,16 +98,16 @@ export async function restoreBackupDoc(
       const archived = v < 2 ? 0 : a.archived ?? 0;
       if (v >= 3 && a.uuid) {
         await db.runAsync('INSERT INTO asset (id, account_id, name, categories, archived, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [a.id, a.accountId, a.name, a.categories ?? '{}', archived, a.uuid, a.updated_at ?? opts.freshStamp]);
+          [a.id, a.accountId, a.name, a.categories ?? '{}', archived, a.uuid, stampOf(a.updated_at)]);
       } else {
         await db.runAsync('INSERT INTO asset (id, account_id, name, categories, archived) VALUES (?, ?, ?, ?, ?)',
           [a.id, a.accountId, a.name, a.categories ?? '{}', archived]);
       }
     }
     for (const s of parsed.snapshots) {
-      if (v >= 3 && s.updated_at) {
+      if ((v >= 3 && s.updated_at) || opts.restamp) {
         await db.runAsync('INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-          [s.assetId, s.date, s.netWorth, s.inflow, s.profit, s.updated_at]);
+          [s.assetId, s.date, s.netWorth, s.inflow, s.profit, stampOf(s.updated_at)]);
       } else {
         await db.runAsync('INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit) VALUES (?, ?, ?, ?, ?)',
           [s.assetId, s.date, s.netWorth, s.inflow, s.profit]);
@@ -113,7 +116,7 @@ export async function restoreBackupDoc(
     for (const t of parsed.transactions) {
       if (v >= 3 && t.uuid) {
         await db.runAsync('INSERT INTO tran (id, date, type, value, cat, note, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [t.id, t.date, t.type, t.value, t.cat ?? '', t.note ?? '', t.uuid, t.updated_at ?? opts.freshStamp]);
+          [t.id, t.date, t.type, t.value, t.cat ?? '', t.note ?? '', t.uuid, stampOf(t.updated_at)]);
       } else {
         await db.runAsync('INSERT INTO tran (id, date, type, value, cat, note) VALUES (?, ?, ?, ?, ?, ?)',
           [t.id, t.date, t.type, t.value, t.cat ?? '', t.note ?? '']);
@@ -126,7 +129,7 @@ export async function restoreBackupDoc(
         await db.runAsync(
           `INSERT INTO setting (key, value, updated_at) VALUES (?, ?, ?)
            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-          [s.key, String(s.value), s.updated_at ?? opts.freshStamp]
+          [s.key, String(s.value), stampOf(s.updated_at)]
         );
       }
     } else if (parsed.settings) {

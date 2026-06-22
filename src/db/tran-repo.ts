@@ -1,5 +1,6 @@
 import { getDatabase } from './database';
 import { stampWrite, recordTombstones } from '../sync/stamp';
+import { bumpDirty } from '../sync/dirty';
 import type { Transaction, TranType } from '../utils/types';
 
 type TranRow = {
@@ -59,6 +60,7 @@ export async function createTransaction(
     'INSERT INTO tran (date, type, value, cat, note, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [date, type, value, cat, note, uuid, updatedAt]
   );
+  bumpDirty();
   return result.lastInsertRowId;
 }
 
@@ -76,6 +78,7 @@ export async function updateTransaction(
     'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE id = ?',
     [date, type, value, cat, note, updatedAt, id]
   );
+  bumpDirty();
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
@@ -88,6 +91,7 @@ export async function deleteTransaction(id: number): Promise<void> {
   if (tran?.uuid) {
     await recordTombstones(db, 'tran', [tran.uuid]);
   }
+  bumpDirty();
 }
 
 export async function getAllTags(): Promise<string[]> {

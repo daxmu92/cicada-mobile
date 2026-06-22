@@ -4,7 +4,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -17,9 +16,7 @@ import {
 } from '../sync/credentials';
 import { createConfiguredRemote } from '../sync/remote';
 import { type WebDavConfig } from '../sync/providers/webdav';
-import { AuthError } from '../sync/providers/types';
 import {
-  syncNow as runSyncNow,
   overwriteCloud as runOverwriteCloud,
   LAST_SYNCED_KEY,
   SYNC_IN_PROGRESS_KEY,
@@ -27,6 +24,8 @@ import {
 import { getSyncState, setSyncState } from '../sync/sync-state-repo';
 import { getDatabase } from '../db/database';
 import { cascadeRepair } from '../sync/apply';
+import { syncScheduler } from '../sync/scheduler';
+import { AuthError } from '../sync/providers/types';
 
 export type SyncStatus = 'idle' | 'syncing' | 'ok' | 'offline' | 'authError' | 'error';
 
@@ -71,7 +70,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SyncStatus>('idle');
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
-  const inFlight = useRef(false);
 
   const refreshMeta = useCallback(async () => {
     const creds = await loadCredentials();
@@ -80,31 +78,21 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     setLastSyncedAt(raw ? Number(raw) : null);
   }, []);
 
-  const doSync = useCallback(async () => {
-    if (!available || inFlight.current) return;
-    if ((await loadCredentials()) === null) return;
-    inFlight.current = true;
-    setStatus('syncing');
-    setLastError(null);
-    try {
-      await runSyncNow();
-      setStatus('ok');
-    } catch (e) {
-      const { status: s, message } = classify(e);
-      setStatus(s);
-      setLastError(message);
-    } finally {
-      inFlight.current = false;
-      await refreshMeta().catch(() => {});
-    }
-  }, [available, refreshMeta]);
+  // Subscribe to scheduler status/error updates.
+  useEffect(() => {
+    const unsub = syncScheduler.subscribe((s) => {
+      setStatus(s.status);
+      setLastError(s.lastError);
+      if (s.status === 'ok') void refreshMeta();
+    });
+    return unsub;
+  }, [refreshMeta]);
 
-  // Launch trigger + load persisted meta.
+  // Launch trigger: crash-recovery, load persisted meta, then start scheduler.
   useEffect(() => {
     if (!available) return;
+    let cancelled = false;
     (async () => {
-      // Crash recovery: a set flag means a prior apply was interrupted
-      // (Tauri non-atomic). Repair orphans, clear the flag, then sync normally.
       try {
         if ((await getSyncState(SYNC_IN_PROGRESS_KEY)) === '1') {
           const db = await getDatabase();
@@ -115,18 +103,38 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         // recovery is best-effort; never block startup
       }
       await refreshMeta();
-      await doSync();
+      if (cancelled) return;
+      syncScheduler.start();
+      void syncScheduler.requestSync('launch');
     })();
-  }, [available, refreshMeta, doSync]);
+    return () => {
+      cancelled = true;
+      syncScheduler.stop();
+    };
+  }, [available, refreshMeta]);
 
-  // Foreground trigger (debounced via the in-flight guard).
+  // Lifecycle triggers: RN AppState (mobile) + DOM visibility/blur (web + Tauri desktop).
   useEffect(() => {
     if (!available) return;
     const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
-      if (s === 'active') void doSync();
+      if (s === 'active') void syncScheduler.requestSync('lifecycle');
     });
-    return () => sub.remove();
-  }, [available, doSync]);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void syncScheduler.requestSync('lifecycle');
+    };
+    const onHide = () => { void syncScheduler.requestSync('lifecycle'); };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisible);
+      window.addEventListener('blur', onHide);
+    }
+    return () => {
+      sub.remove();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisible);
+        window.removeEventListener('blur', onHide);
+      }
+    };
+  }, [available]);
 
   const testConnection = useCallback(async (config: WebDavConfig) => {
     await createConfiguredRemote(config).testConnection(); // throws on failure
@@ -136,8 +144,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     await createConfiguredRemote(config).testConnection(); // verify before persisting
     await saveCredentials(config);
     setConnected(true);
-    await doSync();
-  }, [doSync]);
+    void syncScheduler.requestSync('manual');
+  }, []);
 
   const disconnect = useCallback(async () => {
     await clearCredentials();
@@ -147,8 +155,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const overwriteCloud = useCallback(async () => {
-    if (!available || inFlight.current) return;
-    inFlight.current = true;
+    // Escape hatch: bypass scheduler, call the engine directly with its own guard.
     setStatus('syncing');
     setLastError(null);
     try {
@@ -159,10 +166,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setStatus(s);
       setLastError(message);
     } finally {
-      inFlight.current = false;
       await refreshMeta().catch(() => {});
     }
-  }, [available, refreshMeta]);
+  }, [refreshMeta]);
 
   return (
     <SyncContext.Provider
@@ -175,7 +181,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         testConnection,
         connect,
         disconnect,
-        syncNow: doSync,
+        syncNow: () => syncScheduler.requestSync('manual'),
         overwriteCloud,
       }}>
       {children}

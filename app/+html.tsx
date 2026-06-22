@@ -1,15 +1,26 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 
-// Registers the PWA service worker once the page has loaded. Injected as a raw
-// <script> because this document is rendered to static HTML at build time.
+// Registers the PWA service worker on web; unregisters any leftover SW on Tauri
+// desktop (where assets are embedded in the exe — a SW only serves a stale bundle
+// after a rebuild). Injected as a raw <script> because this document is rendered
+// to static HTML at build time.
 const swRegister = `
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/sw.js').catch(function (err) {
-      console.warn('Service worker registration failed:', err);
+  if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
+    // Desktop (Tauri): assets are embedded in the app; a service worker only
+    // serves a STALE bundle after a rebuild. Unregister any leftover SW so
+    // existing desktop installs self-heal on next launch.
+    navigator.serviceWorker.getRegistrations().then(function (rs) {
+      rs.forEach(function (r) { r.unregister(); });
+    }).catch(function () {});
+  } else {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (err) {
+        console.warn('SW registration failed', err);
+      });
     });
-  });
+  }
 }`;
 
 /**

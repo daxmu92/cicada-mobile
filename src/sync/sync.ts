@@ -13,6 +13,7 @@ import { ConflictError, type SyncRemote, type WritePrecondition } from './provid
 
 export const LAST_SYNCED_KEY = 'cloud_last_synced_at';
 export const SYNC_IN_PROGRESS_KEY = 'sync_in_progress';
+export const CLOUD_ETAG_KEY = 'cloud_etag';
 
 export const TOMBSTONE_RETENTION_DAYS = 90;
 const DAY_MS = 86_400_000;
@@ -55,10 +56,11 @@ export type RunSyncDeps = {
   receiveRemote: (remoteHlc: string) => Promise<void>;
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
+  conditionalEtag?: string;
 };
 
 export type SyncOutcome = {
-  status: 'seeded' | 'merged';
+  status: 'seeded' | 'merged' | 'unchanged';
   suffixed: string[];
 };
 
@@ -81,6 +83,22 @@ function backoffMs(attempt: number): number {
   return 200 * 2 ** (attempt - 1) + Math.floor(Math.random() * 100);
 }
 
+/** Stable key for data-content comparison — omits mutable metadata (generatedAt/generatedBy).
+ *  Rows are sorted by their merge key so the fingerprint is ORDER-INDEPENDENT: two devices
+ *  with identical data but different SELECT row-order still produce the same hash. */
+function dataFingerprint(doc: SyncDocument): string {
+  const sorted = <T>(arr: readonly T[], key: (r: T) => string): T[] =>
+    [...arr].sort((a, b) => { const ka = key(a), kb = key(b); return ka < kb ? -1 : ka > kb ? 1 : 0; });
+  return JSON.stringify({
+    account: sorted(doc.tables.account, (r) => r.uuid),
+    asset: sorted(doc.tables.asset, (r) => r.uuid),
+    snapshot: sorted(doc.tables.snapshot, (r) => `${r.assetUuid}|${r.date}`),
+    tran: sorted(doc.tables.tran, (r) => r.uuid),
+    setting: sorted(doc.tables.setting, (r) => r.key),
+    tombstones: sorted(doc.tombstones, (t) => `${t.entity}|${t.uuid}`),
+  });
+}
+
 function assertCompatible(doc: SyncDocument): void {
   if (doc.enc !== 'none') {
     throw new UnsupportedRemoteError(`remote document is encrypted (enc="${doc.enc}") — please update the app`);
@@ -100,20 +118,30 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
   const buildLocal = () =>
     buildDocument(db, { generatedBy: deviceId, generatedAt: new Date(now()).toISOString() });
 
-  let pulled = await remote.read();
+  // Initial read — conditional when the caller knows local is clean.
+  const firstRaw = await remote.read(deps.conditionalEtag ? { ifNoneMatch: deps.conditionalEtag } : undefined);
+  if (firstRaw === 'not-modified') {
+    const t = now();
+    await setState(LAST_SYNCED_KEY, String(t));
+    return { status: 'unchanged', suffixed: [] };
+  }
+  let pulled = firstRaw; // { content, etag } | null
 
   // Seed an empty remote. ifNoneMatch is the only path that MKCOLs the folder.
   if (pulled === null) {
     try {
-      await remote.write(serializeDocument(await buildLocal()), { kind: 'ifNoneMatch' });
+      const seeded = await remote.write(serializeDocument(await buildLocal()), { kind: 'ifNoneMatch' });
       const t = now();
       await setState(LAST_SYNCED_KEY, String(t));
+      if (seeded.etag) await setState(CLOUD_ETAG_KEY, seeded.etag);
       await gcTombstones(db, t);
       return { status: 'seeded', suffixed: [] };
     } catch (e) {
       if (!(e instanceof ConflictError)) throw e;
       // Another device seeded between our read and write — fall through to merge.
-      pulled = await remote.read();
+      const reRaw = await remote.read();
+      if (reRaw === 'not-modified') throw new Error('unexpected 304 on unconditional retry read');
+      pulled = reRaw;
       if (pulled === null) throw new Error('remote vanished after create conflict');
     }
   }
@@ -130,15 +158,28 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     if (max) await receiveRemote(max);
 
     // Rebuild AFTER apply so we push the canonical merged local state.
-    const outDoc = serializeDocument(await buildLocal());
+    const localDoc = await buildLocal();
+    const outDoc = serializeDocument(localDoc);
+    if (pulled.etag) await setState(CLOUD_ETAG_KEY, pulled.etag);
+
+    if (dataFingerprint(localDoc) === dataFingerprint(remoteDoc)) {
+      // Cloud already holds exactly this data — no upload needed.
+      const t = now();
+      await setState(LAST_SYNCED_KEY, String(t));
+      await setState(SYNC_IN_PROGRESS_KEY, '0');
+      await gcTombstones(db, t);
+      return { status: 'unchanged', suffixed: applied.suffixed };
+    }
+
     const pre: WritePrecondition = pulled.etag
       ? { kind: 'ifMatch', etag: pulled.etag }
       : { kind: 'none' };
 
     try {
-      await remote.write(outDoc, pre);
+      const written = await remote.write(outDoc, pre);
       const t = now();
       await setState(LAST_SYNCED_KEY, String(t));
+      if (written.etag) await setState(CLOUD_ETAG_KEY, written.etag);
       await setState(SYNC_IN_PROGRESS_KEY, '0');
       await gcTombstones(db, t);
       return { status: 'merged', suffixed: applied.suffixed };
@@ -146,9 +187,10 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
       if (e instanceof ConflictError && attempt < maxRetries) {
         attempt++;
         await sleep(backoffMs(attempt));
-        const re = await remote.read();
-        if (re === null) throw new Error('remote vanished during retry');
-        pulled = re;
+        const reRaw = await remote.read();
+        if (reRaw === 'not-modified') throw new Error('unexpected 304 on unconditional retry read');
+        if (reRaw === null) throw new Error('remote vanished during retry');
+        pulled = reRaw;
         continue;
       }
       throw e;
@@ -156,9 +198,11 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
   }
 }
 
-/** Run a full sync against the configured remote. Returns null if sync is
- *  unavailable on this platform or no credentials are stored. */
-export async function syncNow(): Promise<SyncOutcome | null> {
+/** Run a sync against the configured remote with explicit mode.
+ *  'conditional' passes the stored ETag so the remote can return 304 if unchanged.
+ *  'full' always fetches the full document.
+ *  Returns null if sync is unavailable on this platform or no credentials are stored. */
+export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcome | null> {
   // Dynamic imports keep platform-specific modules (react-native, expo-secure-store,
   // expo-sqlite) out of the module graph at test time.
   const [{ isSyncAvailable }, { loadRemote }, { getDatabase }, { getDeviceId }, { getSyncState, setSyncState }, { receiveRemote: recv }] =
@@ -175,6 +219,7 @@ export async function syncNow(): Promise<SyncOutcome | null> {
   if (!remote) return null;
   const db = await getDatabase();
   const deviceId = await getDeviceId();
+  const conditionalEtag = mode === 'conditional' ? (await getSyncState(CLOUD_ETAG_KEY)) ?? undefined : undefined;
   return runSync({
     db,
     remote,
@@ -183,8 +228,13 @@ export async function syncNow(): Promise<SyncOutcome | null> {
     getState: getSyncState,
     setState: setSyncState,
     receiveRemote: recv,
+    conditionalEtag,
   });
 }
+
+/** Run a full sync against the configured remote. Returns null if sync is
+ *  unavailable on this platform or no credentials are stored. */
+export const syncNow = (): Promise<SyncOutcome | null> => syncOnce('full');
 
 /** Discard the remote document and replace it with this device's state.
  *  The corrupt-remote / first-connect "Replace" escape hatch (spec §8). */

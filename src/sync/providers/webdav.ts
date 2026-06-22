@@ -54,8 +54,11 @@ export function createWebDavRemote(config: WebDavConfig, http: HttpClient): Sync
       }
     },
 
-    async read(): Promise<{ content: string; etag: string | null } | null> {
-      const res = await http(fileUrl, { method: 'GET', headers: authHeaders() });
+    async read(opts?: { ifNoneMatch?: string }): Promise<{ content: string; etag: string | null } | 'not-modified' | null> {
+      const headers = authHeaders();
+      if (opts?.ifNoneMatch) headers['If-None-Match'] = opts.ifNoneMatch;
+      const res = await http(fileUrl, { method: 'GET', headers });
+      if (res.status === 304) return 'not-modified';
       if (res.status === 404) return null;
       if (res.status === 401) throw new AuthError();
       if (!ok(res.status)) {

@@ -4,8 +4,10 @@ import { makeMigratedDb } from './test-support/sqlite';
 import { buildDocument, serializeDocument, parseDocument, type SyncDocument } from './document';
 import { ConflictError } from './providers/types';
 import type { SyncRemote, WritePrecondition } from './providers/types';
-import { runSync, maxRemoteStamp, gcTombstones, TOMBSTONE_RETENTION_DAYS, SYNC_IN_PROGRESS_KEY } from './sync';
+import { runSync, maxRemoteStamp, gcTombstones, TOMBSTONE_RETENTION_DAYS, SYNC_IN_PROGRESS_KEY, CLOUD_ETAG_KEY } from './sync';
 import type { CicadaDB } from '../db/migrations';
+import { eraseAllData } from './erase';
+import { restoreBackupDoc } from '../services/backup-core';
 
 // ---- in-memory fake remote -------------------------------------------------
 function makeFakeRemote(opts: { honorIfMatch?: boolean; returnEtag?: boolean } = {}) {
@@ -17,7 +19,11 @@ function makeFakeRemote(opts: { honorIfMatch?: boolean; returnEtag?: boolean } =
   const remote: SyncRemote & { _content(): string | null; _seed(c: string): void } = {
     isConnected: () => true,
     testConnection: async () => {},
-    read: async () => (content === null ? null : { content, etag: etag() }),
+    read: async (opts?: { ifNoneMatch?: string }) => {
+      if (content === null) return null;
+      if (opts?.ifNoneMatch && opts.ifNoneMatch === etag()) return 'not-modified';
+      return { content, etag: etag() };
+    },
     write: async (c: string, pre: WritePrecondition) => {
       if (pre.kind === 'ifNoneMatch' && content !== null && honor) throw new ConflictError();
       if (pre.kind === 'ifMatch' && honor && pre.etag !== etag()) throw new ConflictError();
@@ -223,4 +229,145 @@ test('runSync leaves sync_in_progress set when the push ultimately fails', async
   await assert.rejects(() => runSync({ ...deps, maxRetries: 1 }));
   const flag = await deps.getState(SYNC_IN_PROGRESS_KEY);
   assert.equal(flag, '1'); // left set so the next launch recovers
+});
+
+// A monotonic tick that sorts AFTER any HLC(n,*) the tests use below.
+function tickFrom(start: number, dev: string) {
+  let n = start;
+  return { tick: async () => HLC(n++, dev) };
+}
+
+test('erase propagates: device that erases empties the cloud of live data', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  await runSync(depsFor(db, remote, 'aaaaaa').deps); // seed cloud with {Cash}
+
+  await eraseAllData(db, tickFrom(100, 'aaaaaa')); // tombstone + delete locally
+  await runSync(depsFor(db, remote, 'aaaaaa', 2_000_000).deps); // push tombstone
+
+  const pushed = parseDocument(remote._content()!);
+  assert.equal(pushed.tables.account.length, 0, 'no live accounts in cloud');
+  assert.equal(pushed.tombstones.length, 1, 'tombstone present in cloud');
+});
+
+test('erase propagates to a second device on its next sync', async () => {
+  const { db: dbA } = await makeMigratedDb();
+  const { db: dbB } = await makeMigratedDb();
+  await addAccount(dbA, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  await runSync(depsFor(dbA, remote, 'aaaaaa').deps);     // A seeds {Cash}
+  await runSync(depsFor(dbB, remote, 'bbbbbb').deps);     // B pulls {Cash}
+  let docB = await buildDocument(dbB, { generatedBy: 'x', generatedAt: 'x' });
+  assert.equal(docB.tables.account.length, 1);
+
+  await eraseAllData(dbA, tickFrom(100, 'aaaaaa'));        // A erases
+  await runSync(depsFor(dbA, remote, 'aaaaaa', 2_000_000).deps); // push tombstone
+  await runSync(depsFor(dbB, remote, 'bbbbbb', 3_000_000).deps); // B applies deletion
+
+  docB = await buildDocument(dbB, { generatedBy: 'x', generatedAt: 'x' });
+  assert.equal(docB.tables.account.length, 0, 'B deleted the account');
+});
+
+test('no resurrection: a second sync after erase keeps data gone', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  await runSync(depsFor(db, remote, 'aaaaaa').deps);
+  await eraseAllData(db, tickFrom(100, 'aaaaaa'));
+  await runSync(depsFor(db, remote, 'aaaaaa', 2_000_000).deps);
+  await runSync(depsFor(db, remote, 'aaaaaa', 3_000_000).deps); // run again
+  const doc = await buildDocument(db, { generatedBy: 'x', generatedAt: 'x' });
+  assert.equal(doc.tables.account.length, 0, 'still gone after a 2nd sync');
+});
+
+test('import-as-truth: cloud converges to the imported backup', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-old', 'OldBank', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  await runSync(depsFor(db, remote, 'aaaaaa').deps); // cloud = {OldBank}
+
+  // Import a backup that contains a DIFFERENT account.
+  await eraseAllData(db, { tick: async () => HLC(100, 'aaaaaa') });
+  const backup = {
+    version: 3, exportedAt: 'x',
+    accounts: [{ id: 1, name: 'NewBank', archived: 0, uuid: 'acc-new', updated_at: HLC(5, 'bbbbbb') }],
+    assets: [], snapshots: [], transactions: [], settings: [], tombstones: [],
+  };
+  await restoreBackupDoc(db, backup as any, { freshStamp: HLC(101, 'aaaaaa'), restamp: true });
+  await runSync(depsFor(db, remote, 'aaaaaa', 2_000_000).deps);
+
+  const pushed = parseDocument(remote._content()!);
+  assert.deepEqual(pushed.tables.account.map((a) => a.name), ['NewBank']);
+});
+
+test('runSync skips the write when the merged doc equals the cloud (no-op)', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  await runSync(depsFor(db, remote, 'aaaaaa').deps); // seed -> cloud = {Cash}
+  const before = remote._content();
+  let writes = 0;
+  const realWrite = remote.write.bind(remote);
+  remote.write = async (c, pre) => { writes++; return realWrite(c, pre); };
+  const out = await runSync(depsFor(db, remote, 'aaaaaa', 2_000_000).deps); // nothing changed
+  assert.equal(out.status, 'unchanged');
+  assert.equal(writes, 0, 'no PUT when content identical');
+  assert.equal(remote._content(), before);
+});
+
+test('runSync with conditionalEtag returns unchanged on a 304 (no merge/write)', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  await runSync(depsFor(db, remote, 'aaaaaa').deps); // seed; etag now v1
+  const etag = 'v1';
+  let writes = 0; const realWrite = remote.write.bind(remote);
+  remote.write = async (c, p) => { writes++; return realWrite(c, p); };
+  const { deps } = depsFor(db, remote, 'aaaaaa', 2_000_000);
+  const out = await runSync({ ...deps, conditionalEtag: etag });
+  assert.equal(out.status, 'unchanged');
+  assert.equal(writes, 0);
+});
+
+test('dataFingerprint is order-independent: reversed remote row order still skips upload', async () => {
+  // Insert two accounts locally in one order (acc-a first, acc-b second).
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Alpha', HLC(10, 'aaaaaa'));
+  await addAccount(db, 'acc-b', 'Beta', HLC(11, 'aaaaaa'));
+
+  // Seed the remote with the SAME two accounts but in REVERSED order ([acc-b, acc-a]).
+  // This simulates a second device that happened to SELECT them in a different order.
+  const remote = makeFakeRemote();
+  const reversedDoc: SyncDocument = {
+    syncFormatVersion: 1, enc: 'none', schemaVersion: 2, generatedAt: 'x', generatedBy: 'b',
+    tables: {
+      account: [
+        { uuid: 'acc-b', name: 'Beta', archived: 0, updated_at: HLC(11, 'aaaaaa') },
+        { uuid: 'acc-a', name: 'Alpha', archived: 0, updated_at: HLC(10, 'aaaaaa') },
+      ],
+      asset: [], snapshot: [], tran: [], setting: [],
+    },
+    tombstones: [],
+  };
+  remote._seed(serializeDocument(reversedDoc));
+
+  let writes = 0;
+  const realWrite = remote.write.bind(remote);
+  remote.write = async (c, pre) => { writes++; return realWrite(c, pre); };
+
+  const { deps } = depsFor(db, remote, 'aaaaaa', 2_000_000);
+  const out = await runSync(deps);
+
+  assert.equal(out.status, 'unchanged', 'should be unchanged — data is identical despite row-order difference');
+  assert.equal(writes, 0, 'no upload when content is the same regardless of row order');
+});
+
+test('runSync persists cloud_etag after a sync', async () => {
+  const { db } = await makeMigratedDb();
+  await addAccount(db, 'acc-a', 'Cash', HLC(10, 'aaaaaa'));
+  const remote = makeFakeRemote();
+  const { deps } = depsFor(db, remote, 'aaaaaa');
+  await runSync(deps);
+  assert.equal(await deps.getState(CLOUD_ETAG_KEY), 'v1'); // seeded write -> etag v1
 });

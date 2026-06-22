@@ -75,11 +75,12 @@ async function main() {
   console.log(`✓ write(none) 覆盖成功,etag = ${w1.etag ?? '(无 ETag 头)'}`);
 
   // 3) 读回
-  const r1 = await remote.read();
-  if (!r1) {
+  const r1raw = await remote.read();
+  if (!r1raw || r1raw === 'not-modified') {
     console.error('✗ read() 返回 null,但刚写过 —— 异常');
     process.exit(1);
   }
+  const r1 = r1raw;
   const contentMatches = r1.content === payload1;
   console.log(`✓ read() 成功,内容${contentMatches ? '一致' : '不一致(!)'},etag = ${r1.etag ?? '(无 ETag 头)'}`);
 

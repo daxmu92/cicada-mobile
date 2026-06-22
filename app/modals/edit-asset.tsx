@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,6 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { confirmAsync, notify } from '../../src/utils/dialog';
 import { getAccount } from '../../src/db/account-repo';
 import {
   deleteAsset,
@@ -71,7 +71,7 @@ export default function EditAssetModal() {
 
   const save = async () => {
     if (!name.trim()) {
-      Alert.alert(t('editAsset.invalidTitle'), t('editAsset.emptyName'));
+      notify(t('editAsset.invalidTitle'), t('editAsset.emptyName'));
       return;
     }
     const catMap: Record<string, string> = {};
@@ -85,7 +85,7 @@ export default function EditAssetModal() {
       router.back();
     } catch (e) {
       const message = e instanceof Error ? e.message : t('editAsset.saveFailed');
-      Alert.alert(t('common.error'), message);
+      notify(t('common.error'), message);
     }
   };
 
@@ -94,34 +94,22 @@ export default function EditAssetModal() {
     const nextArchived = !asset.archived;
     const title = nextArchived ? t('editAsset.archiveTitle') : t('editAsset.unarchiveTitle');
     const message = nextArchived ? t('editAsset.archiveBody', { name: asset.name }) : t('editAsset.unarchiveBody', { name: asset.name });
-    Alert.alert(title, message, [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: nextArchived ? t('common.archive') : t('common.unarchive'),
-        onPress: async () => {
-          await setAssetArchived(assetId, nextArchived);
-          router.back();
-        },
-      },
-    ]);
+    const ok = await confirmAsync(title, message, nextArchived ? t('common.archive') : t('common.unarchive'));
+    if (!ok) return;
+    await setAssetArchived(assetId, nextArchived);
+    router.back();
   };
 
-  const confirmDelete = () => {
-    Alert.alert(
+  const confirmDelete = async () => {
+    const ok = await confirmAsync(
       t('editAsset.deleteTitle'),
       t('editAsset.deleteBody', { name: asset?.name ?? '' }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            await deleteAsset(assetId);
-            router.back();
-          },
-        },
-      ]
+      t('common.delete'),
+      true
     );
+    if (!ok) return;
+    await deleteAsset(assetId);
+    router.back();
   };
 
   return (

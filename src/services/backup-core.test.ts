@@ -68,3 +68,23 @@ test('legacy v2 restore backfills non-NULL uuid/updated_at and restores no tombs
 test('parseBackup rejects version > 3', () => {
   assert.throws(() => parseBackup(JSON.stringify({ version: 4, accounts: [], assets: [], snapshots: [], transactions: [] })));
 });
+
+test('restoreBackupDoc with restamp forces freshStamp on all updated_at', async () => {
+  const { db } = await makeMigratedDb();
+  const parsed = {
+    version: 3,
+    exportedAt: 'x',
+    accounts: [{ id: 1, name: 'Bank', archived: 0, uuid: 'acc-1', updated_at: '000000000000005-00000-bbbbbb' }],
+    assets: [],
+    snapshots: [],
+    transactions: [],
+    settings: [{ key: 'currency', value: '€', updated_at: '000000000000005-00000-bbbbbb' }],
+    tombstones: [],
+  };
+  const fresh = '000000000000999-00000-aaaaaa';
+  await restoreBackupDoc(db, parsed as any, { freshStamp: fresh, restamp: true });
+  const acc = await db.getFirstAsync<{ updated_at: string }>("SELECT updated_at FROM account WHERE uuid='acc-1'");
+  const setting = await db.getFirstAsync<{ updated_at: string }>("SELECT updated_at FROM setting WHERE key='currency'");
+  assert.equal(acc!.updated_at, fresh);
+  assert.equal(setting!.updated_at, fresh);
+});

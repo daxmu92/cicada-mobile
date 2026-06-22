@@ -52,6 +52,7 @@ if (-not (Test-Path "node_modules") -or -not (Test-Path $marker) -or
 
 Write-Host "==> Building Windows bundle (npm run tauri:build)..."
 npm run tauri:build
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "==> Build complete. Artifacts in:"
 Write-Host "    $RepoDir\src-tauri\target\release\bundle\"

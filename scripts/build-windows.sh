@@ -38,6 +38,11 @@ fi
 echo "==> Building branch '$BRANCH' on Windows ($WIN_REPO)..."
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
   -Branch "$BRANCH" -WslRemote "$WSL_UNC"
+build_status=$?
+if [ "$build_status" -ne 0 ]; then
+  echo "ERROR: Windows build failed (exit $build_status). No artifacts produced." >&2
+  exit "$build_status"
+fi
 
 # Surface the installers on the Linux side for convenience.
 RELEASE="$WIN_REPO_MNT/src-tauri/target/release"

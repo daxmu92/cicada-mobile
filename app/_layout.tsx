@@ -43,6 +43,10 @@ export default function RootLayout() {
             name="modals/edit-asset"
             options={{ presentation: 'modal', title: t('nav.editAsset') }}
           />
+          <Stack.Screen
+            name="modals/erase-data"
+            options={{ presentation: 'modal', title: t('eraseData.title') }}
+          />
         </Stack>
         <StatusBar style="auto" />
         </ThemeProvider>

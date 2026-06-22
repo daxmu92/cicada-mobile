@@ -1,5 +1,6 @@
 import { getDatabase } from './database';
 import { stampWrite } from '../sync/stamp';
+import { bumpDirty } from '../sync/dirty';
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDatabase();
@@ -18,6 +19,7 @@ export async function setSetting(key: string, value: string): Promise<void> {
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
     [key, value, updatedAt]
   );
+  bumpDirty();
 }
 
 export async function getAllSettings(): Promise<Record<string, string>> {

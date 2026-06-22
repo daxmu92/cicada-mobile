@@ -1,6 +1,7 @@
 import { getDatabase } from './database';
 import { stampWrite, recordTombstones } from '../sync/stamp';
 import { collectSnapshotTombstoneKeys } from './snapshot-repo';
+import { bumpDirty } from '../sync/dirty';
 import type { Asset, AssetWithAccount } from '../utils/types';
 
 type AssetRow = {
@@ -82,6 +83,7 @@ export async function createAsset(
     'INSERT INTO asset (account_id, name, categories, uuid, updated_at) VALUES (?, ?, ?, ?, ?)',
     [accountId, name, JSON.stringify(categories), uuid, updatedAt]
   );
+  bumpDirty();
   return result.lastInsertRowId;
 }
 
@@ -96,6 +98,7 @@ export async function updateAsset(
     'UPDATE asset SET name = ?, categories = ?, updated_at = ? WHERE id = ?',
     [name, JSON.stringify(categories), updatedAt, id]
   );
+  bumpDirty();
 }
 
 export async function deleteAsset(id: number): Promise<void> {
@@ -109,6 +112,7 @@ export async function deleteAsset(id: number): Promise<void> {
   await recordTombstones(db, 'asset', [asset.uuid]);
   await recordTombstones(db, 'snapshot', snapshotKeys);
   await db.runAsync('DELETE FROM asset WHERE id = ?', [id]);
+  bumpDirty();
 }
 
 export async function setAssetArchived(
@@ -122,4 +126,5 @@ export async function setAssetArchived(
     updatedAt,
     id,
   ]);
+  bumpDirty();
 }

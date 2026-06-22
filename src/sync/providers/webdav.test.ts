@@ -160,6 +160,29 @@ test('write throws on 401', async () => {
   await assert.rejects(() => remote.write('{}', { kind: 'none' }), /401|authentication/i);
 });
 
+test('read() with ifNoneMatch sends If-None-Match and maps 304 to not-modified', async () => {
+  let seenHeaders: Record<string, string> = {};
+  const http: HttpClient = async (_url, init) => {
+    seenHeaders = init.headers;
+    return { status: 304, headers: { get: () => null }, text: async () => '' };
+  };
+  const remote = createWebDavRemote({ baseUrl: 'https://x/dav/', username: 'u', appPassword: 'p' }, http);
+  const r = await remote.read({ ifNoneMatch: 'etag-123' });
+  assert.equal(r, 'not-modified');
+  assert.equal(seenHeaders['If-None-Match'], 'etag-123');
+});
+
+test('read() maps 200 to data and 404 to null', async () => {
+  const make = (status: number, body: string, etag: string | null): HttpClient => async () => ({
+    status, headers: { get: (n: string) => (n === 'ETag' ? etag : null) }, text: async () => body,
+  });
+  const cfg = { baseUrl: 'https://x/dav/', username: 'u', appPassword: 'p' };
+  const got = await createWebDavRemote(cfg, make(200, '{"a":1}', 'e9'))!.read();
+  assert.deepEqual(got, { content: '{"a":1}', etag: 'e9' });
+  const absent = await createWebDavRemote(cfg, make(404, '', null)).read();
+  assert.equal(absent, null);
+});
+
 test('read throws AuthError on 401', async () => {
   const { client } = makeMock(() => ({ status: 401 }));
   const remote = createWebDavRemote(config, client);

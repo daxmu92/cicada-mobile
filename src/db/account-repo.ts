@@ -1,6 +1,7 @@
 import { getDatabase } from './database';
 import { stampWrite, recordTombstones } from '../sync/stamp';
 import { collectSnapshotTombstoneKeys } from './snapshot-repo';
+import { bumpDirty } from '../sync/dirty';
 import type { Account } from '../utils/types';
 
 type AccountRow = {
@@ -45,6 +46,7 @@ export async function createAccount(name: string): Promise<number> {
     'INSERT INTO account (name, uuid, updated_at) VALUES (?, ?, ?)',
     [name, uuid, updatedAt]
   );
+  bumpDirty();
   return result.lastInsertRowId;
 }
 
@@ -56,6 +58,7 @@ export async function renameAccount(id: number, name: string): Promise<void> {
     updatedAt,
     id,
   ]);
+  bumpDirty();
 }
 
 export async function deleteAccount(id: number): Promise<void> {
@@ -79,6 +82,7 @@ export async function deleteAccount(id: number): Promise<void> {
   await recordTombstones(db, 'snapshot', snapshotKeys);
   // FK ON DELETE CASCADE clears assets + snapshots locally.
   await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
+  bumpDirty();
 }
 
 export async function setAccountArchived(
@@ -103,4 +107,5 @@ export async function setAccountArchived(
       );
     }
   });
+  bumpDirty();
 }
