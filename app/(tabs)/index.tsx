@@ -92,11 +92,7 @@ export default function HomeScreen() {
         </View>
         {trend.length > 1 && (
           <View style={styles.heroTrend}>
-            <NetWorthTrendChart
-              points={trend}
-              height={150}
-              color={trend[trend.length - 1].value >= trend[0].value ? gain : loss}
-            />
+            <NetWorthTrendChart points={trend} height={150} />
           </View>
         )}
       </View>

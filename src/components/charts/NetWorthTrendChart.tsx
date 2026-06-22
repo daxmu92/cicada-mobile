@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
-import { useLocale, useTheme } from '../../hooks/SettingsContext';
+import { useLocale, useSemanticColors, useTheme } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
 import { monthShort } from '../../utils/date';
-import { netWorthLineColor, spacing } from '../../utils/theme';
+import { spacing } from '../../utils/theme';
 import { usePointerConfig } from './pointer';
 
 export type TrendPoint = {
@@ -29,12 +29,15 @@ const Y_AXIS_WIDTH = 42;
 export function NetWorthTrendChart({ points, color, height = 150 }: Props) {
   const locale = useLocale();
   const c = useTheme();
+  const { gain, loss } = useSemanticColors();
   const [boxWidth, setBoxWidth] = useState(0);
 
-  // Defaults to a fixed red (theme-independent) so the net-worth curve looks
-  // the same in every theme; callers that want a data-driven color (e.g. the
-  // home hero's up/down green/red) still override via `color`.
-  const lineColor = color ?? netWorthLineColor;
+  // A net-worth curve is colored by its net direction over the range, honoring
+  // the user's gain/loss convention (green-up or red-up) — never the theme
+  // accent, so it reads the same across themes. Callers may still override.
+  const lineColor =
+    color ??
+    (points.length > 1 && points[points.length - 1].value >= points[0].value ? gain : loss);
 
   const axis = useMemo(() => {
     const vals = points.map((p) => p.value);

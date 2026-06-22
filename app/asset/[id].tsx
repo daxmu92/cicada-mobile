@@ -111,8 +111,18 @@ export default function AssetDetailScreen() {
         : s[metric],
   }));
 
+  const firstChartValue = chartData.length ? chartData[0].value : 0;
   const lastChartValue = chartData.length ? chartData[chartData.length - 1].value : 0;
-  const lineColor = metric === 'profit' ? (lastChartValue >= 0 ? gain : loss) : c.primary;
+  // Profit is colored by sign; a value/net-worth series by its net direction
+  // over the range. Both honor the user's gain/loss convention — no theme tint.
+  const lineColor =
+    metric === 'profit'
+      ? lastChartValue >= 0
+        ? gain
+        : loss
+      : lastChartValue >= firstChartValue
+        ? gain
+        : loss;
 
   return (
     <>
