@@ -479,7 +479,9 @@ git commit -m "refactor(theme): convert charts to useThemedStyles; fix module-sc
 
 ### Task 5: Convert tab screens + tab bar tint
 
-**Files (Modify):** `app/(tabs)/index.tsx`, `app/(tabs)/assets.tsx`, `app/(tabs)/transactions.tsx`, `app/(tabs)/_layout.tsx`.
+**Files (Modify):** `app/(tabs)/index.tsx`, `app/(tabs)/assets.tsx`, `app/(tabs)/transactions.tsx`, `app/(tabs)/analysis.tsx`, `app/(tabs)/_layout.tsx`.
+
+> Reconciliation note (master vs original plan): the original survey ran on an old feature branch. On master the 5th tab `app/(tabs)/analysis.tsx` exists and is converted here. `CompositionDonut.tsx` (its chart) was folded into Task 4.
 
 - [ ] **Step 1: Convert `_layout.tsx` (tab bar tint via hook)**
 
@@ -530,7 +532,9 @@ git commit -m "refactor(theme): convert tab screens + themed tab bar tint"
 
 ### Task 6: Convert detail, trends, modals, and settings base
 
-**Files (Modify):** `app/asset/[id].tsx`, `app/trends.tsx`, `app/modals/add-record.tsx`, `app/modals/add-transaction.tsx`, `app/modals/edit-asset.tsx`, `app/modals/erase-data.tsx`, `app/modals/manage-accounts.tsx`, `app/(tabs)/settings.tsx`.
+**Files (Modify):** `app/asset/[id].tsx`, `app/modals/add-record.tsx`, `app/modals/add-transaction.tsx`, `app/modals/edit-asset.tsx`, `app/modals/manage-accounts.tsx`, `app/(tabs)/settings.tsx`.
+
+> Reconciliation note: `app/trends.tsx` and `app/modals/erase-data.tsx` were listed from the old feature branch and do NOT exist on master — dropped from scope.
 
 - [ ] **Step 1: Convert each file** with the standard pattern.
 
@@ -543,12 +547,12 @@ For `settings.tsx` specifically:
 - [ ] **Step 2: Verify**
 
 Run: `npx tsc --noEmit && npm run lint`
-Then: `grep -nE "\bcolors\." "app/asset/[id].tsx" app/trends.tsx app/modals/*.tsx "app/(tabs)/settings.tsx"` → no matches.
+Then: `grep -nE "\bcolors\." "app/asset/[id].tsx" app/modals/*.tsx "app/(tabs)/settings.tsx"` → no matches.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add "app/asset/[id].tsx" app/trends.tsx app/modals/*.tsx "app/(tabs)/settings.tsx"
+git add "app/asset/[id].tsx" app/modals/*.tsx "app/(tabs)/settings.tsx"
 git commit -m "refactor(theme): convert detail/trends/modals/settings to useThemedStyles"
 ```
 
