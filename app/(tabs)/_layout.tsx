@@ -4,15 +4,16 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { colors } from '../../src/utils/theme';
+import { useTheme } from '../../src/hooks/SettingsContext';
 
 export default function TabLayout() {
   const { t } = useTranslation();
+  const c = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.accent,
+        tabBarActiveTintColor: c.accent,
         headerShown: true,
         tabBarButton: HapticTab,
         // On web the tab button is vertically tight, so the label (a flex item)

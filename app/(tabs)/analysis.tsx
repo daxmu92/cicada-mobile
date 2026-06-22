@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { getDateRange, getMonthlyTotals, listSnapshotsByDate } from '../../src/db/snapshot-repo';
 import { listAssets } from '../../src/db/asset-repo';
 import { currentYearMonth, minusMonths } from '../../src/utils/date';
-import { useFormat, useSettings } from '../../src/hooks/SettingsContext';
-import { categoryPalette, colors, shared, spacing } from '../../src/utils/theme';
+import { useFormat, useSettings, useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
+import { categoryPalette, spacing, type ThemeColors } from '../../src/utils/theme';
 import { MonthSelector } from '../../src/components/MonthSelector';
 import { SectionCard } from '../../src/components/SectionCard';
 import { NetWorthTrendChart, type TrendPoint } from '../../src/components/charts/NetWorthTrendChart';
@@ -30,6 +30,8 @@ export default function AnalysisScreen() {
   const { t } = useTranslation();
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
 
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [range, setRange] = useState<Range>('1Y');
@@ -173,19 +175,20 @@ export default function AnalysisScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: spacing.lg, paddingBottom: spacing.xl },
-  selectorRow: { marginBottom: spacing.md },
-  chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    backgroundColor: colors.track,
-  },
-  chipActive: { backgroundColor: colors.accent },
-  chipText: { fontSize: 13, color: colors.inkSoft, fontWeight: '600' },
-  chipTextActive: { color: 'white' },
-  empty: { color: colors.muted, paddingVertical: spacing.lg, textAlign: 'center' },
-  intro: { fontSize: 13, color: colors.inkSoft, marginBottom: spacing.md, lineHeight: 19 },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    content: { padding: spacing.lg, paddingBottom: spacing.xl },
+    selectorRow: { marginBottom: spacing.md },
+    chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: 999,
+      backgroundColor: c.track,
+    },
+    chipActive: { backgroundColor: c.accent },
+    chipText: { fontSize: 13, color: c.inkSoft, fontWeight: '600' },
+    chipTextActive: { color: c.onAccent },
+    empty: { color: c.muted, paddingVertical: spacing.lg, textAlign: 'center' },
+    intro: { fontSize: 13, color: c.inkSoft, marginBottom: spacing.md, lineHeight: 19 },
+  });

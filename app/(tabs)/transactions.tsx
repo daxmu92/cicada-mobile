@@ -14,9 +14,9 @@ import {
   formatMonthYear,
   formatLongDate,
 } from '../../src/utils/date';
-import { useFormat, useLocale, useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useFormat, useLocale, useSemanticColors, useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { Transaction } from '../../src/utils/types';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { spacing, type ThemeColors } from '../../src/utils/theme';
 import { CategoryBars } from '../../src/components/charts/CategoryBars';
 
 type Tab = 'list' | 'breakdown';
@@ -27,6 +27,8 @@ export default function TransactionsScreen() {
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totals, setTotals] = useState({ income: 0, outlay: 0 });
@@ -227,131 +229,132 @@ export default function TransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  selectorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-  },
-  arrowBtn: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  arrow: {
-    fontSize: 24,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  monthLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  totalsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  totalCard: {
-    flex: 1,
-    padding: spacing.md,
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  tabRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tabActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  tabTextActive: {
-    color: 'white',
-  },
-  empty: {
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-  },
-  sectionHeader: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    backgroundColor: colors.bg,
-  },
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-  },
-  txHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  txType: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  txDate: {
-    fontSize: 14,
-    color: colors.muted,
-  },
-  txCat: {
-    fontSize: 13,
-    color: colors.primary,
-    marginTop: 2,
-  },
-  txNote: {
-    fontSize: 13,
-    color: colors.muted,
-    marginTop: 2,
-  },
-  txValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  fabText: {
-    color: 'white',
-    fontSize: 28,
-    fontWeight: '300',
-    marginTop: -2,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    selectorCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+    },
+    arrowBtn: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    arrow: {
+      fontSize: 24,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    monthLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    totalsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    totalCard: {
+      flex: 1,
+      padding: spacing.md,
+    },
+    totalValue: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    tabRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      alignItems: 'center',
+      borderRadius: 8,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    tabActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    tabText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.muted,
+    },
+    tabTextActive: {
+      color: c.onAccent,
+    },
+    empty: {
+      alignItems: 'center',
+      paddingTop: spacing.xxl,
+    },
+    sectionHeader: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
+      backgroundColor: c.bg,
+    },
+    txRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.md,
+    },
+    txHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    txType: {
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    txDate: {
+      fontSize: 14,
+      color: c.muted,
+    },
+    txCat: {
+      fontSize: 13,
+      color: c.primary,
+      marginTop: 2,
+    },
+    txNote: {
+      fontSize: 13,
+      color: c.muted,
+      marginTop: 2,
+    },
+    txValue: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    fabText: {
+      color: c.onAccent,
+      fontSize: 28,
+      fontWeight: '300',
+      marginTop: -2,
+    },
+  });

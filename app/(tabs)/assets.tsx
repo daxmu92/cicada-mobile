@@ -14,9 +14,9 @@ import {
 } from '../../src/db/snapshot-repo';
 import { currentYearMonth } from '../../src/utils/date';
 import { confirmAsync, notify } from '../../src/utils/dialog';
-import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useFormat, useSemanticColors, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { Account, AssetWithAccount, SnapshotWithAsset } from '../../src/utils/types';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { spacing, type ThemeColors } from '../../src/utils/theme';
 import { Sparkline } from '../../src/components/charts/Sparkline';
 import { MonthSelector } from '../../src/components/MonthSelector';
 import { AssetEntryCard, type SnapshotDraft } from '../../src/components/AssetEntryCard';
@@ -47,6 +47,9 @@ export default function AssetsScreen() {
   const router = useRouter();
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
+  const c = useTheme();
   const [groups, setGroups] = useState<AccountGroup[]>([]);
 
   // Entry-mode state
@@ -276,7 +279,7 @@ export default function AssetsScreen() {
       <TouchableOpacity key={asset.id} onPress={() => expand(asset.id)} style={styles.assetRow}>
         <Text style={[styles.assetName, { flex: 1 }]}>{asset.name}</Text>
         {dirty ? (
-          <Text style={[styles.marker, { color: colors.primary }]}>{t('batchEntry.edited')}</Text>
+          <Text style={[styles.marker, { color: c.primary }]}>{t('batchEntry.edited')}</Text>
         ) : recorded ? (
           <Text style={styles.marker}>{t('batchEntry.recorded')}</Text>
         ) : null}
@@ -339,81 +342,82 @@ export default function AssetsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  empty: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: spacing.sm,
-  },
-  enterBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-  },
-  enterText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  toolBtn: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  toolText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  submitText: {
-    color: colors.primary,
-  },
-  disabled: {
-    opacity: 0.4,
-  },
-  accountName: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    color: colors.muted,
-  },
-  assetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.sm,
-  },
-  assetName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  assetMeta: {
-    fontSize: 12,
-    color: colors.muted,
-    marginTop: 2,
-  },
-  assetValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    minWidth: 90,
-    textAlign: 'right',
-  },
-  marker: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    empty: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.xl,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginBottom: spacing.sm,
+    },
+    enterBtn: {
+      backgroundColor: c.primary,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: 8,
+    },
+    enterText: {
+      color: c.onAccent,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    toolbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    toolBtn: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+    },
+    toolText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.muted,
+    },
+    submitText: {
+      color: c.primary,
+    },
+    disabled: {
+      opacity: 0.4,
+    },
+    accountName: {
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: spacing.sm,
+      color: c.muted,
+    },
+    assetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      gap: spacing.sm,
+    },
+    assetName: {
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    assetMeta: {
+      fontSize: 12,
+      color: c.muted,
+      marginTop: 2,
+    },
+    assetValue: {
+      fontSize: 15,
+      fontWeight: '600',
+      minWidth: 90,
+      textAlign: 'right',
+    },
+    marker: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.muted,
+    },
+  });
