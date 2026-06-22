@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useFormat, useSemanticColors } from '../hooks/SettingsContext';
-import { colors, radius, spacing, tints } from '../utils/theme';
+import { useFormat, useSemanticColors, useThemedStyles } from '../hooks/SettingsContext';
+import { radius, spacing, tints, type ThemeColors } from '../utils/theme';
 
 type Props = {
   /** The signed change amount (drives sign, color, and arrow). */
@@ -20,10 +20,11 @@ type Props = {
 export function ChangePill({ value, percent, caption }: Props) {
   const { fmtSigned } = useFormat();
   const { gain, loss } = useSemanticColors();
+  const styles = useThemedStyles(makeStyles);
 
   const positive = value >= 0;
   const color = positive ? gain : loss;
-  const bg = tints[color] ?? colors.accentSoft;
+  const bg = tints[color] ?? 'transparent';
 
   // fmtSigned already prefixes a ▲/▼ arrow.
   const pctText =
@@ -42,24 +43,25 @@ export function ChangePill({ value, percent, caption }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: radius.pill,
-    gap: spacing.xs,
-  },
-  text: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  caption: {
-    fontSize: 12,
-    color: colors.muted,
-    fontWeight: '500',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      paddingVertical: 4,
+      paddingHorizontal: spacing.sm + 2,
+      borderRadius: radius.pill,
+      gap: spacing.xs,
+    },
+    text: {
+      fontSize: 12.5,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+    },
+    caption: {
+      fontSize: 12,
+      color: c.muted,
+      fontWeight: '500',
+    },
+  });

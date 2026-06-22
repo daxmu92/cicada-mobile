@@ -1,9 +1,9 @@
 import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { useFormat } from '../hooks/SettingsContext';
+import { useFormat, useThemedStyles } from '../hooks/SettingsContext';
 import { computeInflow, computeProfit } from '../utils/snapshot-calc';
-import { colors, spacing } from '../utils/theme';
+import { spacing, type ThemeColors } from '../utils/theme';
 
 export type SnapshotDraft = {
   netWorth: string;
@@ -31,6 +31,7 @@ export function AssetEntryCard({
 }: Props) {
   const { t } = useTranslation();
   const { fmt } = useFormat();
+  const styles = useThemedStyles(makeStyles);
 
   const setNetWorth = (v: string) => {
     const next = { ...draft, netWorth: v };
@@ -108,58 +109,59 @@ export function AssetEntryCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.md,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  muted: {
-    fontSize: 13,
-    color: colors.muted,
-    marginTop: 2,
-  },
-  autoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.lg,
-    marginTop: spacing.md,
-  },
-  footerBtn: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  footerText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  collapseText: {
-    color: colors.primary,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      paddingVertical: spacing.md,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    muted: {
+      fontSize: 13,
+      color: c.muted,
+      marginTop: 2,
+    },
+    autoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginTop: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 16,
+      backgroundColor: c.card,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.lg,
+      marginTop: spacing.md,
+    },
+    footerBtn: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+    },
+    footerText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.muted,
+    },
+    collapseText: {
+      color: c.primary,
+    },
+  });

@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { formatMonthYear, nextYearMonth, prevYearMonth } from '../utils/date';
-import { useLocale } from '../hooks/SettingsContext';
+import { useLocale, useThemedStyles } from '../hooks/SettingsContext';
 import { YearCalendar } from './YearCalendar';
-import { colors, spacing } from '../utils/theme';
+import { spacing, type ThemeColors } from '../utils/theme';
 
 type Props = {
   value: string;
@@ -14,6 +14,7 @@ type Props = {
 
 export function MonthSelector({ value, onChange, disablePicker = false }: Props) {
   const locale = useLocale();
+  const styles = useThemedStyles(makeStyles);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
@@ -63,39 +64,40 @@ export function MonthSelector({ value, onChange, disablePicker = false }: Props)
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  arrow: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  arrowText: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  label: {
-    minWidth: 120,
-    alignItems: 'center',
-  },
-  labelText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  sheet: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: spacing.md,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+    },
+    arrow: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    arrowText: {
+      fontSize: 22,
+      fontWeight: '600',
+      color: c.primary,
+    },
+    label: {
+      minWidth: 120,
+      alignItems: 'center',
+    },
+    labelText: {
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    sheet: {
+      backgroundColor: c.card,
+      borderRadius: 12,
+      padding: spacing.md,
+    },
+  });

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { getMonthlyTotals } from '../db/snapshot-repo';
-import { useFormat, useLocale, useSemanticColors, useSettings } from '../hooks/SettingsContext';
+import { useFormat, useLocale, useSemanticColors, useSettings, useTheme, useThemedStyles } from '../hooks/SettingsContext';
 import { useTranslation } from 'react-i18next';
 import { currentYear, currentYearMonth, monthShort, yearMonth } from '../utils/date';
-import { colors, radius, spacing } from '../utils/theme';
+import { radius, spacing, type ThemeColors } from '../utils/theme';
 
 type Props = {
   selected: string;
@@ -23,6 +23,8 @@ export function YearCalendar({ selected, onChange }: Props) {
   const { fmtSignedCompact } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [selectedYear, selectedMonth] = selected.split('-').map(Number);
   const [displayYear, setDisplayYear] = useState<number>(selectedYear);
   const [cells, setCells] = useState<MonthCell[]>(emptyCells());
@@ -91,20 +93,20 @@ export function YearCalendar({ selected, onChange }: Props) {
       </View>
 
       <View style={styles.grid}>
-        {cells.map((c) => {
-          const isSelected = displayYear === selectedYear && c.month === selectedMonth;
-          const hasData = c.netGrowth != null;
+        {cells.map((cell) => {
+          const isSelected = displayYear === selectedYear && cell.month === selectedMonth;
+          const hasData = cell.netGrowth != null;
           const growthColor = !hasData
-            ? colors.muted
-            : c.netGrowth! > 0
+            ? c.muted
+            : cell.netGrowth! > 0
             ? gain
-            : c.netGrowth! < 0
+            : cell.netGrowth! < 0
             ? loss
-            : colors.muted;
+            : c.muted;
           return (
-            <View key={c.month} style={styles.cellWrap}>
+            <View key={cell.month} style={styles.cellWrap}>
               <TouchableOpacity
-                onPress={() => onChange(yearMonth(displayYear, c.month))}
+                onPress={() => onChange(yearMonth(displayYear, cell.month))}
                 activeOpacity={0.7}
                 style={[
                   styles.cell,
@@ -116,14 +118,14 @@ export function YearCalendar({ selected, onChange }: Props) {
                     styles.monthLabel,
                     isSelected && styles.monthLabelSelected,
                   ]}>
-                  {monthShort(c.month, locale)}
+                  {monthShort(cell.month, locale)}
                 </Text>
                 <Text
                   style={[styles.growth, { color: growthColor }]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.5}>
-                  {hasData ? fmtSignedCompact(c.netGrowth!) : '—'}
+                  {hasData ? fmtSignedCompact(cell.netGrowth!) : '—'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -140,87 +142,88 @@ function emptyCells(): MonthCell[] {
   return out;
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
-    marginBottom: spacing.md,
-    shadowColor: '#3a3530',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.sm,
-  },
-  arrowBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  arrow: {
-    fontSize: 28,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  headerCenter: {
-    alignItems: 'center',
-  },
-  yearLabel: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  todayLink: {
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: 2,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  cellWrap: {
-    width: '25%',
-    padding: 2,
-  },
-  cell: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 68,
-  },
-  cellMuted: {
-    backgroundColor: colors.bg,
-  },
-  cellSelected: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-    backgroundColor: colors.accentSoft,
-  },
-  monthLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.muted,
-    marginBottom: 2,
-  },
-  monthLabelSelected: {
-    color: colors.primary,
-  },
-  growth: {
-    fontSize: 15,
-    fontWeight: '700',
-    textAlign: 'center',
-    fontVariant: ['tabular-nums'],
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.card,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xs,
+      marginBottom: spacing.md,
+      shadowColor: '#3a3530',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+      paddingHorizontal: spacing.sm,
+    },
+    arrowBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    arrow: {
+      fontSize: 28,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    headerCenter: {
+      alignItems: 'center',
+    },
+    yearLabel: {
+      fontSize: 20,
+      fontWeight: '700',
+    },
+    todayLink: {
+      fontSize: 12,
+      color: c.primary,
+      marginTop: 2,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    cellWrap: {
+      width: '25%',
+      padding: 2,
+    },
+    cell: {
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 68,
+    },
+    cellMuted: {
+      backgroundColor: c.bg,
+    },
+    cellSelected: {
+      borderColor: c.primary,
+      borderWidth: 2,
+      backgroundColor: c.accentSoft,
+    },
+    monthLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.muted,
+      marginBottom: 2,
+    },
+    monthLabelSelected: {
+      color: c.primary,
+    },
+    growth: {
+      fontSize: 15,
+      fontWeight: '700',
+      textAlign: 'center',
+      fontVariant: ['tabular-nums'],
+    },
+  });

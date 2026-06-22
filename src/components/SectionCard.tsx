@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { shared, spacing } from '../utils/theme';
+import { useShared } from '../hooks/SettingsContext';
+import { spacing } from '../utils/theme';
 
 type Props = {
   title?: string;
@@ -12,6 +13,8 @@ type Props = {
 
 /** A surface card with an optional uppercase section title row. */
 export function SectionCard({ title, action, children }: Props) {
+  const shared = useShared();
+
   return (
     <View style={shared.card}>
       {(title || action) && (

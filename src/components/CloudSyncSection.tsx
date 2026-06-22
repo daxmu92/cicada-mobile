@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { useShared, useTheme, useThemedStyles } from '../hooks/SettingsContext';
 import { useSync, type SyncStatus } from '../hooks/SyncContext';
 import { loadCredentials } from '../sync/credentials';
 import { type WebDavConfig } from '../sync/providers/webdav';
 import { confirmAsync, notify } from '../utils/dialog';
-import { colors, shared, spacing } from '../utils/theme';
+import { semantic, spacing, type ThemeColors } from '../utils/theme';
 
 const DEFAULT_URL = 'https://dav.jianguoyun.com/dav/';
 
@@ -22,6 +23,8 @@ const STATUS_KEY: Record<SyncStatus, string> = {
 export default function CloudSyncSection() {
   const { t } = useTranslation();
   const sync = useSync();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_URL);
   const [username, setUsername] = useState('');
   const [appPassword, setAppPassword] = useState('');
@@ -100,7 +103,7 @@ export default function CloudSyncSection() {
         <Text style={shared.muted}>{t('settings.cloudAppPasswordHelp')}</Text>
 
         <View style={styles.statusRow}>
-          <Text style={[styles.statusText, sync.status === 'authError' || sync.status === 'error' ? { color: colors.negative } : null]}>
+          <Text style={[styles.statusText, sync.status === 'authError' || sync.status === 'error' ? { color: semantic.negative } : null]}>
             {sync.connected ? t('settings.cloudConnected') : t('settings.cloudNotConnected')}
             {statusKey ? ` · ${t(statusKey)}` : ''}
           </Text>
@@ -124,7 +127,7 @@ export default function CloudSyncSection() {
 
       {sync.connected && (
         <TouchableOpacity onPress={onOverwrite} disabled={busy} style={[shared.card, busy && { opacity: 0.5 }]}>
-          <Text style={[styles.label, { color: colors.negative, marginTop: 0 }]}>{t('settings.cloudOverwrite')}</Text>
+          <Text style={[styles.label, { color: semantic.negative, marginTop: 0 }]}>{t('settings.cloudOverwrite')}</Text>
           <Text style={shared.muted}>{t('settings.cloudOverwriteSub')}</Text>
         </TouchableOpacity>
       )}
@@ -133,29 +136,33 @@ export default function CloudSyncSection() {
 }
 
 function Btn({ label, onPress, disabled, primary }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
       style={[styles.btn, primary && styles.btnPrimary, disabled && { opacity: 0.5 }]}>
-      <Text style={[styles.btnText, primary && { color: 'white' }]}>{label}</Text>
+      <Text style={[styles.btnText, primary && { color: c.onAccent }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  label: { fontSize: 14, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.xs },
-  input: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: 'white', fontSize: 15,
-  },
-  statusRow: { marginTop: spacing.md },
-  statusText: { fontSize: 14, fontWeight: '600' },
-  buttonRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  btn: {
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 8,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: 'white',
-  },
-  btnPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  btnText: { fontSize: 15, fontWeight: '600', color: colors.muted },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    label: { fontSize: 14, fontWeight: '600', marginTop: spacing.md, marginBottom: spacing.xs },
+    input: {
+      borderWidth: 1, borderColor: c.border, borderRadius: 8,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: c.card, fontSize: 15,
+    },
+    statusRow: { marginTop: spacing.md },
+    statusText: { fontSize: 14, fontWeight: '600' },
+    buttonRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+    btn: {
+      paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 8,
+      borderWidth: 1, borderColor: c.border, backgroundColor: c.card,
+    },
+    btnPrimary: { backgroundColor: c.primary, borderColor: c.primary },
+    btnText: { fontSize: 15, fontWeight: '600', color: c.muted },
+  });
