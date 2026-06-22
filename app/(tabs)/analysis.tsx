@@ -35,6 +35,7 @@ export default function AnalysisScreen() {
   const [range, setRange] = useState<Range>('1Y');
   const [dimension, setDimension] = useState<string>(ACCOUNT_DIMENSION);
   const [focusedKey, setFocusedKey] = useState<string | undefined>(undefined);
+  const handleMonthChange = (ym: string) => { setSelectedMonth(ym); setFocusedKey(undefined); };
 
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [compInput, setCompInput] = useState<CompositionInput[]>([]);
@@ -52,6 +53,7 @@ export default function AnalysisScreen() {
         end = dr.end;
       }
     }
+    // Trend uses raw monthly sums (gaps allowed, no forward-fill); composition forward-fills — so the two cards can intentionally differ for a sparse selected month.
     const months = await getMonthlyTotals(start, end);
     setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
 
@@ -110,7 +112,7 @@ export default function AnalysisScreen() {
   return (
     <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
       <View style={styles.selectorRow}>
-        <MonthSelector value={selectedMonth} onChange={setSelectedMonth} disablePicker />
+        <MonthSelector value={selectedMonth} onChange={handleMonthChange} disablePicker />
       </View>
 
       <SectionCard title={t('analysis.trendTitle')}>
@@ -153,7 +155,7 @@ export default function AnalysisScreen() {
         <CompositionDonut
           slices={donutSlices}
           centerPrimary={fmt(comp.chartedTotal)}
-          centerSecondary={`${t('analysis.netWorthTrue')} ${fmt(comp.trueTotal)}`}
+          centerSecondary={comp.trueTotal !== comp.chartedTotal ? `${t('analysis.netWorthTrue')} ${fmt(comp.trueTotal)}` : undefined}
           caption={caption}
           focusedKey={focusedKey}
           onSlicePress={(key) => setFocusedKey((cur) => (cur === key ? undefined : key))}
@@ -163,9 +165,9 @@ export default function AnalysisScreen() {
         )}
       </SectionCard>
 
-      <SectionCard title={t('nav.analysis')}>
+      <SectionCard title={t('analysis.calendarTitle')}>
         <Text style={styles.intro}>{t('analysis.calendarIntro')}</Text>
-        <YearCalendar selected={selectedMonth} onChange={setSelectedMonth} />
+        <YearCalendar selected={selectedMonth} onChange={handleMonthChange} />
       </SectionCard>
     </ScrollView>
   );

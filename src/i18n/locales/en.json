@@ -230,6 +230,7 @@
     "netWorthTrue": "Net worth",
     "excludedLiabilities": "Excludes {{count}} net-negative group(s)",
     "noPositiveHoldings": "No positive holdings to chart",
+    "calendarTitle": "Calendar",
     "calendarIntro": "Tap a month to view it."
   }
 }

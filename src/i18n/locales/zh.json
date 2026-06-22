@@ -230,6 +230,7 @@
     "netWorthTrue": "净值",
     "excludedLiabilities": "未含 {{count}} 个负向分组",
     "noPositiveHoldings": "暂无正值持仓可展示",
+    "calendarTitle": "年历",
     "calendarIntro": "点击月份查看。"
   }
 }

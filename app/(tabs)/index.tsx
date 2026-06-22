@@ -131,6 +131,7 @@ export default function HomeScreen() {
       {/* Analysis entry */}
       <TouchableOpacity
         style={styles.trendsLink}
+        activeOpacity={0.7}
         onPress={() => router.navigate('/analysis' as Href)}>
         <Text style={styles.trendsLinkText}>{t('home.viewAnalysis')} →</Text>
       </TouchableOpacity>
