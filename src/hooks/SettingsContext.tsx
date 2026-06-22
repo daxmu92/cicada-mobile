@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -20,7 +21,14 @@ import {
   formatSigned,
   formatSignedCompact,
 } from '../utils/format';
-import { semantic } from '../utils/theme';
+import {
+  semantic,
+  themes,
+  resolveTheme,
+  makeShared,
+  type ThemeColors,
+  type ThemeName,
+} from '../utils/theme';
 
 export type GainColor = 'green' | 'red';
 
@@ -33,6 +41,8 @@ type SettingsContextValue = {
   setGainColor: (v: GainColor) => Promise<void>;
   language: Language;
   setLanguage: (lang: Language) => Promise<void>;
+  theme: ThemeName;
+  setTheme: (name: ThemeName) => Promise<void>;
   ready: boolean;
 };
 
@@ -40,6 +50,7 @@ const DEFAULT_CURRENCY = '$';
 const DEFAULT_FORWARD_FILL = false;
 const DEFAULT_GAIN_COLOR: GainColor = 'green';
 const DEFAULT_LANGUAGE: Language = detectDeviceLanguage();
+const DEFAULT_THEME: ThemeName = 'warmSlate';
 
 const SettingsContext = createContext<SettingsContextValue>({
   currency: DEFAULT_CURRENCY,
@@ -50,6 +61,8 @@ const SettingsContext = createContext<SettingsContextValue>({
   setGainColor: async () => {},
   language: DEFAULT_LANGUAGE,
   setLanguage: async () => {},
+  theme: DEFAULT_THEME,
+  setTheme: async () => {},
   ready: false,
 });
 
@@ -58,6 +71,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [forwardFill, setForwardFillState] = useState(DEFAULT_FORWARD_FILL);
   const [gainColor, setGainColorState] = useState<GainColor>(DEFAULT_GAIN_COLOR);
   const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
+  const [theme, setThemeState] = useState<ThemeName>(DEFAULT_THEME);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -78,6 +92,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (i18n.language !== storedLanguage) {
           await i18n.changeLanguage(storedLanguage);
         }
+      }
+      const storedTheme = await getSetting('theme');
+      if (storedTheme && storedTheme in themes) {
+        setThemeState(storedTheme as ThemeName);
       }
       setReady(true);
     })();
@@ -104,6 +122,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setLanguageState(lang);
   }, []);
 
+  const updateTheme = useCallback(async (name: ThemeName) => {
+    await setSetting('theme', name);
+    setThemeState(name);
+  }, []);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -115,6 +138,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setGainColor: updateGainColor,
         language,
         setLanguage: updateLanguage,
+        theme,
+        setTheme: updateTheme,
         ready,
       }}>
       {children}
@@ -159,4 +184,25 @@ export function useSemanticColors() {
     gain: gainColor === 'red' ? semantic.negative : semantic.positive,
     loss: gainColor === 'red' ? semantic.positive : semantic.negative,
   };
+}
+
+export function useTheme(): ThemeColors {
+  const { theme } = useContext(SettingsContext);
+  return useMemo(() => resolveTheme(themes[theme]), [theme]);
+}
+
+/**
+ * Memoizes a themed StyleSheet. `factory` MUST be a module-scope const —
+ * defining it inside a component re-creates it each render and defeats the memo.
+ *
+ *   const makeStyles = (c: ThemeColors) => StyleSheet.create({ ... });
+ *   const styles = useThemedStyles(makeStyles);
+ */
+export function useThemedStyles<T>(factory: (c: ThemeColors) => T): T {
+  const c = useTheme();
+  return useMemo(() => factory(c), [c, factory]);
+}
+
+export function useShared() {
+  return useThemedStyles(makeShared);
 }
