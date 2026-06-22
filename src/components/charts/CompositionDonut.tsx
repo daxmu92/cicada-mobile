@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 
-import { colors, spacing } from '../../utils/theme';
+import { spacing, type ThemeColors } from '../../utils/theme';
+import { useTheme, useThemedStyles } from '../../hooks/SettingsContext';
 
 export type DonutSlice = {
   key: string;
@@ -27,6 +28,9 @@ export function CompositionDonut({
   focusedKey,
   onSlicePress,
 }: Props) {
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
   const data = slices.map((s) => ({
     value: s.value,
     color: s.color,
@@ -41,7 +45,7 @@ export function CompositionDonut({
           data={data}
           radius={96}
           innerRadius={64}
-          innerCircleColor={colors.card}
+          innerCircleColor={c.card}
           focusOnPress
           sectionAutoFocus
           onPress={(_item: unknown, index: number) => {
@@ -69,30 +73,31 @@ export function CompositionDonut({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerPrimary: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-  centerSecondary: {
-    fontSize: 12,
-    color: colors.muted,
-    marginTop: 2,
-  },
-  caption: {
-    fontSize: 12,
-    color: colors.muted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    wrap: {
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerPrimary: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.ink,
+      fontVariant: ['tabular-nums'],
+    },
+    centerSecondary: {
+      fontSize: 12,
+      color: c.muted,
+      marginTop: 2,
+    },
+    caption: {
+      fontSize: 12,
+      color: c.muted,
+      marginTop: spacing.sm,
+      textAlign: 'center',
+    },
+  });
