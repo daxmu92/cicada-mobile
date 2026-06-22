@@ -32,6 +32,12 @@ export function nextYearMonth(ym: string): string {
   return yearMonth(y, m + 1);
 }
 
+export function minusMonths(ym: string, n: number): string {
+  let cur = ym;
+  for (let i = 0; i < n; i++) cur = prevYearMonth(cur);
+  return cur;
+}
+
 export function yearMonthList(start: string, end: string): string[] {
   const result: string[] = [];
   let cur = start;
