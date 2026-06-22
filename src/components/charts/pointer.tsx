@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useFormat, useLocale } from '../../hooks/SettingsContext';
+import { useFormat, useLocale, useThemedStyles, useTheme } from '../../hooks/SettingsContext';
 import { formatMonthYear } from '../../utils/date';
-import { colors, radius, spacing } from '../../utils/theme';
+import { radius, spacing, type ThemeColors } from '../../utils/theme';
 
 /** A chart data item carrying the fields our tooltip needs. */
 export type PointerItem = {
@@ -18,10 +18,12 @@ export type PointerItem = {
 export function usePointerConfig(color: string) {
   const { fmt } = useFormat();
   const locale = useLocale();
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   return {
     pointerColor: color,
-    pointerStripColor: colors.muted,
+    pointerStripColor: c.muted,
     pointerStripWidth: 1,
     radius: 4,
     pointerLabelWidth: 130,
@@ -42,23 +44,24 @@ export function usePointerConfig(color: string) {
   };
 }
 
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: colors.ink,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm,
-    minWidth: 110,
-  },
-  date: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    marginBottom: 2,
-  },
-  value: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    box: {
+      backgroundColor: c.ink,
+      borderRadius: radius.sm,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.sm,
+      minWidth: 110,
+    },
+    date: {
+      color: 'rgba(255,255,255,0.7)',
+      fontSize: 10,
+      marginBottom: 2,
+    },
+    value: {
+      color: c.onAccent,
+      fontSize: 13,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+    },
+  });

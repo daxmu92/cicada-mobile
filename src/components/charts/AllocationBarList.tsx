@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { useFormat } from '../../hooks/SettingsContext';
-import { categoryPalette, colors, spacing } from '../../utils/theme';
+import { useFormat, useThemedStyles, useTheme } from '../../hooks/SettingsContext';
+import { categoryPalette, spacing, type ThemeColors } from '../../utils/theme';
 
 export type AllocationItem = {
   label: string;
@@ -22,13 +22,15 @@ type Props = {
 export function AllocationBarList({ items, maxItems = 8, highlightKey }: Props) {
   const { t } = useTranslation();
   const { fmt } = useFormat();
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const sorted = [...items].sort((a, b) => b.value - a.value);
   const visible = sorted.slice(0, maxItems);
   const total = sorted.reduce((sum, i) => sum + i.value, 0);
   const maxValue = visible[0]?.value ?? 0;
 
   if (total <= 0 || visible.length === 0) {
-    return <Text style={{ color: colors.muted }}>{t('charts.noDataToDisplay')}</Text>;
+    return <Text style={{ color: c.muted }}>{t('charts.noDataToDisplay')}</Text>;
   }
 
   return (
@@ -59,49 +61,50 @@ export function AllocationBarList({ items, maxItems = 8, highlightKey }: Props) 
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    marginBottom: spacing.md,
-  },
-  rowActive: {
-    backgroundColor: colors.track,
-    borderRadius: 8,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    marginHorizontal: -spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  label: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.inkSoft,
-    marginRight: spacing.sm,
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.ink,
-    fontVariant: ['tabular-nums'],
-  },
-  barTrack: {
-    height: 7,
-    backgroundColor: colors.track,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  bar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  pct: {
-    fontSize: 12,
-    color: colors.muted,
-    marginTop: 2,
-    textAlign: 'right',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    row: {
+      marginBottom: spacing.md,
+    },
+    rowActive: {
+      backgroundColor: c.track,
+      borderRadius: 8,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      marginHorizontal: -spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    label: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '500',
+      color: c.inkSoft,
+      marginRight: spacing.sm,
+    },
+    value: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.ink,
+      fontVariant: ['tabular-nums'],
+    },
+    barTrack: {
+      height: 7,
+      backgroundColor: c.track,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    bar: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    pct: {
+      fontSize: 12,
+      color: c.muted,
+      marginTop: 2,
+      textAlign: 'right',
+    },
+  });

@@ -1,7 +1,7 @@
 import { LineChart } from 'react-native-gifted-charts';
 import { View } from 'react-native';
 
-import { colors } from '../../utils/theme';
+import { useTheme } from '../../hooks/SettingsContext';
 
 type Props = {
   values: number[];
@@ -16,9 +16,12 @@ export function Sparkline({
   values,
   width = 80,
   height = 32,
-  color = colors.primary,
+  color,
   area = false,
 }: Props) {
+  const c = useTheme();
+  const lineColor = color ?? c.primary;
+
   if (values.length < 2) return <View style={{ width, height }} />;
 
   // Normalize so only the SHAPE matters. gifted-charts baselines at 0, which
@@ -47,7 +50,7 @@ export function Sparkline({
         hideYAxisText
         xAxisColor="transparent"
         yAxisColor="transparent"
-        color={color}
+        color={lineColor}
         thickness={area ? 2.5 : 1.5}
         curved
         maxValue={1}
@@ -55,8 +58,8 @@ export function Sparkline({
         endSpacing={0}
         disableScroll
         areaChart={area}
-        startFillColor={area ? color : undefined}
-        endFillColor={area ? color : undefined}
+        startFillColor={area ? lineColor : undefined}
+        endFillColor={area ? lineColor : undefined}
         startOpacity={area ? 0.22 : 0}
         endOpacity={0}
       />

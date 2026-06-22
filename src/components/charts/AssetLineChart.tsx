@@ -3,8 +3,9 @@ import { Dimensions, LayoutChangeEvent, StyleSheet, Text, View } from 'react-nat
 import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-gifted-charts';
 
+import { useTheme, useThemedStyles } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
-import { colors, spacing } from '../../utils/theme';
+import { spacing, type ThemeColors } from '../../utils/theme';
 import { usePointerConfig } from './pointer';
 
 export type LinePoint = {
@@ -30,9 +31,13 @@ function shortMonthYear(ym: string): string {
   return `${m}/${y.slice(2)}`;
 }
 
-export function AssetLineChart({ data, color = colors.primary, height = 220 }: Props) {
+export function AssetLineChart({ data, color, height = 220 }: Props) {
   const { t } = useTranslation();
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [boxWidth, setBoxWidth] = useState(WIDTH_ESTIMATE);
+
+  const lineColor = color ?? c.primary;
 
   const axis = useMemo(() => {
     const vals = data.map((p) => p.value);
@@ -55,12 +60,12 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
     }));
   }, [data, axis]);
 
-  const pointer = usePointerConfig(color);
+  const pointer = usePointerConfig(lineColor);
 
   if (data.length === 0 || !axis) {
     return (
       <View style={styles.empty}>
-        <Text style={{ color: colors.muted }}>{t('charts.noDataYet')}</Text>
+        <Text style={{ color: c.muted }}>{t('charts.noDataYet')}</Text>
       </View>
     );
   }
@@ -79,30 +84,30 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
         width={plotWidth}
         adjustToWidth
         yAxisLabelWidth={Y_AXIS_WIDTH}
-        color={color}
+        color={lineColor}
         thickness={2}
         curved
         hideDataPoints={data.length > 12}
-        dataPointsColor={color}
+        dataPointsColor={lineColor}
         dataPointsRadius={3}
         maxValue={axis.top - axis.offset}
         noOfSections={axis.noOfSections}
         stepValue={axis.niceStep}
-        yAxisTextStyle={{ color: colors.muted, fontSize: 10 }}
+        yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
         formatYLabel={(label: string) => abbrev(Number(label) + axis.offset)}
         // Dense date axis: rotate labels so they don't get clipped to the
         // (tiny) per-point width. labelsExtraHeight reserves room for them.
         rotateLabel
         labelsExtraHeight={20}
-        xAxisLabelTextStyle={{ color: colors.muted, fontSize: 9.5 }}
-        yAxisColor={colors.border}
-        xAxisColor={colors.border}
-        rulesColor={colors.border}
+        xAxisLabelTextStyle={{ color: c.muted, fontSize: 9.5 }}
+        yAxisColor={c.border}
+        xAxisColor={c.border}
+        rulesColor={c.border}
         rulesType="solid"
         initialSpacing={10}
         endSpacing={10}
         areaChart
-        startFillColor={color}
+        startFillColor={lineColor}
         startOpacity={0.2}
         endOpacity={0.0}
         pointerConfig={pointer}
@@ -112,10 +117,11 @@ export function AssetLineChart({ data, color = colors.primary, height = 220 }: P
   );
 }
 
-const styles = StyleSheet.create({
-  empty: {
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    empty: {
+      height: 200,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });

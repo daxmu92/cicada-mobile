@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { Dimensions, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
-import { useFormat, useLocale, useSemanticColors } from '../../hooks/SettingsContext';
+import { useFormat, useLocale, useSemanticColors, useThemedStyles, useTheme } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
 import { formatMonthYear } from '../../utils/date';
-import { colors, radius, spacing } from '../../utils/theme';
+import { radius, spacing, type ThemeColors } from '../../utils/theme';
 
 export type BarPoint = {
   label: string; // "YYYY-MM"
@@ -36,11 +36,15 @@ function shortMonthYear(ym: string): string {
  * Bars baseline at zero so negative months drop below the axis; tap a bar to
  * see its month and value. Width is measured so it fits its card.
  */
-export function AssetBarChart({ data, color = colors.accent, diverging = false, height = 220 }: Props) {
+export function AssetBarChart({ data, color, diverging = false, height = 220 }: Props) {
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
+  const c = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [boxWidth, setBoxWidth] = useState(WIDTH_ESTIMATE);
+
+  const barColor = color ?? c.accent;
 
   const labelStep = data.length > 12 ? Math.ceil(data.length / 6) : 1;
   const plotWidth = Math.max(boxWidth - Y_AXIS_WIDTH - spacing.sm, 0);
@@ -52,12 +56,12 @@ export function AssetBarChart({ data, color = colors.accent, diverging = false, 
     () =>
       data.map((p, i) => ({
         value: p.value,
-        frontColor: diverging ? (p.value >= 0 ? gain : loss) : color,
+        frontColor: diverging ? (p.value >= 0 ? gain : loss) : barColor,
         label: i % labelStep === 0 ? shortMonthYear(p.label) : '',
         labelWidth: i % labelStep === 0 ? 40 : 0, // room for the rotated date
         date: p.label,
       })),
-    [data, diverging, color, gain, loss, labelStep]
+    [data, diverging, barColor, gain, loss, labelStep]
   );
 
   // "Nice" y-axis so labels round to 0 / 1K / 2K instead of 646-style steps.
@@ -94,17 +98,17 @@ export function AssetBarChart({ data, color = colors.accent, diverging = false, 
           stepValue={yAxis.step}
           noOfSections={yAxis.topSections}
           noOfSectionsBelowXAxis={yAxis.bottomSections}
-          yAxisColor={colors.border}
-          xAxisColor={colors.border}
-          rulesColor={colors.border}
+          yAxisColor={c.border}
+          xAxisColor={c.border}
+          rulesColor={c.border}
           rulesType="solid"
-          yAxisTextStyle={{ color: colors.muted, fontSize: 10 }}
+          yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
           formatYLabel={(label: string) => abbrev(Number(label))}
           yAxisLabelWidth={Y_AXIS_WIDTH}
           rotateLabel
           xAxisLabelsAtBottom
           labelsExtraHeight={20}
-          xAxisLabelTextStyle={{ color: colors.muted, fontSize: 9.5 }}
+          xAxisLabelTextStyle={{ color: c.muted, fontSize: 9.5 }}
           renderTooltip={(item: { value: number; date?: string }) => (
             <View style={styles.tip}>
               {item.date ? <Text style={styles.tipDate}>{formatMonthYear(item.date, locale)}</Text> : null}
@@ -117,14 +121,15 @@ export function AssetBarChart({ data, color = colors.accent, diverging = false, 
   );
 }
 
-const styles = StyleSheet.create({
-  tip: {
-    backgroundColor: colors.ink,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.xs + 1,
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  tipDate: { color: 'rgba(255,255,255,0.7)', fontSize: 10, marginBottom: 1 },
-  tipValue: { color: '#fff', fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    tip: {
+      backgroundColor: c.ink,
+      borderRadius: radius.sm,
+      paddingVertical: spacing.xs + 1,
+      paddingHorizontal: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    tipDate: { color: 'rgba(255,255,255,0.7)', fontSize: 10, marginBottom: 1 },
+    tipValue: { color: c.onAccent, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  });

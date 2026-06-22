@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
-import { useLocale } from '../../hooks/SettingsContext';
+import { useLocale, useTheme } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
 import { monthShort } from '../../utils/date';
-import { colors, spacing } from '../../utils/theme';
+import { spacing } from '../../utils/theme';
 import { usePointerConfig } from './pointer';
 
 export type TrendPoint = {
@@ -26,9 +26,12 @@ const Y_AXIS_WIDTH = 42;
  * measured from the actual container (not Dimensions) so it never overflows the
  * card; the y-axis auto-scales to the data range rather than starting at zero.
  */
-export function NetWorthTrendChart({ points, color = colors.accent, height = 150 }: Props) {
+export function NetWorthTrendChart({ points, color, height = 150 }: Props) {
   const locale = useLocale();
+  const c = useTheme();
   const [boxWidth, setBoxWidth] = useState(0);
+
+  const lineColor = color ?? c.accent;
 
   const axis = useMemo(() => {
     const vals = points.map((p) => p.value);
@@ -51,7 +54,7 @@ export function NetWorthTrendChart({ points, color = colors.accent, height = 150
     });
   }, [points, locale, axis.offset]);
 
-  const pointer = usePointerConfig(color);
+  const pointer = usePointerConfig(lineColor);
 
   // gifted-charts total width = plot width + y-axis labels; subtract the axis
   // (plus a small margin) from the measured box so nothing spills out.
@@ -64,13 +67,13 @@ export function NetWorthTrendChart({ points, color = colors.accent, height = 150
           data={chartData}
           height={height}
           width={plotWidth}
-          color={color}
+          color={lineColor}
           thickness={2.5}
           curved
           adjustToWidth
           hideDataPoints
           areaChart
-          startFillColor={color}
+          startFillColor={lineColor}
           startOpacity={0.18}
           endOpacity={0.0}
           // y-axis range (data is pre-shifted by axis.offset; labels add it back)
@@ -78,12 +81,12 @@ export function NetWorthTrendChart({ points, color = colors.accent, height = 150
           noOfSections={axis.noOfSections}
           stepValue={axis.niceStep}
           // axes + grid
-          yAxisColor={colors.border}
-          xAxisColor={colors.border}
-          rulesColor={colors.border}
+          yAxisColor={c.border}
+          xAxisColor={c.border}
+          rulesColor={c.border}
           rulesType="solid"
-          yAxisTextStyle={{ color: colors.muted, fontSize: 10 }}
-          xAxisLabelTextStyle={{ color: colors.muted, fontSize: 10 }}
+          yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
+          xAxisLabelTextStyle={{ color: c.muted, fontSize: 10 }}
           formatYLabel={(label: string) => abbrev(Number(label) + axis.offset)}
           yAxisLabelWidth={Y_AXIS_WIDTH}
           initialSpacing={8}
