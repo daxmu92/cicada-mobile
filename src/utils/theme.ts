@@ -52,6 +52,11 @@ export const tints: Record<string, string> = {
   [semantic.negative]: 'rgba(220,38,38,0.12)',
 };
 
+// Net-worth trend line — a fixed red, identical across every theme (so the
+// curve reads the same regardless of the selected palette). Theme-independent
+// on purpose; do NOT route this through the theme accent.
+export const netWorthLineColor = '#dc2626';
+
 // Multi-hue category palette (asset categories must be easy to tell apart).
 export const categoryPalette = [
   '#4f86c6', '#e8a33d', '#57b08a', '#cc6f8e',

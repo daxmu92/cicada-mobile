@@ -5,7 +5,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import { useLocale, useTheme } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
 import { monthShort } from '../../utils/date';
-import { spacing } from '../../utils/theme';
+import { netWorthLineColor, spacing } from '../../utils/theme';
 import { usePointerConfig } from './pointer';
 
 export type TrendPoint = {
@@ -31,7 +31,10 @@ export function NetWorthTrendChart({ points, color, height = 150 }: Props) {
   const c = useTheme();
   const [boxWidth, setBoxWidth] = useState(0);
 
-  const lineColor = color ?? c.accent;
+  // Defaults to a fixed red (theme-independent) so the net-worth curve looks
+  // the same in every theme; callers that want a data-driven color (e.g. the
+  // home hero's up/down green/red) still override via `color`.
+  const lineColor = color ?? netWorthLineColor;
 
   const axis = useMemo(() => {
     const vals = points.map((p) => p.value);
