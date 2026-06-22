@@ -20,7 +20,7 @@ import {
   formatSigned,
   formatSignedCompact,
 } from '../utils/format';
-import { colors } from '../utils/theme';
+import { semantic } from '../utils/theme';
 
 export type GainColor = 'green' | 'red';
 
@@ -156,7 +156,7 @@ export function useFormat() {
 export function useSemanticColors() {
   const { gainColor } = useContext(SettingsContext);
   return {
-    gain: gainColor === 'red' ? colors.negative : colors.positive,
-    loss: gainColor === 'red' ? colors.positive : colors.negative,
+    gain: gainColor === 'red' ? semantic.negative : semantic.positive,
+    loss: gainColor === 'red' ? semantic.positive : semantic.negative,
   };
 }
