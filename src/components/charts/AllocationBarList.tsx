@@ -8,6 +8,7 @@ export type AllocationItem = {
   label: string;
   value: number;
   color?: string;
+  key?: string;
 };
 
 const PALETTE = categoryPalette;
@@ -15,9 +16,10 @@ const PALETTE = categoryPalette;
 type Props = {
   items: AllocationItem[];
   maxItems?: number;
+  highlightKey?: string;
 };
 
-export function AllocationBarList({ items, maxItems = 8 }: Props) {
+export function AllocationBarList({ items, maxItems = 8, highlightKey }: Props) {
   const { t } = useTranslation();
   const { fmt } = useFormat();
   const sorted = [...items].sort((a, b) => b.value - a.value);
@@ -35,9 +37,11 @@ export function AllocationBarList({ items, maxItems = 8 }: Props) {
         const pct = (item.value / total) * 100;
         const barWidth = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
         const color = item.color ?? PALETTE[index % PALETTE.length];
+        const rowKey = item.key ?? item.label;
+        const isActive = highlightKey != null && rowKey === highlightKey;
 
         return (
-          <View key={item.label} style={styles.row}>
+          <View key={rowKey} style={[styles.row, isActive && styles.rowActive]}>
             <View style={styles.header}>
               <Text style={styles.label} numberOfLines={1}>
                 {item.label}
@@ -58,6 +62,13 @@ export function AllocationBarList({ items, maxItems = 8 }: Props) {
 const styles = StyleSheet.create({
   row: {
     marginBottom: spacing.md,
+  },
+  rowActive: {
+    backgroundColor: colors.track,
+    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginHorizontal: -spacing.sm,
   },
   header: {
     flexDirection: 'row',
