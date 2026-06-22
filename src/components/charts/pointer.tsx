@@ -59,7 +59,7 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: 2,
     },
     value: {
-      color: c.onAccent,
+      color: '#fff',
       fontSize: 13,
       fontWeight: '700',
       fontVariant: ['tabular-nums'],

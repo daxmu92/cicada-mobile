@@ -131,5 +131,5 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: spacing.xs,
     },
     tipDate: { color: 'rgba(255,255,255,0.7)', fontSize: 10, marginBottom: 1 },
-    tipValue: { color: c.onAccent, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
+    tipValue: { color: '#fff', fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
   });

@@ -150,7 +150,7 @@ const makeStyles = (c: ThemeColors) =>
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.xs,
       marginBottom: spacing.md,
-      shadowColor: '#3a3530',
+      shadowColor: c.shadowColor,
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
