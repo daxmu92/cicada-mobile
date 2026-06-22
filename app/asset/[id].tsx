@@ -7,9 +7,9 @@ import { getAsset } from '../../src/db/asset-repo';
 import { getAccount } from '../../src/db/account-repo';
 import { listSnapshotsByAsset } from '../../src/db/snapshot-repo';
 import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
-import { useFormat, useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useFormat, useSemanticColors, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { Asset, AssetSnapshot } from '../../src/utils/types';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { spacing, type ThemeColors } from '../../src/utils/theme';
 import { AssetLineChart } from '../../src/components/charts/AssetLineChart';
 import { AssetBarChart } from '../../src/components/charts/AssetBarChart';
 
@@ -39,6 +39,9 @@ export default function AssetDetailScreen() {
   const { t } = useTranslation();
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
+  const c = useTheme();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   const assetId = Number(id);
 
   const [asset, setAsset] = useState<Asset | null>(null);
@@ -109,7 +112,7 @@ export default function AssetDetailScreen() {
   }));
 
   const lastChartValue = chartData.length ? chartData[chartData.length - 1].value : 0;
-  const lineColor = metric === 'profit' ? (lastChartValue >= 0 ? gain : loss) : colors.primary;
+  const lineColor = metric === 'profit' ? (lastChartValue >= 0 ? gain : loss) : c.primary;
 
   return (
     <>
@@ -140,12 +143,12 @@ export default function AssetDetailScreen() {
                         onPress={() => setMetric(m)}
                         style={[
                           styles.chip,
-                          metric === m && { backgroundColor: colors.primary },
+                          metric === m && { backgroundColor: c.primary },
                         ]}>
                         <Text
                           style={[
                             styles.chipText,
-                            metric === m && { color: 'white' },
+                            metric === m && { color: c.onAccent },
                           ]}>
                           {t(METRIC_LABEL_KEYS[m])}
                         </Text>
@@ -161,9 +164,9 @@ export default function AssetDetailScreen() {
                           onPress={() => setProfitMode(pm)}
                           style={[
                             styles.chipSm,
-                            profitMode === pm && { backgroundColor: colors.primary },
+                            profitMode === pm && { backgroundColor: c.primary },
                           ]}>
-                          <Text style={[styles.chipText, profitMode === pm && { color: 'white' }]}>
+                          <Text style={[styles.chipText, profitMode === pm && { color: c.onAccent }]}>
                             {t(pm === 'cumulative' ? 'assetDetail.cumulative' : 'assetDetail.monthly')}
                           </Text>
                         </TouchableOpacity>
@@ -178,12 +181,12 @@ export default function AssetDetailScreen() {
                       onPress={() => setRange(r)}
                       style={[
                         styles.chip,
-                        range === r && { backgroundColor: colors.primary },
+                        range === r && { backgroundColor: c.primary },
                       ]}>
                       <Text
                         style={[
                           styles.chipText,
-                          range === r && { color: 'white' },
+                          range === r && { color: c.onAccent },
                         ]}>
                         {r}
                       </Text>
@@ -249,77 +252,78 @@ export default function AssetDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  assetName: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  chipRowOuter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  chipGroup: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  rangeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'white',
-  },
-  chipSm: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'white',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.muted,
-  },
-  actionBtn: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  actionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  cell: {
-    flex: 1,
-    fontSize: 14,
-  },
-  headerCell: {
-    fontWeight: '600',
-    color: colors.muted,
-    fontSize: 12,
-    textTransform: 'uppercase',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    assetName: {
+      fontSize: 24,
+      fontWeight: '700',
+      marginTop: spacing.xs,
+    },
+    chipRowOuter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    chipGroup: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    rangeRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    chipSm: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    chipText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.muted,
+    },
+    actionBtn: {
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+    },
+    actionText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.primary,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      paddingBottom: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    tableRow: {
+      flexDirection: 'row',
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    cell: {
+      flex: 1,
+      fontSize: 14,
+    },
+    headerCell: {
+      fontWeight: '600',
+      color: c.muted,
+      fontSize: 12,
+      textTransform: 'uppercase',
+    },
+  });

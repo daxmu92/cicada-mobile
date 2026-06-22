@@ -26,11 +26,15 @@ import {
   setAssetArchived,
 } from '../../src/db/asset-repo';
 import type { Account, AssetWithAccount } from '../../src/utils/types';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
+import { useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 
 export default function ManageAccountsModal() {
   const { t } = useTranslation();
   const router = useRouter();
+  const c = useTheme();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<AssetWithAccount[]>([]);
   const [newAccountName, setNewAccountName] = useState('');
@@ -162,7 +166,7 @@ export default function ManageAccountsModal() {
               onPress={() => setSelectedAccountId(acc.id)}
               style={[
                 styles.listRow,
-                selectedAccountId === acc.id && { backgroundColor: '#eff6ff' },
+                selectedAccountId === acc.id && { backgroundColor: c.accentSoft },
                 acc.archived && styles.archivedRow,
               ]}>
               <View style={styles.rowLeft}>
@@ -255,103 +259,104 @@ export default function ManageAccountsModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-  },
-  toggleLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  addRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  addBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  addBtnText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  listRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 6,
-  },
-  archivedRow: {
-    opacity: 0.6,
-  },
-  rowLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  rowActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  listRowText: {
-    fontSize: 15,
-  },
-  listRowMeta: {
-    fontSize: 12,
-    color: colors.muted,
-    marginTop: 2,
-  },
-  editArrow: {
-    fontSize: 22,
-    color: colors.muted,
-    paddingHorizontal: spacing.sm,
-  },
-  deleteX: {
-    color: colors.negative,
-    fontSize: 18,
-    paddingHorizontal: spacing.sm,
-  },
-  archiveBtn: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  unarchiveBtn: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  badge: {
-    backgroundColor: colors.border,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+    },
+    toggleLabel: {
+      fontSize: 15,
+      fontWeight: '500',
+    },
+    addRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 16,
+      backgroundColor: c.card,
+    },
+    addBtn: {
+      backgroundColor: c.primary,
+      paddingHorizontal: spacing.lg,
+      justifyContent: 'center',
+      borderRadius: 8,
+    },
+    addBtnText: {
+      color: c.onAccent,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    listRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 6,
+    },
+    archivedRow: {
+      opacity: 0.6,
+    },
+    rowLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    rowActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    listRowText: {
+      fontSize: 15,
+    },
+    listRowMeta: {
+      fontSize: 12,
+      color: c.muted,
+      marginTop: 2,
+    },
+    editArrow: {
+      fontSize: 22,
+      color: c.muted,
+      paddingHorizontal: spacing.sm,
+    },
+    deleteX: {
+      color: semantic.negative,
+      fontSize: 18,
+      paddingHorizontal: spacing.sm,
+    },
+    archiveBtn: {
+      color: c.muted,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    unarchiveBtn: {
+      color: c.primary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    badge: {
+      backgroundColor: c.border,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    badgeText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: c.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+  });

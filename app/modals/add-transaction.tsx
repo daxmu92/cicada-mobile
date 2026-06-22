@@ -22,9 +22,9 @@ import {
   updateTransaction,
 } from '../../src/db/tran-repo';
 import { currentDate } from '../../src/utils/date';
-import { useSemanticColors } from '../../src/hooks/SettingsContext';
+import { useSemanticColors, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { TranType } from '../../src/utils/types';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
 
 function formatYMD(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -41,6 +41,9 @@ export default function AddTransactionModal() {
   const params = useLocalSearchParams<{ date?: string; id?: string }>();
   const editingId = params.id ? Number(params.id) : null;
   const { gain, loss } = useSemanticColors();
+  const c = useTheme();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
 
   const [type, setType] = useState<TranType>('OUTLAY');
   const [date, setDate] = useState(params.date ?? currentDate());
@@ -145,7 +148,7 @@ export default function AddTransactionModal() {
                 <Text
                   style={[
                     styles.typeBtnText,
-                    type === opt && { color: 'white' },
+                    type === opt && { color: c.onAccent },
                   ]}>
                   {opt === 'INCOME' ? t('addTransaction.typeIncome') : t('addTransaction.typeOutlay')}
                 </Text>
@@ -207,7 +210,7 @@ export default function AddTransactionModal() {
                     <Text
                       style={[
                         styles.tagChipText,
-                        active && { color: 'white' },
+                        active && { color: c.onAccent },
                       ]}>
                       {tag}
                     </Text>
@@ -241,106 +244,107 @@ export default function AddTransactionModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  typeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  typeBtn: {
-    flex: 1,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  typeBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  inputText: {
-    fontSize: 16,
-    paddingVertical: 2,
-  },
-  pickerWrap: {
-    marginTop: spacing.xs,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: spacing.sm,
-  },
-  doneBtn: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  doneText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tagChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  tagChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'white',
-  },
-  tagChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  tagChipText: {
-    fontSize: 13,
-    color: colors.muted,
-  },
-  submitBtn: {
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  submitText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  deleteText: {
-    color: colors.negative,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    typeRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    typeBtn: {
+      flex: 1,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      alignItems: 'center',
+      backgroundColor: c.card,
+    },
+    typeBtnText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.muted,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 16,
+      backgroundColor: c.card,
+    },
+    inputText: {
+      fontSize: 16,
+      paddingVertical: 2,
+    },
+    pickerWrap: {
+      marginTop: spacing.xs,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      padding: spacing.sm,
+    },
+    doneBtn: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    doneText: {
+      color: c.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    tagChipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    tagChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    tagChipActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    tagChipText: {
+      fontSize: 13,
+      color: c.muted,
+    },
+    submitBtn: {
+      backgroundColor: c.primary,
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.md,
+    },
+    submitText: {
+      color: c.onAccent,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    deleteBtn: {
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    deleteText: {
+      color: semantic.negative,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });

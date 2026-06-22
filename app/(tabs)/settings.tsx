@@ -14,18 +14,18 @@ import { useTranslation } from 'react-i18next';
 import { resetDatabase } from '../../src/db/database';
 import { exportBackup, importBackup } from '../../src/services/backup';
 import { loadSampleData } from '../../src/services/sample-data';
-import { useSettings } from '../../src/hooks/SettingsContext';
+import { useSettings, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { GainColor } from '../../src/hooks/SettingsContext';
 import { confirmAsync, notify } from '../../src/utils/dialog';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
 import { LANGUAGES, type Language } from '../../src/i18n';
 import CloudSyncSection from '../../src/components/CloudSyncSection';
 
 const CURRENCY_OPTIONS = ['$', '€', '£', '¥', 'R$', '₹', '₩', 'CHF'];
 
 const GAIN_COLOR_OPTIONS: { value: GainColor; labelKey: string; color: string }[] = [
-  { value: 'green', labelKey: 'settings.green', color: colors.positive },
-  { value: 'red', labelKey: 'settings.red', color: colors.negative },
+  { value: 'green', labelKey: 'settings.green', color: semantic.positive },
+  { value: 'red', labelKey: 'settings.red', color: semantic.negative },
 ];
 
 const LANGUAGE_LABELS: Record<Language, string> = {
@@ -46,6 +46,9 @@ export default function SettingsScreen() {
     language,
     setLanguage,
   } = useSettings();
+  const c = useTheme();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   const [loading, setLoading] = useState(false);
 
   const confirmReset = async () => {
@@ -108,7 +111,7 @@ export default function SettingsScreen() {
               <Text
                 style={[
                   styles.currencyChipText,
-                  currency === symbol && { color: 'white' },
+                  currency === symbol && { color: c.onAccent },
                 ]}>
                 {symbol}
               </Text>
@@ -136,9 +139,9 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.currencyChipText,
-                    { color: active ? 'white' : opt.color },
+                    { color: active ? c.onAccent : opt.color },
                   ]}>
-                  {t(opt.labelKey)} {'\u25B2'}
+                  {t(opt.labelKey)} {'▲'}
                 </Text>
               </TouchableOpacity>
             );
@@ -162,7 +165,7 @@ export default function SettingsScreen() {
               <Text
                 style={[
                   styles.currencyChipText,
-                  language === lang && { color: 'white' },
+                  language === lang && { color: c.onAccent },
                 ]}>
                 {LANGUAGE_LABELS[lang]}
               </Text>
@@ -244,7 +247,7 @@ export default function SettingsScreen() {
 
       {loading && (
         <View style={styles.loading}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color={c.primary} />
           <Text style={[shared.muted, { marginTop: spacing.sm }]}>{t('common.working')}</Text>
         </View>
       )}
@@ -265,13 +268,15 @@ function Row({
   destructive?: boolean;
   disabled?: boolean;
 }) {
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
       style={[shared.card, styles.row, disabled && { opacity: 0.5 }]}>
       <Text
-        style={[styles.rowTitle, destructive && { color: colors.negative }]}>
+        style={[styles.rowTitle, destructive && { color: semantic.negative }]}>
         {title}
       </Text>
       {subtitle && <Text style={shared.muted}>{subtitle}</Text>}
@@ -279,54 +284,55 @@ function Row({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    marginBottom: spacing.sm,
-  },
-  rowTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  currencyRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  currencyChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'white',
-    minWidth: 48,
-    alignItems: 'center',
-  },
-  currencyChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  currencyChipText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  gainChip: {
-    paddingHorizontal: spacing.lg,
-    minWidth: 96,
-  },
-  loading: {
-    marginTop: spacing.lg,
-    alignItems: 'center',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  toggleText: {
-    flex: 1,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    row: {
+      marginBottom: spacing.sm,
+    },
+    rowTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    currencyRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    currencyChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      minWidth: 48,
+      alignItems: 'center',
+    },
+    currencyChipActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    currencyChipText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.muted,
+    },
+    gainChip: {
+      paddingHorizontal: spacing.lg,
+      minWidth: 96,
+    },
+    loading: {
+      marginTop: spacing.lg,
+      alignItems: 'center',
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    toggleText: {
+      flex: 1,
+    },
+  });

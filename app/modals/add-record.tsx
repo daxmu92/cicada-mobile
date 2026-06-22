@@ -23,8 +23,8 @@ import {
   getSnapshot,
   upsertSnapshot,
 } from '../../src/db/snapshot-repo';
-import { useFormat } from '../../src/hooks/SettingsContext';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { useFormat, useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
+import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
 import { computeInflow, computeProfit } from '../../src/utils/snapshot-calc';
 
 function formatYM(d: Date): string {
@@ -40,6 +40,8 @@ export default function AddRecordModal() {
   const router = useRouter();
   const { t } = useTranslation();
   const { fmt } = useFormat();
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ assetId: string; date: string }>();
   const assetId = Number(params.assetId);
   const [date, setDate] = useState(params.date ?? '');
@@ -230,75 +232,76 @@ export default function AddRecordModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  dateLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
-    color: colors.primary,
-  },
-  pickerWrap: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: spacing.sm,
-  },
-  doneBtn: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  doneText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  autoFillRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  submitBtn: {
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  submitText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  deleteText: {
-    color: colors.negative,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    dateLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      color: c.primary,
+    },
+    pickerWrap: {
+      marginTop: spacing.xs,
+      marginBottom: spacing.sm,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      padding: spacing.sm,
+    },
+    doneBtn: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    doneText: {
+      color: c.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    autoFillRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 16,
+      backgroundColor: c.card,
+    },
+    submitBtn: {
+      backgroundColor: c.primary,
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.md,
+    },
+    submitText: {
+      color: c.onAccent,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    deleteBtn: {
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    deleteText: {
+      color: semantic.negative,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });

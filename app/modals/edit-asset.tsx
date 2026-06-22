@@ -21,7 +21,8 @@ import {
   updateAsset,
 } from '../../src/db/asset-repo';
 import type { Asset } from '../../src/utils/types';
-import { colors, shared, spacing } from '../../src/utils/theme';
+import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
+import { useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
 
 type Category = { key: string; value: string };
 
@@ -30,6 +31,8 @@ export default function EditAssetModal() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const assetId = Number(params.id);
+  const shared = useShared();
+  const styles = useThemedStyles(makeStyles);
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [accountName, setAccountName] = useState('');
@@ -196,107 +199,108 @@ export default function EditAssetModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    backgroundColor: colors.border,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  catRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  catKey: {
-    flex: 1,
-  },
-  catValue: {
-    flex: 2,
-  },
-  removeBtn: {
-    padding: spacing.sm,
-  },
-  removeBtnText: {
-    color: colors.negative,
-    fontSize: 18,
-  },
-  addCatBtn: {
-    marginTop: spacing.md,
-    padding: spacing.sm,
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-  },
-  addCatBtnText: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  saveBtnText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  archiveBtn: {
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'white',
-  },
-  archiveBtnText: {
-    color: colors.muted,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    padding: spacing.md,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  deleteBtnText: {
-    color: colors.negative,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    badge: {
+      backgroundColor: c.border,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    badgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: c.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: 16,
+      backgroundColor: c.card,
+    },
+    catRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    catKey: {
+      flex: 1,
+    },
+    catValue: {
+      flex: 2,
+    },
+    removeBtn: {
+      padding: spacing.sm,
+    },
+    removeBtnText: {
+      color: semantic.negative,
+      fontSize: 18,
+    },
+    addCatBtn: {
+      marginTop: spacing.md,
+      padding: spacing.sm,
+      alignItems: 'center',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+    },
+    addCatBtnText: {
+      color: c.primary,
+      fontWeight: '600',
+    },
+    saveBtn: {
+      backgroundColor: c.primary,
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.md,
+    },
+    saveBtnText: {
+      color: c.onAccent,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    archiveBtn: {
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    archiveBtnText: {
+      color: c.muted,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    deleteBtn: {
+      padding: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    deleteBtnText: {
+      color: semantic.negative,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
