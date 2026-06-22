@@ -128,12 +128,11 @@ export default function HomeScreen() {
         <AllocationBarList items={allocationItems} />
       </SectionCard>
 
-      {/* Trends entry */}
+      {/* Analysis entry */}
       <TouchableOpacity
         style={styles.trendsLink}
-        activeOpacity={0.7}
-        onPress={() => router.push('/trends' as Href)}>
-        <Text style={styles.trendsLinkText}>{t('home.viewTrends')} →</Text>
+        onPress={() => router.navigate('/analysis' as Href)}>
+        <Text style={styles.trendsLinkText}>{t('home.viewAnalysis')} →</Text>
       </TouchableOpacity>
     </ScrollView>
   );

@@ -24,7 +24,6 @@
     "addTransaction": "添加交易",
     "manageAccounts": "管理账户",
     "editAsset": "编辑资产",
-    "trends": "趋势",
     "analysis": "分析"
   },
   "home": {
@@ -36,7 +35,6 @@
     "greetingAfternoon": "下午好",
     "greetingEvening": "晚上好",
     "thisMonth": "本月",
-    "viewTrends": "查看全年趋势",
     "viewAnalysis": "查看分析"
   },
   "assets": {
@@ -222,9 +220,6 @@
     "noData": "暂无数据",
     "noDataToDisplay": "暂无数据显示",
     "noDataYet": "暂无数据"
-  },
-  "trends": {
-    "yearIntro": "点击某个月份可在首页查看该月。每格显示当月净增长。"
   },
   "analysis": {
     "composition": "构成",

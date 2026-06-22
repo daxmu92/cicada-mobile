@@ -24,7 +24,6 @@
     "addTransaction": "Add Transaction",
     "manageAccounts": "Manage Accounts",
     "editAsset": "Edit Asset",
-    "trends": "Trends",
     "analysis": "Insights"
   },
   "home": {
@@ -36,7 +35,6 @@
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
     "thisMonth": "this month",
-    "viewTrends": "View full trends",
     "viewAnalysis": "View full analysis"
   },
   "assets": {
@@ -222,9 +220,6 @@
     "noData": "No data",
     "noDataToDisplay": "No data to display",
     "noDataYet": "No data yet"
-  },
-  "trends": {
-    "yearIntro": "Tap a month to view it on the home screen. Each cell shows that month’s net growth."
   },
   "analysis": {
     "composition": "Composition",

@@ -28,10 +28,6 @@ export default function RootLayout() {
             options={{ title: t('nav.asset') }}
           />
           <Stack.Screen
-            name="trends"
-            options={{ title: t('nav.trends') }}
-          />
-          <Stack.Screen
             name="modals/add-record"
             options={{ presentation: 'modal', title: t('nav.recordSnapshot') }}
           />
