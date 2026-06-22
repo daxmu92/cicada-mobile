@@ -24,7 +24,8 @@
     "addTransaction": "添加交易",
     "manageAccounts": "管理账户",
     "editAsset": "编辑资产",
-    "trends": "趋势"
+    "trends": "趋势",
+    "analysis": "分析"
   },
   "home": {
     "totalNetWorth": "总净值",
@@ -35,7 +36,8 @@
     "greetingAfternoon": "下午好",
     "greetingEvening": "晚上好",
     "thisMonth": "本月",
-    "viewTrends": "查看全年趋势"
+    "viewTrends": "查看全年趋势",
+    "viewAnalysis": "查看分析"
   },
   "assets": {
     "noAccountsTitle": "还没有账户",
@@ -223,5 +225,16 @@
   },
   "trends": {
     "yearIntro": "点击某个月份可在首页查看该月。每格显示当月净增长。"
+  },
+  "analysis": {
+    "composition": "构成",
+    "byAccount": "按账户",
+    "uncategorized": "未分类",
+    "others": "其他",
+    "trendTitle": "净值趋势",
+    "netWorthTrue": "净值",
+    "excludedLiabilities": "未含 {{count}} 个负向分组",
+    "noPositiveHoldings": "暂无正值持仓可展示",
+    "calendarIntro": "点击月份查看。"
   }
 }

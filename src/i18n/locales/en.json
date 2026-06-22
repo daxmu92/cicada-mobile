@@ -24,7 +24,8 @@
     "addTransaction": "Add Transaction",
     "manageAccounts": "Manage Accounts",
     "editAsset": "Edit Asset",
-    "trends": "Trends"
+    "trends": "Trends",
+    "analysis": "Insights"
   },
   "home": {
     "totalNetWorth": "Total Net Worth",
@@ -35,7 +36,8 @@
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
     "thisMonth": "this month",
-    "viewTrends": "View full trends"
+    "viewTrends": "View full trends",
+    "viewAnalysis": "View full analysis"
   },
   "assets": {
     "noAccountsTitle": "No accounts yet",
@@ -223,5 +225,16 @@
   },
   "trends": {
     "yearIntro": "Tap a month to view it on the home screen. Each cell shows that month’s net growth."
+  },
+  "analysis": {
+    "composition": "Composition",
+    "byAccount": "By account",
+    "uncategorized": "Uncategorized",
+    "others": "Others",
+    "trendTitle": "Net worth trend",
+    "netWorthTrue": "Net worth",
+    "excludedLiabilities": "Excludes {{count}} net-negative group(s)",
+    "noPositiveHoldings": "No positive holdings to chart",
+    "calendarIntro": "Tap a month to view it."
   }
 }
