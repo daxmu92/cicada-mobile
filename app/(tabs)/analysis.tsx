@@ -155,7 +155,7 @@ export default function AnalysisScreen() {
         <CompositionDonut
           slices={donutSlices}
           centerPrimary={fmt(comp.chartedTotal)}
-          centerSecondary={comp.trueTotal !== comp.chartedTotal ? `${t('analysis.netWorthTrue')} ${fmt(comp.trueTotal)}` : undefined}
+          centerSecondary={comp.excludedCount > 0 ? `${t('analysis.netWorthTrue')} ${fmt(comp.trueTotal)}` : undefined}
           caption={caption}
           focusedKey={focusedKey}
           onSlicePress={(key) => setFocusedKey((cur) => (cur === key ? undefined : key))}
