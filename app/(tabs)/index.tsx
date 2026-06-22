@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { ScrollView, Text, View, StyleSheet } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -27,21 +27,11 @@ function greetingKey(hour: number): string {
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
 
-  // The Trends screen's year calendar deep-links back here with a ?month param.
-  const params = useLocalSearchParams<{ month?: string }>();
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
-  useEffect(() => {
-    if (params.month && params.month !== selectedMonth) {
-      setSelectedMonth(params.month);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.month]);
-
   const [totals, setTotals] = useState({ netWorth: 0, inflow: 0, profit: 0 });
   const [prevNetWorth, setPrevNetWorth] = useState(0);
   const [allocations, setAllocations] = useState<SnapshotWithAsset[]>([]);
@@ -127,14 +117,6 @@ export default function HomeScreen() {
       <SectionCard title={t('home.allocation')}>
         <AllocationBarList items={allocationItems} />
       </SectionCard>
-
-      {/* Analysis entry */}
-      <TouchableOpacity
-        style={styles.trendsLink}
-        activeOpacity={0.7}
-        onPress={() => router.navigate('/analysis' as Href)}>
-        <Text style={styles.trendsLinkText}>{t('home.viewAnalysis')} →</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -162,14 +144,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     marginBottom: spacing.md,
-  },
-  trendsLink: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  trendsLinkText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.accent,
   },
 });

@@ -34,8 +34,7 @@
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
-    "thisMonth": "this month",
-    "viewAnalysis": "View full analysis"
+    "thisMonth": "this month"
   },
   "assets": {
     "noAccountsTitle": "No accounts yet",

@@ -34,8 +34,7 @@
     "greetingMorning": "早上好",
     "greetingAfternoon": "下午好",
     "greetingEvening": "晚上好",
-    "thisMonth": "本月",
-    "viewAnalysis": "查看分析"
+    "thisMonth": "本月"
   },
   "assets": {
     "noAccountsTitle": "还没有账户",
