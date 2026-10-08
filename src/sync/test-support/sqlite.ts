@@ -24,10 +24,16 @@ export function makeMemoryDb(): { db: CicadaDB; raw: Database.Database } {
     async execAsync(sql: string): Promise<void> {
       raw.exec(sql);
     },
-    async withTransactionAsync(task: () => Promise<void>): Promise<void> {
-      // better-sqlite3's own transaction wrapper is sync-only; for tests we just
-      // run the task (atomicity is not what these tests exercise).
-      await task();
+    async withTransactionAsync(task: (tx: CicadaDB) => Promise<void>): Promise<void> {
+      const nested = raw.inTransaction;
+      if (!nested) raw.exec('BEGIN');
+      try {
+        await task(db);
+        if (!nested) raw.exec('COMMIT');
+      } catch (error) {
+        if (!nested) raw.exec('ROLLBACK');
+        throw error;
+      }
     },
   };
   return { db, raw };

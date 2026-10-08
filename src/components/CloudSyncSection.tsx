@@ -40,8 +40,8 @@ export default function CloudSyncSection() {
         setUsername(creds.username);
         setAppPassword(creds.appPassword);
       }
-    })();
-  }, [sync.available, sync.connected]);
+    })().catch(() => notify(t('common.error'), t('settings.cloudStatusError')));
+  }, [sync.available, sync.connected, t]);
 
   if (!sync.available) return null; // hidden in a plain browser / PWA
 
@@ -114,12 +114,12 @@ export default function CloudSyncSection() {
           {!sync.connected ? (
             <>
               <Btn label={t('settings.cloudTest')} onPress={onTest} disabled={busy} />
-              <Btn label={t('settings.cloudConnect')} onPress={onConnect} disabled={busy} primary />
+              <Btn label={t('settings.cloudConnect')} onPress={onConnect} disabled={busy || sync.status === 'syncing'} primary />
             </>
           ) : (
             <>
-              <Btn label={t('settings.cloudSyncNow')} onPress={() => sync.syncNow()} disabled={busy} primary />
-              <Btn label={t('settings.cloudDisconnect')} onPress={onDisconnect} disabled={busy} />
+              <Btn label={t('settings.cloudSyncNow')} onPress={() => sync.syncNow()} disabled={busy || sync.status === 'syncing'} primary />
+              <Btn label={t('settings.cloudDisconnect')} onPress={onDisconnect} disabled={busy || sync.status === 'syncing'} />
             </>
           )}
         </View>

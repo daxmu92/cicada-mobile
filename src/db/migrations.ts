@@ -16,7 +16,7 @@ export interface CicadaDB {
   ): Promise<{ lastInsertRowId: number; changes: number }>;
   /** Executes one or more `;`-separated statements (no bind params). */
   execAsync(sql: string): Promise<void>;
-  withTransactionAsync(task: () => Promise<void>): Promise<void>;
+  withTransactionAsync(task: (tx: CicadaDB) => Promise<void>): Promise<void>;
 }
 
 export const SCHEMA_VERSION = 2;
@@ -82,6 +82,13 @@ export async function migrate(db: CicadaDB): Promise<void> {
     CREATE TABLE IF NOT EXISTS sync_state (
       key     TEXT PRIMARY KEY,
       value   TEXT NOT NULL
+    );
+
+    -- Local recovery copies do not travel in the cloud sync document.
+    CREATE TABLE IF NOT EXISTS local_backup (
+      id INTEGER PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      content TEXT NOT NULL
     );
 
     CREATE INDEX IF NOT EXISTS idx_snapshot_date ON asset_snapshot(date);

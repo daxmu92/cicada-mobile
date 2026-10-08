@@ -1,6 +1,8 @@
+import { tick } from '../sync/clock';
+import { requireAmount, requireId, requireMonth } from '../utils/validation';
 import { getDatabase } from './database';
-import { listAssets } from './asset-repo';
-import { stampWrite, recordTombstones } from '../sync/stamp';
+import { monthValuation, monthlyValuations, type ValuationOptions } from './valuation';
+import { stampWrite, recordTombstonesAt } from '../sync/stamp';
 import { bumpDirty } from '../sync/dirty';
 import type { CicadaDB } from './migrations';
 import type { AssetSnapshot, SnapshotWithAsset } from '../utils/types';
@@ -49,56 +51,8 @@ export async function listSnapshotsByAsset(assetId: number): Promise<AssetSnapsh
   return rows.map(rowToSnapshot);
 }
 
-export async function listSnapshotsByDate(
-  date: string,
-  opts?: { forwardFill?: boolean }
-): Promise<SnapshotWithAsset[]> {
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<SnapshotWithAssetRow>(`
-    SELECT s.*, acc.name AS account_name, a.name AS asset_name
-    FROM asset_snapshot s
-    JOIN asset a ON s.asset_id = a.id
-    JOIN account acc ON a.account_id = acc.id
-    WHERE s.date = ? AND a.archived = 0
-    ORDER BY acc.name, a.name
-  `, [date]);
-  const exact: SnapshotWithAsset[] = rows.map(r => ({
-    ...rowToSnapshot(r),
-    accountName: r.account_name,
-    assetName: r.asset_name,
-  }));
-
-  if (!opts?.forwardFill) return exact;
-
-  const assets = await listAssets();
-  const byId = new Map<number, SnapshotWithAsset>();
-  for (const s of exact) byId.set(s.assetId, s);
-
-  const result: SnapshotWithAsset[] = [];
-  for (const asset of assets) {
-    const existing = byId.get(asset.id);
-    if (existing) {
-      result.push(existing);
-      continue;
-    }
-    const prev = await getLastSnapshotBefore(asset.id, date);
-    if (!prev) continue; // asset with no prior history — skip
-    result.push({
-      assetId: asset.id,
-      date,
-      netWorth: prev.netWorth,
-      inflow: 0,
-      profit: 0,
-      accountName: asset.accountName,
-      assetName: asset.name,
-    });
-  }
-
-  result.sort((a, b) => {
-    const cmp = a.accountName.localeCompare(b.accountName);
-    return cmp !== 0 ? cmp : a.assetName.localeCompare(b.assetName);
-  });
-  return result;
+export async function listSnapshotsByDate(date: string, options: ValuationOptions = {}): Promise<SnapshotWithAsset[]> {
+  return monthValuation(await getDatabase(), date, options);
 }
 
 export async function listSnapshotsInRange(
@@ -161,6 +115,8 @@ export async function upsertSnapshot(
   inflow: number,
   profit: number
 ): Promise<void> {
+  requireId(assetId, 'snapshot.assetId'); requireMonth(date, 'snapshot.date');
+  requireAmount(netWorth, 'snapshot.netWorth'); requireAmount(inflow, 'snapshot.inflow'); requireAmount(profit, 'snapshot.profit');
   const db = await getDatabase();
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(`
@@ -177,17 +133,20 @@ export async function upsertSnapshot(
 
 export async function deleteSnapshot(assetId: number, date: string): Promise<void> {
   const db = await getDatabase();
-  const asset = await db.getFirstAsync<{ uuid: string }>(
-    'SELECT uuid FROM asset WHERE id = ?',
-    [assetId]
-  );
-  await db.runAsync(
-    'DELETE FROM asset_snapshot WHERE asset_id = ? AND date = ?',
-    [assetId, date]
-  );
-  if (asset?.uuid) {
-    await recordTombstones(db, 'snapshot', [`${asset.uuid}|${date}`]);
-  }
+  const deletedAt = await tick();
+  await db.withTransactionAsync(async (db) => {
+    const asset = await db.getFirstAsync<{ uuid: string }>(
+      'SELECT uuid FROM asset WHERE id = ?',
+      [assetId]
+    );
+    await db.runAsync(
+      'DELETE FROM asset_snapshot WHERE asset_id = ? AND date = ?',
+      [assetId, date]
+    );
+    if (asset?.uuid) {
+      await recordTombstonesAt(db, 'snapshot', [`${asset.uuid}|${date}`], deletedAt);
+    }
+  });
   bumpDirty();
 }
 
@@ -200,79 +159,10 @@ export async function getDateRange(): Promise<{ start: string; end: string } | n
   return { start: row.start, end: row.end };
 }
 
-export async function getMonthlyTotals(
-  startDate: string,
-  endDate: string
-): Promise<Array<{ date: string; netWorth: number; profit: number; inflow: number }>> {
-  const db = await getDatabase();
-  return db.getAllAsync<{ date: string; netWorth: number; profit: number; inflow: number }>(
-    `SELECT s.date AS date,
-      SUM(s.net_worth) AS netWorth,
-      SUM(s.profit)    AS profit,
-      SUM(s.inflow)    AS inflow
-    FROM asset_snapshot s
-    JOIN asset a ON s.asset_id = a.id
-    WHERE s.date BETWEEN ? AND ? AND a.archived = 0
-    GROUP BY s.date
-    ORDER BY s.date`,
-    [startDate, endDate]
-  );
+export async function getMonthlyTotals(startDate: string, endDate: string, options: ValuationOptions = {}) {
+  return monthlyValuations(await getDatabase(), startDate, endDate, options);
 }
-
-export async function getTotalsForDate(
-  date: string,
-  opts?: { forwardFill?: boolean }
-): Promise<{
-  netWorth: number;
-  inflow: number;
-  profit: number;
-}> {
-  const db = await getDatabase();
-  const row = await db.getFirstAsync<{
-    net_worth: number | null;
-    inflow: number | null;
-    profit: number | null;
-  }>(`
-    SELECT
-      SUM(s.net_worth) AS net_worth,
-      SUM(s.inflow) AS inflow,
-      SUM(s.profit) AS profit
-    FROM asset_snapshot s
-    JOIN asset a ON s.asset_id = a.id
-    WHERE s.date = ? AND a.archived = 0
-  `, [date]);
-  const base = {
-    netWorth: row?.net_worth ?? 0,
-    inflow: row?.inflow ?? 0,
-    profit: row?.profit ?? 0,
-  };
-
-  if (!opts?.forwardFill) return base;
-
-  // Find assets without an exact-date snapshot and add their last-known netWorth.
-  // Only consider non-archived assets; the forward-fill set already does via
-  // listAssets() below, but we also filter the "exact" lookup to archived=0
-  // so archived snapshots on this date don't mark an asset as having one.
-  const exactRows = await db.getAllAsync<{ asset_id: number }>(
-    `SELECT s.asset_id
-       FROM asset_snapshot s
-       JOIN asset a ON s.asset_id = a.id
-      WHERE s.date = ? AND a.archived = 0`,
-    [date]
-  );
-  const haveExact = new Set<number>(exactRows.map(r => r.asset_id));
-
-  const assets = await listAssets();
-  let filledNetWorth = 0;
-  for (const asset of assets) {
-    if (haveExact.has(asset.id)) continue;
-    const prev = await getLastSnapshotBefore(asset.id, date);
-    if (prev) filledNetWorth += prev.netWorth;
-  }
-
-  return {
-    netWorth: base.netWorth + filledNetWorth,
-    inflow: base.inflow,
-    profit: base.profit,
-  };
+export async function getTotalsForDate(date: string, options: ValuationOptions = {}): Promise<{ netWorth: number; inflow: number; profit: number }> {
+  const rows = await monthValuation(await getDatabase(), date, options);
+  return rows.reduce((total, row) => ({ netWorth: total.netWorth + row.netWorth, inflow: total.inflow + row.inflow, profit: total.profit + row.profit }), { netWorth: 0, inflow: 0, profit: 0 });
 }

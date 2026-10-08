@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +39,7 @@ export default function AssetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
   const c = useTheme();
@@ -62,14 +65,11 @@ export default function AssetDetailScreen() {
     setSnapshots(snaps);
   }, [assetId]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
   const reversed = [...snapshots].reverse();

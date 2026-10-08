@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { DateField } from '../../src/components/DateField';
+import { parseAmount } from '../../src/utils/money';
+import { useSaveAction } from '../../src/hooks/use-save-action';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -26,15 +28,6 @@ import { useSemanticColors, useShared, useTheme, useThemedStyles } from '../../s
 import type { TranType } from '../../src/utils/types';
 import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
 
-function formatYMD(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function parseYMD(s: string): Date {
-  const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
-}
-
 export default function AddTransactionModal() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -47,28 +40,17 @@ export default function AddTransactionModal() {
 
   const [type, setType] = useState<TranType>('OUTLAY');
   const [date, setDate] = useState(params.date ?? currentDate());
-  const [showPicker, setShowPicker] = useState(false);
+  const { saving, save } = useSaveAction();
   const [value, setValue] = useState('');
   const [cat, setCat] = useState('');
   const [note, setNote] = useState('');
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
-  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowPicker(false);
-      if (event.type === 'set' && selected) {
-        setDate(formatYMD(selected));
-      }
-    } else if (selected) {
-      setDate(formatYMD(selected));
-    }
-  };
-
   const loadData = useCallback(async () => {
     const tags = await getAllTags();
     setExistingTags(tags);
 
-    if (editingId) {
+    if (editingId !== null) {
       const tx = await getTransaction(editingId);
       if (tx) {
         setType(tx.type);
@@ -97,19 +79,19 @@ export default function AddTransactionModal() {
     }
   };
 
-  const submit = async () => {
-    const v = parseFloat(value);
-    if (isNaN(v) || v <= 0) {
+  const submit = () => save(async () => {
+    const v = parseAmount(value);
+    if (v <= 0) {
       notify(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
       return;
     }
-    if (editingId) {
+    if (editingId !== null) {
       await updateTransaction(editingId, date, type, v, cat.trim(), note.trim());
     } else {
       await createTransaction(date, type, v, cat.trim(), note.trim());
     }
     router.back();
-  };
+  });
 
   const confirmDelete = async () => {
     if (!editingId) return;
@@ -155,41 +137,23 @@ export default function AddTransactionModal() {
           </View>
 
           <Text style={styles.label}>{t('addTransaction.date')}</Text>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowPicker((s) => !s)}>
-            <Text style={styles.inputText}>{date}</Text>
-          </TouchableOpacity>
-          {showPicker && (
-            <View style={styles.pickerWrap}>
-              <DateTimePicker
-                value={parseYMD(date)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={onPickerChange}
-              />
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={styles.doneBtn}
-                  onPress={() => setShowPicker(false)}>
-                  <Text style={styles.doneText}>{t('common.done')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          <DateField value={date} onChange={setDate} label={t('addTransaction.date')} disabled={saving} />
 
           <Text style={styles.label}>{t('addTransaction.value')}</Text>
           <TextInput
             style={styles.input}
+            accessibilityLabel={t('addTransaction.value')}
             value={value}
             onChangeText={setValue}
             placeholder={t('addTransaction.valuePlaceholder')}
             keyboardType="decimal-pad"
+            editable={!saving}
           />
 
           <Text style={styles.label}>{t('addTransaction.tags')}</Text>
           <TextInput
             style={styles.input}
+            accessibilityLabel={t('addTransaction.tags')}
             value={cat}
             onChangeText={setCat}
             placeholder={t('addTransaction.tagsPlaceholder')}
@@ -221,6 +185,7 @@ export default function AddTransactionModal() {
           <Text style={styles.label}>{t('addTransaction.note')}</Text>
           <TextInput
             style={[styles.input, { height: 80 }]}
+            accessibilityLabel={t('addTransaction.note')}
             value={note}
             onChangeText={setNote}
             placeholder={t('addTransaction.notePlaceholder')}
@@ -228,8 +193,8 @@ export default function AddTransactionModal() {
           />
         </View>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={submit}>
-          <Text style={styles.submitText}>{editingId ? t('common.update') : t('common.save')}</Text>
+        <TouchableOpacity accessibilityRole="button" style={styles.submitBtn} onPress={submit} disabled={saving}>
+          <Text style={styles.submitText}>{saving ? t('common.saving') : editingId !== null ? t('common.update') : t('common.save')}</Text>
         </TouchableOpacity>
 
         {editingId && (

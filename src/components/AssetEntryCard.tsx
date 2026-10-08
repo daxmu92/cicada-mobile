@@ -1,3 +1,4 @@
+import { tryAmount } from '../utils/money';
 import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -13,6 +14,7 @@ export type SnapshotDraft = {
 };
 
 type Props = {
+  disabled?: boolean;
   assetName: string;
   lastNetWorth: number;
   draft: SnapshotDraft;
@@ -22,6 +24,7 @@ type Props = {
 };
 
 export function AssetEntryCard({
+  disabled = false,
   assetName,
   lastNetWorth,
   draft,
@@ -36,7 +39,7 @@ export function AssetEntryCard({
   const setNetWorth = (v: string) => {
     const next = { ...draft, netWorth: v };
     if (draft.autoFill) {
-      next.profit = String(computeProfit(parseFloat(v) || 0, lastNetWorth, parseFloat(draft.inflow) || 0));
+      next.profit = String(computeProfit(tryAmount(v) ?? 0, lastNetWorth, tryAmount(draft.inflow) ?? 0));
     }
     onChange(next);
   };
@@ -44,7 +47,7 @@ export function AssetEntryCard({
   const setInflow = (v: string) => {
     const next = { ...draft, inflow: v };
     if (draft.autoFill) {
-      next.profit = String(computeProfit(parseFloat(draft.netWorth) || 0, lastNetWorth, parseFloat(v) || 0));
+      next.profit = String(computeProfit(tryAmount(draft.netWorth) ?? 0, lastNetWorth, tryAmount(v) ?? 0));
     }
     onChange(next);
   };
@@ -52,7 +55,7 @@ export function AssetEntryCard({
   const setProfit = (v: string) => {
     const next = { ...draft, profit: v };
     if (draft.autoFill) {
-      next.inflow = String(computeInflow(parseFloat(draft.netWorth) || 0, lastNetWorth, parseFloat(v) || 0));
+      next.inflow = String(computeInflow(tryAmount(draft.netWorth) ?? 0, lastNetWorth, tryAmount(v) ?? 0));
     }
     onChange(next);
   };
@@ -64,7 +67,7 @@ export function AssetEntryCard({
 
       <View style={styles.autoRow}>
         <Text style={styles.label}>{t('addRecord.autoCalculate')}</Text>
-        <Switch value={draft.autoFill} onValueChange={(v) => onChange({ ...draft, autoFill: v })} />
+        <Switch disabled={disabled} value={draft.autoFill} onValueChange={(v) => onChange({ ...draft, autoFill: v })} />
       </View>
 
       <Text style={styles.label}>{t('addRecord.netWorth')}</Text>
@@ -74,6 +77,7 @@ export function AssetEntryCard({
         onChangeText={setNetWorth}
         placeholder={t('addRecord.valuePlaceholder')}
         keyboardType="decimal-pad"
+        editable={!disabled}
         returnKeyType="next"
       />
 
@@ -84,6 +88,7 @@ export function AssetEntryCard({
         onChangeText={setInflow}
         placeholder={t('addRecord.valuePlaceholder')}
         keyboardType="decimal-pad"
+        editable={!disabled}
         returnKeyType="next"
       />
 
@@ -94,14 +99,15 @@ export function AssetEntryCard({
         onChangeText={setProfit}
         placeholder={t('addRecord.valuePlaceholder')}
         keyboardType="decimal-pad"
+        editable={!disabled}
         returnKeyType="done"
       />
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerBtn} onPress={onReset}>
+        <TouchableOpacity style={styles.footerBtn} onPress={onReset} disabled={disabled}>
           <Text style={styles.footerText}>↺ {t('batchEntry.reset')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerBtn} onPress={onCollapse}>
+        <TouchableOpacity style={styles.footerBtn} onPress={onCollapse} disabled={disabled}>
           <Text style={[styles.footerText, styles.collapseText]}>⌃ {t('batchEntry.collapse')}</Text>
         </TouchableOpacity>
       </View>

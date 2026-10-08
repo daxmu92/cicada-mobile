@@ -1,20 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { parseAmount, tryAmount } from '../../src/utils/money';
+import { useSaveAction } from '../../src/hooks/use-save-action';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { listAccounts } from '../../src/db/account-repo';
-import { listAssets } from '../../src/db/asset-repo';
+import { listAssetOverview } from '../../src/db/asset-repo';
 import {
   getLastSnapshotBefore,
   getSnapshot,
-  listSnapshotsByAsset,
   listSnapshotsByDate,
   upsertSnapshot,
 } from '../../src/db/snapshot-repo';
 import { currentYearMonth } from '../../src/utils/date';
 import { confirmAsync, notify } from '../../src/utils/dialog';
-import { useFormat, useSemanticColors, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
+import { useFormat, useSemanticColors, useShared, useTheme, useThemedStyles, useSettings } from '../../src/hooks/SettingsContext';
 import type { Account, AssetWithAccount, SnapshotWithAsset } from '../../src/utils/types';
 import { spacing, type ThemeColors } from '../../src/utils/theme';
 import { Sparkline } from '../../src/components/charts/Sparkline';
@@ -22,7 +24,7 @@ import { MonthSelector } from '../../src/components/MonthSelector';
 import { AssetEntryCard, type SnapshotDraft } from '../../src/components/AssetEntryCard';
 
 type EnrichedAsset = AssetWithAccount & {
-  netWorth: number;
+  netWorth: number | null;
   history: number[];
 };
 
@@ -32,9 +34,9 @@ type AccountGroup = {
 };
 
 function sameNum(a: string, b: string): boolean {
-  const x = parseFloat(a);
-  const y = parseFloat(b);
-  if (isNaN(x) && isNaN(y)) return true;
+  const x = tryAmount(a);
+  const y = tryAmount(b);
+  if (x === null || y === null) return a === b;
   return x === y;
 }
 
@@ -44,12 +46,18 @@ function isDirty(d: SnapshotDraft, base: SnapshotDraft): boolean {
 
 export default function AssetsScreen() {
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
   const router = useRouter();
   const { fmt } = useFormat();
+  const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
   const c = useTheme();
+  const { saving, save } = useSaveAction();
+  const entrySession = useRef(0);
+  const overviewRequest = useRef(0);
+  const snapshotRequest = useRef(0);
   const [groups, setGroups] = useState<AccountGroup[]>([]);
 
   // Entry-mode state
@@ -62,44 +70,36 @@ export default function AssetsScreen() {
   const [expandedAssetId, setExpandedAssetId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
-    const [accounts, assets] = await Promise.all([listAccounts(), listAssets()]);
-    const today = currentYearMonth();
-
-    const enriched = await Promise.all(
-      assets.map(async (a) => {
-        const snap = (await getSnapshot(a.id, today)) ?? (await getLastSnapshotBefore(a.id, today));
-        const history = await listSnapshotsByAsset(a.id);
-        return {
-          ...a,
-          netWorth: snap?.netWorth ?? 0,
-          history: history.slice(-12).map((s) => s.netWorth),
-        };
-      })
-    );
+    const generation = ++overviewRequest.current;
+    const [accounts, enriched] = await Promise.all([listAccounts(), listAssetOverview(currentYearMonth(), forwardFill)]);
 
     const byAccount = accounts.map((acc) => ({
       account: acc,
       assets: enriched.filter((a) => a.accountId === acc.id),
     }));
-    setGroups(byAccount);
-  }, []);
+    if (generation === overviewRequest.current) setGroups(byAccount);
+  }, [forwardFill]);
 
   const loadMonthSnapshots = useCallback(async () => {
+    const generation = ++snapshotRequest.current;
+    const session = entrySession.current;
     const snaps = await listSnapshotsByDate(selectedMonth);
     const m = new Map<number, SnapshotWithAsset>();
     snaps.forEach((s) => m.set(s.assetId, s));
-    setMonthSnapshots(m);
+    if (generation === snapshotRequest.current && session === entrySession.current) setMonthSnapshots(m);
   }, [selectedMonth]);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
   useEffect(() => {
-    if (entryMode) loadMonthSnapshots();
-  }, [entryMode, loadMonthSnapshots]);
+    if (entryMode) void loadMonthSnapshots().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    void dataVersion;
+  }, [entryMode, loadMonthSnapshots, dataVersion, t]);
 
   const assetNameById = (id: number): string => {
     for (const g of groups) {
@@ -118,6 +118,8 @@ export default function AssetsScreen() {
   const dirtyCount = dirtyEntries().length;
 
   const clearDrafts = () => {
+    entrySession.current++; snapshotRequest.current++;
+    setMonthSnapshots(new Map());
     setDrafts(new Map());
     setBaselines(new Map());
     setLastNetWorthByAsset(new Map());
@@ -154,6 +156,7 @@ export default function AssetsScreen() {
   };
 
   const expand = async (assetId: number) => {
+    const session = entrySession.current;
     if (!baselines.has(assetId)) {
       const last = await getLastSnapshotBefore(assetId, selectedMonth);
       const lastNW = last?.netWorth ?? 0;
@@ -162,6 +165,7 @@ export default function AssetsScreen() {
       // after entering entry mode — a stale empty map would mis-prefill from
       // last-known net worth and cache a wrong baseline for the session.
       const existing = await getSnapshot(assetId, selectedMonth);
+      if (session !== entrySession.current) return;
       const base: SnapshotDraft = existing
         ? {
             netWorth: String(existing.netWorth),
@@ -174,7 +178,7 @@ export default function AssetsScreen() {
       setBaselines((prev) => new Map(prev).set(assetId, base));
       setDrafts((prev) => (prev.has(assetId) ? prev : new Map(prev).set(assetId, base)));
     }
-    setExpandedAssetId(assetId);
+    if (session === entrySession.current) setExpandedAssetId(assetId);
   };
 
   const onDraftChange = (assetId: number, draft: SnapshotDraft) => {
@@ -186,19 +190,15 @@ export default function AssetsScreen() {
     if (base) setDrafts((prev) => new Map(prev).set(assetId, base));
   };
 
-  const submit = async () => {
+  const submit = () => save(async () => {
     const dirty = dirtyEntries();
     const failed: string[] = [];
     const succeeded: number[] = [];
     for (const [id, d] of dirty) {
-      const n = parseFloat(d.netWorth);
-      const i = d.inflow.trim() === '' ? 0 : parseFloat(d.inflow);
-      const p = d.profit.trim() === '' ? 0 : parseFloat(d.profit);
-      if (isNaN(n) || isNaN(i) || isNaN(p)) {
-        failed.push(assetNameById(id));
-        continue;
-      }
       try {
+        const n = parseAmount(d.netWorth);
+        const i = parseAmount(d.inflow, true);
+        const p = parseAmount(d.profit, true);
         await upsertSnapshot(id, selectedMonth, n, i, p);
         succeeded.push(id);
       } catch {
@@ -224,13 +224,13 @@ export default function AssetsScreen() {
     } else {
       exitEntryMode();
     }
-  };
+  });
 
   const renderHeader = () => {
     if (!entryMode) {
-      if (groups.every((g) => g.assets.length === 0)) return null;
       return (
         <View style={styles.topBar}>
+          <TouchableOpacity accessibilityRole="button" style={styles.enterBtn} onPress={() => router.push('/modals/manage-accounts')}><Text style={styles.enterText}>{t('settings.accountsAssets')}</Text></TouchableOpacity>
           <TouchableOpacity style={styles.enterBtn} onPress={enterEntryMode}>
             <Text style={styles.enterText}>{t('batchEntry.enter')}</Text>
           </TouchableOpacity>
@@ -239,13 +239,13 @@ export default function AssetsScreen() {
     }
     return (
       <View style={styles.toolbar}>
-        <TouchableOpacity onPress={onCancel} style={styles.toolBtn}>
+        <TouchableOpacity onPress={onCancel} disabled={saving} style={styles.toolBtn}>
           <Text style={styles.toolText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
-        <MonthSelector value={selectedMonth} onChange={onChangeMonth} />
+        <MonthSelector disabled={saving} value={selectedMonth} onChange={onChangeMonth} />
         <TouchableOpacity
           onPress={submit}
-          disabled={dirtyCount === 0}
+          disabled={saving || dirtyCount === 0}
           style={styles.toolBtn}>
           <Text style={[styles.toolText, styles.submitText, dirtyCount === 0 && styles.disabled]}>
             {t('batchEntry.submit', { count: dirtyCount })}
@@ -260,7 +260,7 @@ export default function AssetsScreen() {
       const draft = drafts.get(asset.id);
       if (!draft) return null;
       return (
-        <AssetEntryCard
+        <AssetEntryCard disabled={saving}
           key={asset.id}
           assetName={asset.name}
           lastNetWorth={lastNetWorthByAsset.get(asset.id) ?? 0}
@@ -276,7 +276,7 @@ export default function AssetsScreen() {
     const dirty = base != null && d != null && isDirty(d, base);
     const recorded = monthSnapshots.has(asset.id);
     return (
-      <TouchableOpacity key={asset.id} onPress={() => expand(asset.id)} style={styles.assetRow}>
+      <TouchableOpacity key={asset.id} disabled={saving} onPress={() => { void expand(asset.id).catch(() => notify(t('common.error'), t('common.loadFailed'))); }} style={styles.assetRow}>
         <Text style={[styles.assetName, { flex: 1 }]}>{asset.name}</Text>
         {dirty ? (
           <Text style={[styles.marker, { color: c.primary }]}>{t('batchEntry.edited')}</Text>
@@ -292,6 +292,7 @@ export default function AssetsScreen() {
       <View style={[shared.screen, styles.empty]}>
         <Text style={shared.heading}>{t('assets.noAccountsTitle')}</Text>
         <Text style={shared.muted}>{t('assets.noAccountsBody')}</Text>
+        <TouchableOpacity accessibilityRole="button" style={styles.enterBtn} onPress={() => router.push('/modals/manage-accounts')}><Text style={styles.enterText}>{t('settings.accountsAssets')}</Text></TouchableOpacity>
       </View>
     );
   }
@@ -331,7 +332,7 @@ export default function AssetsScreen() {
                     )}
                   </View>
                   <Sparkline values={asset.history} width={70} height={28} color={trendColor} />
-                  <Text style={styles.assetValue}>{fmt(asset.netWorth)}</Text>
+                  <Text style={styles.assetValue}>{asset.netWorth === null ? '—' : fmt(asset.netWorth)}</Text>
                 </TouchableOpacity>
               );
             })

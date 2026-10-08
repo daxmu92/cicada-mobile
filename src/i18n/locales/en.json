@@ -12,7 +12,15 @@
     "archived": "Archived",
     "error": "Error",
     "working": "Working…",
-    "today": "Today"
+    "today": "Today",
+    "saving": "Saving…",
+    "saveFailed": "Could not save. Please try again.",
+    "invalidAmount": "Enter a complete amount with up to two decimals and valid thousands separators.",
+    "retry": "Retry",
+    "loading": "Loading your ledger…",
+    "loadFailed": "Could not load your ledger. Please retry.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "nav": {
     "home": "Home",
@@ -34,7 +42,10 @@
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
-    "thisMonth": "this month"
+    "thisMonth": "this month",
+    "noSnapshot": "No net-worth records for this month",
+    "noComparison": "Growth needs records for this and the previous month",
+    "estimated": "Includes last-known values. Archived assets contribute only actual records."
   },
   "assets": {
     "noAccountsTitle": "No accounts yet",
@@ -176,7 +187,7 @@
     "resetConfirm": "Reset",
     "resetDone": "Database has been reset.",
     "loadSampleTitle": "Load Sample Data",
-    "loadSampleBody": "This will replace all current data with generated sample accounts, assets, snapshots, and transactions.",
+    "loadSampleBody": "This replaces this ledger and syncs the replacement to the cloud and connected devices. A local automatic backup is saved first.",
     "loadConfirm": "Load",
     "doneTitle": "Done",
     "sampleLoaded": "Sample data loaded. Check the Home and Assets tabs.",
@@ -184,7 +195,7 @@
     "exportFailedTitle": "Export Failed",
     "exportFailedBody": "Unable to export",
     "importTitle": "Import Backup",
-    "importBody": "This will replace all existing data. Continue?",
+    "importBody": "This replaces this ledger and syncs it to connected devices. An automatic backup is saved first; a failed import keeps your ledger. Continue?",
     "importConfirm": "Import",
     "importedTitle": "Imported",
     "importedBody": "Accounts: {{accounts}}\nAssets: {{assets}}\nSnapshots: {{snapshots}}\nTransactions: {{transactions}}",
@@ -221,7 +232,10 @@
     "themeSeaGlass": "Sea Glass",
     "themeDuskBlue": "Dusk Blue",
     "themeSky": "Sky",
-    "themeLilac": "Lilac"
+    "themeLilac": "Lilac",
+    "exportRecovery": "Export latest automatic backup",
+    "exportRecoverySub": "Keeps up to five local copies before importing or loading samples. Erasing data removes these copies.",
+    "noRecovery": "No automatic backup is available yet."
   },
   "eraseData": {
     "title": "Erase All Data",
@@ -235,7 +249,8 @@
   "charts": {
     "noData": "No data",
     "noDataToDisplay": "No data to display",
-    "noDataYet": "No data yet"
+    "noDataYet": "No data yet",
+    "liabilities": "Liabilities: {{value}} (allocation uses positive assets)"
   },
   "analysis": {
     "composition": "Composition",

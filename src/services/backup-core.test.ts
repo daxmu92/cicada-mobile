@@ -88,3 +88,43 @@ test('restoreBackupDoc with restamp forces freshStamp on all updated_at', async 
   assert.equal(acc!.updated_at, fresh);
   assert.equal(setting!.updated_at, fresh);
 });
+
+test('invalid backup is rejected before any existing financial data is erased', async () => {
+  const { replaceBackupDoc } = await import('./backup-core');
+  const { db } = await makeMigratedDb(); await seed(db);
+  const invalid = { version: 3, accounts: [{ id: 2 }], assets: [], snapshots: [], transactions: [] };
+  assert.throws(() => parseBackup(JSON.stringify(invalid)), /name/);
+  await assert.rejects(() => replaceBackupDoc(db, invalid as any, { deletedAt: STAMP, freshStamp: STAMP }));
+  assert.equal((await db.getAllAsync('SELECT * FROM account')).length, 1);
+  assert.equal((await db.getAllAsync('SELECT * FROM asset_snapshot')).length, 1);
+});
+test('a failed replacement rolls back deletes, partial inserts and tombstones', async () => {
+  const { replaceBackupDoc, latestRecoveryBackup } = await import('./backup-core');
+  const { db } = await makeMigratedDb(); await seed(db);
+  const before = await buildBackupDoc(db, 'x');
+  await db.execAsync("CREATE TRIGGER fail_restore BEFORE INSERT ON asset_snapshot BEGIN SELECT RAISE(ABORT, 'simulated disk failure'); END;");
+  await assert.rejects(() => replaceBackupDoc(db, before, { deletedAt: '000000000000124-00000-aaaaaa', freshStamp: '000000000000125-00000-aaaaaa' }), /disk failure/);
+  assert.equal((await db.getFirstAsync<{ net_worth: number }>('SELECT net_worth FROM asset_snapshot'))!.net_worth, 100);
+  assert.equal((await db.getAllAsync('SELECT * FROM tombstone')).length, 1);
+  assert.ok(await latestRecoveryBackup(db));
+});
+test('backup validation catches dangling ids, duplicates and invalid dates', () => {
+  const valid = { version: 2, accounts: [{id: 1, name: 'Bank'}], assets: [{id: 1, accountId: 1, name: 'Fund', categories: '{}'}], snapshots: [], transactions: [], settings: {} };
+  assert.throws(() => parseBackup(JSON.stringify({...valid, assets: [{...valid.assets[0], accountId: 2}]})), /missing account/);
+  assert.throws(() => parseBackup(JSON.stringify({...valid, accounts: [...valid.accounts, ...valid.accounts]})), /duplicate/);
+  assert.throws(() => parseBackup(JSON.stringify({...valid, transactions: [{id:1,date:'2026-02-30',type:'OUTLAY',value:1}]})), /date/);
+});
+
+for (const version of [1, 2]) {
+  test(`v${version} replacement stamps imported settings above cloud values`, async () => {
+    const { db } = await makeMigratedDb();
+    await seed(db);
+    const freshStamp = '000000000000200-00000-aaaaaa';
+    const { replaceBackupDoc } = await import('./backup-core');
+    await replaceBackupDoc(db, parseBackup(JSON.stringify({version,exportedAt:'2026-01-01T00:00:00Z',accounts:[],assets:[],snapshots:[],transactions:[],settings:{currency:'¥'}})), {deletedAt:STAMP,freshStamp});
+    assert.deepEqual(await db.getFirstAsync('SELECT value,updated_at FROM setting WHERE key=?',['currency']),{value:'¥',updated_at:freshStamp});
+    const { applyMerge } = await import('../sync/apply');
+    await applyMerge(db,{tables:{account:[],asset:[],snapshot:[],tran:[],setting:[{key:'currency',value:'$',updated_at:'000000000000150-00000-bbbbbb'}]},tombstones:[]});
+    assert.equal((await db.getFirstAsync<{value:string}>('SELECT value FROM setting WHERE key=?',['currency']))?.value,'¥');
+  });
+}

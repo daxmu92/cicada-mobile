@@ -93,7 +93,7 @@ export function AssetLineChart({ data, color, height = 220 }: Props) {
         maxValue={axis.top - axis.offset}
         noOfSections={axis.noOfSections}
         stepValue={axis.niceStep}
-        yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
+        yAxisTextStyle={{ color: c.muted, fontSize: 12 }}
         formatYLabel={(label: string) => abbrev(Number(label) + axis.offset)}
         // Dense date axis: rotate labels so they don't get clipped to the
         // (tiny) per-point width. labelsExtraHeight reserves room for them.

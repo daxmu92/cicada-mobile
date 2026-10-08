@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { exportBackup, importBackup } from '../../src/services/backup';
+import { exportBackup, importBackup, exportRecoveryBackup } from '../../src/services/backup';
 import { loadSampleData } from '../../src/services/sample-data';
 import { useSettings, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { GainColor } from '../../src/hooks/SettingsContext';
@@ -257,6 +257,13 @@ export default function SettingsScreen() {
         }}
         disabled={loading}
       />
+
+      <Row title={t('settings.exportRecovery')} subtitle={t('settings.exportRecoverySub')} disabled={loading} onPress={async () => {
+        setLoading(true);
+        try { await exportRecoveryBackup(); }
+        catch (e) { notify(t('common.error'), e instanceof Error && e.message === 'NO_RECOVERY_BACKUP' ? t('settings.noRecovery') : t('settings.exportFailedBody')); }
+        finally { setLoading(false); }
+      }} />
 
       <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.data')}</Text>
       <Row

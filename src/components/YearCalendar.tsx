@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useDataVersion } from '../hooks/use-data-version';
 import { getMonthlyTotals } from '../db/snapshot-repo';
 import { useFormat, useLocale, useSemanticColors, useSettings, useTheme, useThemedStyles } from '../hooks/SettingsContext';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +21,7 @@ type MonthCell = {
 export function YearCalendar({ selected, onChange }: Props) {
   const { t } = useTranslation();
   const locale = useLocale();
+  const dataVersion = useDataVersion();
   const { fmtSignedCompact } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
@@ -33,15 +35,13 @@ export function YearCalendar({ selected, onChange }: Props) {
     setDisplayYear(selectedYear);
   }, [selectedYear]);
 
-  // NOTE: year-view net growth uses raw SQL sums from getMonthlyTotals and
-  // does NOT apply forward-fill. The dependency on `forwardFill` is kept so
-  // this effect re-runs if the setting changes in case that ever gets wired up.
+  // Use the same valuation and missing-data policy as the overview.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const start = yearMonth(displayYear - 1, 12);
       const end = yearMonth(displayYear, 12);
-      const rows = await getMonthlyTotals(start, end);
+      const rows = await getMonthlyTotals(start, end, { forwardFill });
       if (cancelled) return;
 
       const byDate = new Map<string, number>();
@@ -56,15 +56,15 @@ export function YearCalendar({ selected, onChange }: Props) {
         if (cur == null) {
           next.push({ month: m, netGrowth: null });
         } else {
-          next.push({ month: m, netGrowth: cur - (prev ?? 0) });
+          next.push({ month: m, netGrowth: prev == null ? null : cur - prev });
         }
       }
       setCells(next);
-    })();
+    })().catch(() => { if (!cancelled) setCells(emptyCells()); });
     return () => {
       cancelled = true;
     };
-  }, [displayYear, forwardFill, selected]);
+  }, [displayYear, forwardFill, selected, dataVersion]);
 
   const goToday = () => {
     onChange(currentYearMonth());

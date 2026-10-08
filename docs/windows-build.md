@@ -6,7 +6,13 @@ synced from it over a `\\wsl.localhost\` git remote, then compiled with the Wind
 toolchain. Builds use the latest **commit** on your current branch — commit before
 building, as uncommitted edits are excluded.
 
-## Prerequisites (installed automatically)
+## Prerequisites
+
+Install **PowerShell 7** (`Microsoft.PowerShell`) on Windows first. The WSL scripts
+use `pwsh.exe`, with the default `C:\Program Files\PowerShell\7\pwsh.exe` path as a
+fallback when WSL has not picked up the updated PATH.
+
+### Build dependencies (installed automatically)
 
 `scripts/setup-windows-build.sh` installs these via `winget` (idempotent):
 

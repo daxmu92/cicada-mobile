@@ -1,3 +1,4 @@
+import { requireRecord, requireText, requireAmount, requireMonth, requireDate, requireStamp, requireCategories, requireArchived, uniqueKey, validateTombstones } from '../utils/validation';
 import type { CicadaDB } from '../db/migrations';
 import { SCHEMA_VERSION } from '../db/migrations';
 
@@ -75,10 +76,12 @@ const TABLE_NAMES: (keyof SyncTables)[] = ['account', 'asset', 'snapshot', 'tran
  * Read the whole local DB into a SyncDocument. SELECT-only (never writes).
  * FKs are resolved to parent uuids via joins. `archived` comes back as 0/1.
  */
-export async function buildDocument(
-  db: CicadaDB,
-  meta: { generatedBy: string; generatedAt: string }
-): Promise<SyncDocument> {
+export async function buildDocument(db: CicadaDB, meta: { generatedBy: string; generatedAt: string }): Promise<SyncDocument> {
+  let result!: SyncDocument;
+  await db.withTransactionAsync(async tx => { result = await readDocument(tx, meta); });
+  return result;
+}
+async function readDocument(db: CicadaDB, meta: { generatedBy: string; generatedAt: string }): Promise<SyncDocument> {
   const account = await db.getAllAsync<AccountRecord>(
     'SELECT uuid, name, archived, updated_at FROM account'
   );
@@ -149,5 +152,32 @@ export function parseDocument(content: string): SyncDocument {
   if (!Array.isArray(d.tombstones)) {
     throw new Error('sync document tombstones is not an array');
   }
+  if (!Number.isSafeInteger(d.schemaVersion) || Number(d.schemaVersion) < 0) throw new Error('sync document: invalid schemaVersion');
+  requireText(d.enc, 'sync document.enc');
+  const accounts = new Set<string | number>(); const assets = new Set<string | number>(); const transactions = new Set<string | number>();
+  const snapshots = new Set<string | number>(); const settings = new Set<string | number>();
+  for (const entry of tables.account as unknown[]) {
+    const r = requireRecord(entry, 'account'); requireText(r.uuid, 'account.uuid'); requireText(r.name, 'account.name'); requireArchived(r.archived, 'account.archived'); requireStamp(r.updated_at, 'account.updated_at'); uniqueKey(accounts, r.uuid, 'account.uuid');
+  }
+  for (const entry of tables.asset as unknown[]) {
+    const r = requireRecord(entry, 'asset'); requireText(r.uuid, 'asset.uuid'); requireText(r.accountUuid, 'asset.accountUuid'); requireText(r.name, 'asset.name'); requireCategories(r.categories, 'asset.categories'); requireArchived(r.archived, 'asset.archived'); requireStamp(r.updated_at, 'asset.updated_at');
+    if (!accounts.has(r.accountUuid)) throw new Error('asset: missing account');
+    uniqueKey(assets, r.uuid, 'asset.uuid');
+  }
+  for (const entry of tables.snapshot as unknown[]) {
+    const r = requireRecord(entry, 'snapshot'); requireText(r.assetUuid, 'snapshot.assetUuid'); requireMonth(r.date, 'snapshot.date'); requireStamp(r.updated_at, 'snapshot.updated_at');
+    if (!assets.has(r.assetUuid)) throw new Error('snapshot: missing asset');
+    for (const key of ['netWorth', 'inflow', 'profit']) requireAmount(r[key], `snapshot.${key}`);
+    uniqueKey(snapshots, `${r.assetUuid}|${r.date}`, 'snapshot');
+  }
+  for (const entry of tables.tran as unknown[]) {
+    const r = requireRecord(entry, 'transaction'); requireText(r.uuid, 'transaction.uuid'); requireDate(r.date, 'transaction.date'); requireAmount(r.value, 'transaction.value'); requireStamp(r.updated_at, 'transaction.updated_at');
+    if (!['INCOME', 'OUTLAY'].includes(String(r.type))) throw new Error('transaction: invalid type or amount');
+    requireText(r.cat, 'transaction.cat', true); requireText(r.note, 'transaction.note', true); uniqueKey(transactions, r.uuid, 'transaction.uuid');
+  }
+  for (const entry of tables.setting as unknown[]) {
+    const r = requireRecord(entry, 'setting'); requireText(r.key, 'setting.key'); requireText(r.value, 'setting.value', true); requireStamp(r.updated_at, 'setting.updated_at'); uniqueKey(settings, r.key, 'setting.key');
+  }
+  validateTombstones(d.tombstones);
   return parsed as SyncDocument;
 }

@@ -5,8 +5,8 @@ import * as Sharing from 'expo-sharing';
 
 import { getDatabase } from '../db/database';
 import { tick } from '../sync/clock';
-import { buildBackupDoc, parseBackup, restoreBackupDoc, type ImportCounts } from './backup-core';
-import { eraseAllData } from '../sync/erase';
+import { buildBackupDoc, parseBackup, replaceBackupDoc, latestRecoveryBackup, type ImportCounts } from './backup-core';
+import { notifyDataChanged } from '../db/changes';
 import { syncScheduler } from '../sync/scheduler';
 
 // ---------------------------------------------------------------------------
@@ -112,12 +112,26 @@ export async function importBackup(): Promise<ImportCounts> {
   }
 
   const parsed = parseBackup(content);
-  await syncScheduler.requestSync('manual').catch(() => {}); // pre-sync: advance clock past the cloud
-  const db = await getDatabase();
-  await eraseAllData(db, { tick }); // tombstone everything currently present
-  const freshStamp = await tick();  // newer than the tombstones just written
-  const counts = await restoreBackupDoc(db, parsed, { freshStamp, restamp: true });
-  syncScheduler.markDirty();
-  await syncScheduler.requestSync('manual').catch(() => {}); // push tombstones + the restamped import
-  return counts;
+  return syncScheduler.runExclusive(async (sync) => {
+    await sync().catch(() => {}); // Offline replacement remains local until retry.
+    const db = await getDatabase();
+    const deletedAt = await tick();
+    const freshStamp = await tick();
+    const counts = await replaceBackupDoc(db, parsed, { deletedAt, freshStamp });
+    notifyDataChanged();
+    syncScheduler.markDirty();
+    await sync().catch(() => {});
+    return counts;
+  });
+}
+
+export async function exportRecoveryBackup(): Promise<void> {
+  const content = await latestRecoveryBackup(await getDatabase());
+  if (!content) throw new Error('NO_RECOVERY_BACKUP');
+  const filename = `cicada-recovery-${new Date().toISOString().slice(0, 10)}.json`;
+  if (Platform.OS === 'web') { downloadJsonWeb(filename, content); return; }
+  const file = new File(Paths.cache, filename);
+  if (file.exists) file.delete();
+  file.create(); file.write(content);
+  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json' });
 }

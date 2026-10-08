@@ -102,7 +102,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       } catch {
         // recovery is best-effort; never block startup
       }
-      await refreshMeta();
+      try { await refreshMeta(); } catch (e) { const failure = classify(e); setStatus(failure.status); setLastError(failure.message); return; }
       if (cancelled) return;
       syncScheduler.start();
       void syncScheduler.requestSync('launch');
@@ -148,18 +148,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const disconnect = useCallback(async () => {
-    await clearCredentials();
+    await syncScheduler.runExclusive(async () => { await clearCredentials(); });
     setConnected(false);
     setStatus('idle');
     setLastError(null);
   }, []);
 
   const overwriteCloud = useCallback(async () => {
-    // Escape hatch: bypass scheduler, call the engine directly with its own guard.
+    // Serialize cloud replacement with synchronization and local maintenance.
     setStatus('syncing');
     setLastError(null);
     try {
-      await runOverwriteCloud();
+      await syncScheduler.runExclusive(async () => { await runOverwriteCloud(); });
       setStatus('ok');
     } catch (e) {
       const { status: s, message } = classify(e);

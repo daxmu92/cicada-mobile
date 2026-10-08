@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Text, View, StyleSheet } from 'react-native';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useRef, useState } from 'react';
+import { ScrollView, Text, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -27,6 +29,8 @@ function greetingKey(hour: number): string {
 
 export default function HomeScreen() {
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
+  const wide = useWindowDimensions().width >= 1000;
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
@@ -35,39 +39,39 @@ export default function HomeScreen() {
 
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [totals, setTotals] = useState({ netWorth: 0, inflow: 0, profit: 0 });
-  const [prevNetWorth, setPrevNetWorth] = useState(0);
+  const [prevNetWorth, setPrevNetWorth] = useState<number | null>(null);
   const [allocations, setAllocations] = useState<SnapshotWithAsset[]>([]);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
 
+  const request = useRef(0);
   const loadData = useCallback(async () => {
-    const [cur, prev, snaps] = await Promise.all([
+    const generation = ++request.current;
+    const [cur, prevSnaps, snaps] = await Promise.all([
       getTotalsForDate(selectedMonth, { forwardFill }),
-      getTotalsForDate(prevYearMonth(selectedMonth), { forwardFill }),
+      listSnapshotsByDate(prevYearMonth(selectedMonth), { forwardFill }),
       listSnapshotsByDate(selectedMonth, { forwardFill }),
     ]);
-    setTotals(cur);
-    setPrevNetWorth(prev.netWorth);
-    setAllocations(snaps);
 
     // 12-month trend ending at selectedMonth
     let start = selectedMonth;
     for (let i = 0; i < 11; i++) start = prevYearMonth(start);
-    const months = await getMonthlyTotals(start, selectedMonth);
+    const months = await getMonthlyTotals(start, selectedMonth, { forwardFill });
+    if (generation !== request.current) return;
+    setTotals(cur);
+    setPrevNetWorth(prevSnaps.length ? prevSnaps.reduce((sum, row) => sum + row.netWorth, 0) : null);
+    setAllocations(snaps);
     setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
   }, [selectedMonth, forwardFill]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
-  const netGrowth = totals.netWorth - prevNetWorth;
-  const growthPct = prevNetWorth !== 0 ? (netGrowth / Math.abs(prevNetWorth)) * 100 : null;
+  const netGrowth = totals.netWorth - (prevNetWorth ?? 0);
+  const growthPct = prevNetWorth !== null && prevNetWorth !== 0 ? (netGrowth / Math.abs(prevNetWorth)) * 100 : null;
   const greeting = t(greetingKey(new Date().getHours()));
 
   const allocationItems = allocations.map((s) => ({
@@ -83,30 +87,34 @@ export default function HomeScreen() {
         <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
       </View>
 
+      <View style={wide ? styles.desktopGrid : undefined}>
       {/* Hero: net worth + change + trend */}
-      <View style={shared.card}>
+      <View style={[shared.card, wide && styles.heroColumn]}>
         <Text style={shared.sectionTitle}>{t('home.totalNetWorth')}</Text>
-        <Text style={shared.bigNumber}>{fmt(totals.netWorth)}</Text>
+        <Text style={shared.bigNumber}>{allocations.length ? fmt(totals.netWorth) : '—'}</Text>
+        {!allocations.length && <Text style={shared.muted}>{t('home.noSnapshot')}</Text>}
+        {allocations.some((row) => row.estimated) && <Text style={shared.muted}>{t('home.estimated')}</Text>}
         <View style={{ marginTop: spacing.sm }}>
-          <ChangePill value={netGrowth} percent={growthPct} caption={t('home.thisMonth')} />
+          {prevNetWorth !== null && allocations.length > 0 ? <ChangePill value={netGrowth} percent={growthPct} caption={t('home.thisMonth')} /> : <Text style={shared.muted}>{t('home.noComparison')}</Text>}
         </View>
         {trend.length > 1 && (
           <View style={styles.heroTrend}>
-            <NetWorthTrendChart points={trend} height={150} />
+            <NetWorthTrendChart points={trend} height={wide ? 280 : 150} />
           </View>
         )}
       </View>
 
+      <View style={wide ? styles.sideColumn : undefined}>
       {/* Two metrics */}
       <View style={styles.metricsRow}>
         <MetricCard
           label={t('home.netGrowth')}
-          value={fmt(netGrowth)}
+          value={prevNetWorth === null || !allocations.length ? '—' : fmt(netGrowth)}
           valueColor={netGrowth >= 0 ? gain : loss}
         />
         <MetricCard
           label={t('home.profit')}
-          value={fmt(totals.profit)}
+          value={allocations.length ? fmt(totals.profit) : '—'}
           valueColor={totals.profit >= 0 ? gain : loss}
         />
       </View>
@@ -115,6 +123,8 @@ export default function HomeScreen() {
       <SectionCard title={t('home.allocation')}>
         <AllocationBarList items={allocationItems} />
       </SectionCard>
+      </View>
+      </View>
     </ScrollView>
   );
 }
@@ -122,9 +132,15 @@ export default function HomeScreen() {
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     content: {
+      width: '100%',
+      maxWidth: 1200,
+      alignSelf: 'center',
       padding: spacing.lg,
       paddingBottom: spacing.xl,
     },
+    desktopGrid: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+    heroColumn: { flex: 1.4, minWidth: 0 },
+    sideColumn: { flex: 1, minWidth: 0 },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',

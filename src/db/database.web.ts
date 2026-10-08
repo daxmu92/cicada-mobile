@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { serializeExpoDatabase } from './serialized-db';
 
 import { migrate, resetSchema, type CicadaDB } from './migrations';
 
@@ -25,11 +26,11 @@ export function getDatabase(): Promise<CicadaDB> {
         const { openTauriDatabase } = await import('./tauri-sqlite');
         db = await openTauriDatabase();
       } else {
-        db = (await SQLite.openDatabaseAsync(DB_NAME)) as unknown as CicadaDB;
+        db = serializeExpoDatabase(await SQLite.openDatabaseAsync(DB_NAME));
       }
       await migrate(db);
       return db;
-    })();
+    })().catch((error) => { dbPromise = null; throw error; });
   }
   return dbPromise;
 }

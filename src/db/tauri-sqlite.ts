@@ -1,4 +1,6 @@
 import Database from '@tauri-apps/plugin-sql';
+import { invoke } from '@tauri-apps/api/core';
+import { serializeDatabase } from './serialized-db';
 
 import type { CicadaDB, SqlParam } from './migrations';
 
@@ -30,7 +32,7 @@ function splitStatements(sql: string): string[] {
 export async function openTauriDatabase(): Promise<CicadaDB> {
   const db = await Database.load(DB_URL);
 
-  return {
+  return serializeDatabase({
     async getAllAsync<T>(sql: string, params: SqlParam[] = []): Promise<T[]> {
       return (await db.select(toNumberedPlaceholders(sql), params)) as T[];
     },
@@ -60,13 +62,25 @@ export async function openTauriDatabase(): Promise<CicadaDB> {
       }
     },
 
-    async withTransactionAsync(task: () => Promise<void>): Promise<void> {
-      // tauri-plugin-sql runs each statement on a pooled connection, so a
-      // JS-issued BEGIN/COMMIT can't reliably wrap later calls (they may land
-      // on a different connection). Run the task directly — statements
-      // autocommit individually. Fine for this single-user, sequential app;
-      // the only trade-off is loss of all-or-nothing atomicity.
-      await task();
+    async withTransactionAsync(task: (tx: CicadaDB) => Promise<void>): Promise<void> {
+      const transactionId = await invoke<string>('cicada_begin_transaction');
+      const query = <T>(sql: string, params: SqlParam[] = [], select = true) => invoke<T>(
+        'cicada_transaction_query', { transactionId, sql: toNumberedPlaceholders(sql), params, select }
+      );
+      const tx: CicadaDB = {
+        getAllAsync: (sql, params) => query(sql, params),
+        getFirstAsync: async (sql, params) => (await query<any[]>(sql, params))[0] ?? null,
+        runAsync: (sql, params) => query(sql, params, false),
+        execAsync: async (sql) => { for (const statement of splitStatements(sql)) await query(statement, [], false); },
+        withTransactionAsync: (nested) => nested(tx),
+      };
+      try {
+        await task(tx);
+        await invoke('cicada_end_transaction', { transactionId, commit: true });
+      } catch (error) {
+        await invoke('cicada_end_transaction', { transactionId, commit: false }).catch(() => {});
+        throw error;
+      }
     },
-  };
+  });
 }

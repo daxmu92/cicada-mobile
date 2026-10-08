@@ -1,5 +1,8 @@
+import { tick } from '../sync/clock';
+import { requireAmount, requireDate, requireId } from '../utils/validation';
+import { nextYearMonth } from '../utils/date';
 import { getDatabase } from './database';
-import { stampWrite, recordTombstones } from '../sync/stamp';
+import { stampWrite, recordTombstonesAt } from '../sync/stamp';
 import { bumpDirty } from '../sync/dirty';
 import type { Transaction, TranType } from '../utils/types';
 
@@ -31,8 +34,8 @@ export async function listTransactions(): Promise<Transaction[]> {
 export async function listTransactionsInMonth(yearMonth: string): Promise<Transaction[]> {
   const db = await getDatabase();
   return db.getAllAsync<TranRow>(
-    "SELECT id, date, type, value, cat, note FROM tran WHERE substr(date, 1, 7) = ? ORDER BY date DESC, id DESC",
-    [yearMonth]
+    'SELECT id, date, type, value, cat, note FROM tran WHERE date >= ? AND date < ? ORDER BY date DESC, id DESC',
+    [yearMonth + '-01', nextYearMonth(yearMonth) + '-01']
   );
 }
 
@@ -54,6 +57,8 @@ export async function createTransaction(
   cat: string = '',
   note: string = ''
 ): Promise<number> {
+  requireDate(date, 'transaction.date'); requireAmount(value, 'transaction.value');
+  if (value <= 0 || !['INCOME', 'OUTLAY'].includes(type)) throw new Error('Invalid transaction');
   const db = await getDatabase();
   const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
@@ -72,6 +77,8 @@ export async function updateTransaction(
   cat: string,
   note: string
 ): Promise<void> {
+  requireId(id, 'transaction.id'); requireDate(date, 'transaction.date'); requireAmount(value, 'transaction.value');
+  if (value <= 0 || !['INCOME', 'OUTLAY'].includes(type)) throw new Error('Invalid transaction');
   const db = await getDatabase();
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(
@@ -83,14 +90,17 @@ export async function updateTransaction(
 
 export async function deleteTransaction(id: number): Promise<void> {
   const db = await getDatabase();
-  const tran = await db.getFirstAsync<{ uuid: string }>(
-    'SELECT uuid FROM tran WHERE id = ?',
-    [id]
-  );
-  await db.runAsync('DELETE FROM tran WHERE id = ?', [id]);
-  if (tran?.uuid) {
-    await recordTombstones(db, 'tran', [tran.uuid]);
-  }
+  const deletedAt = await tick();
+  await db.withTransactionAsync(async (db) => {
+    const tran = await db.getFirstAsync<{ uuid: string }>(
+      'SELECT uuid FROM tran WHERE id = ?',
+      [id]
+    );
+    await db.runAsync('DELETE FROM tran WHERE id = ?', [id]);
+    if (tran?.uuid) {
+      await recordTombstonesAt(db, 'tran', [tran.uuid], deletedAt);
+    }
+  });
   bumpDirty();
 }
 
@@ -115,8 +125,8 @@ export async function getIncomeOutlayTotalsForMonth(
       SUM(CASE WHEN type = 'INCOME' THEN value ELSE 0 END) AS income,
       SUM(CASE WHEN type = 'OUTLAY' THEN value ELSE 0 END) AS outlay
     FROM tran
-    WHERE substr(date, 1, 7) = ?`,
-    [yearMonth]
+    WHERE date >= ? AND date < ?`,
+    [yearMonth + '-01', nextYearMonth(yearMonth) + '-01']
   );
   return {
     income: row?.income ?? 0,

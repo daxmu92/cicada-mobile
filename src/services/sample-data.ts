@@ -1,11 +1,8 @@
-import { createAccount } from '../db/account-repo';
-import { createAsset } from '../db/asset-repo';
-import { upsertSnapshot } from '../db/snapshot-repo';
-import { createTransaction } from '../db/tran-repo';
 import { getDatabase } from '../db/database';
-import { eraseAllData } from '../sync/erase';
 import { tick } from '../sync/clock';
 import { syncScheduler } from '../sync/scheduler';
+import { notifyDataChanged } from '../db/changes';
+import { replaceBackupDoc, type BackupFile } from './backup-core';
 import { currentYearMonth, prevYearMonth } from '../utils/date';
 
 type SampleAsset = {
@@ -89,67 +86,47 @@ function pastMonths(count: number): string[] {
   return result;
 }
 
-export async function loadSampleData(options: {
-  monthsOfHistory?: number;
-  transactionsPerMonth?: number;
-} = {}): Promise<void> {
+export function buildSampleData(options: { monthsOfHistory?: number; transactionsPerMonth?: number } = {}): BackupFile {
   const { monthsOfHistory = 24, transactionsPerMonth = 12 } = options;
-
-  const db = await getDatabase();
-  await eraseAllData(db, { tick });
-
-  // Create accounts
-  const accountIds = new Map<string, number>();
-  const accountNames = Array.from(new Set(SAMPLE_ASSETS.map((a) => a.account)));
-  for (const name of accountNames) {
-    accountIds.set(name, await createAccount(name));
-  }
-
-  // Create assets and their snapshots
-  const months = pastMonths(monthsOfHistory);
-  const rng = random(42);
-
-  for (const asset of SAMPLE_ASSETS) {
-    const accountId = accountIds.get(asset.account)!;
-    const assetId = await createAsset(accountId, asset.name, asset.categories);
-
+  const names = Array.from(new Set(SAMPLE_ASSETS.map((a) => a.account)));
+  const accountIds = new Map(names.map((name, i) => [name, i + 1]));
+  const doc: BackupFile = { version: 2, exportedAt: new Date().toISOString(), accounts: names.map((name, i) => ({ id: i + 1, name, archived: 0 })), assets: [], snapshots: [], transactions: [], settings: {} };
+  const months = pastMonths(monthsOfHistory); const rng = random(42);
+  for (const [i, asset] of SAMPLE_ASSETS.entries()) {
+    const assetId = i + 1;
+    doc.assets.push({ id: assetId, accountId: accountIds.get(asset.account)!, name: asset.name, categories: JSON.stringify(asset.categories), archived: 0 });
     let netWorth = asset.initialValue;
     for (const date of months) {
       const inflow = asset.monthlyInflow * (0.7 + rng() * 0.6);
-      const returnRate = (rng() - 0.45) * asset.volatility * 2;
-      const profit = netWorth * returnRate;
-      netWorth = netWorth + inflow + profit;
-      await upsertSnapshot(
-        assetId,
-        date,
-        Math.round(netWorth * 100) / 100,
-        Math.round(inflow * 100) / 100,
-        Math.round(profit * 100) / 100
-      );
+      const profit = netWorth * (rng() - 0.45) * asset.volatility * 2;
+      netWorth += inflow + profit;
+      doc.snapshots.push({ assetId, date, netWorth: Math.round(netWorth * 100) / 100, inflow: Math.round(inflow * 100) / 100, profit: Math.round(profit * 100) / 100 });
     }
   }
-
-  // Create transactions for the last 3 months
   const txRng = random(123);
-  const recentMonths = months.slice(-3);
-  for (const month of recentMonths) {
+  for (const month of months.slice(-3)) {
     for (let i = 0; i < transactionsPerMonth; i++) {
       const day = Math.floor(txRng() * 28) + 1;
       const date = `${month}-${String(day).padStart(2, '0')}`;
       const isIncome = txRng() < 0.25;
-
-      if (isIncome) {
-        const tag = INCOME_TAGS[Math.floor(txRng() * INCOME_TAGS.length)];
-        const value = tag === 'salary' ? 4000 + txRng() * 1000 : 100 + txRng() * 800;
-        await createTransaction(date, 'INCOME', Math.round(value), tag, '');
-      } else {
-        const tag = OUTLAY_TAGS[Math.floor(txRng() * OUTLAY_TAGS.length)];
-        const base = tag === 'rent' ? 1500 : tag === 'food' ? 80 : 30 + txRng() * 200;
-        const value = Math.round(base * (0.8 + txRng() * 0.4));
-        await createTransaction(date, 'OUTLAY', value, tag, '');
-      }
+      const tags = isIncome ? INCOME_TAGS : OUTLAY_TAGS;
+      const cat = tags[Math.floor(txRng() * tags.length)];
+      const value = isIncome
+        ? Math.round(cat === 'salary' ? 4000 + txRng() * 1000 : 100 + txRng() * 800)
+        : Math.round((cat === 'rent' ? 1500 : cat === 'food' ? 80 : 30 + txRng() * 200) * (0.8 + txRng() * 0.4));
+      doc.transactions.push({ id: doc.transactions.length + 1, date, type: isIncome ? 'INCOME' : 'OUTLAY', value, cat, note: '' });
     }
   }
-  syncScheduler.markDirty();
-  await syncScheduler.requestSync('manual').catch(() => {});
+  return doc;
+}
+
+export async function loadSampleData(options: { monthsOfHistory?: number; transactionsPerMonth?: number } = {}): Promise<void> {
+  const data = buildSampleData(options);
+  await syncScheduler.runExclusive(async (sync) => {
+    await sync().catch(() => {});
+    const deletedAt = await tick(); const freshStamp = await tick();
+    await replaceBackupDoc(await getDatabase(), data, { deletedAt, freshStamp });
+    notifyDataChanged(); syncScheduler.markDirty();
+    await sync().catch(() => {});
+  });
 }

@@ -10,6 +10,16 @@
 # Usage:  bash scripts/setup-windows-build.sh
 set -euo pipefail
 
+# Require PowerShell 7; WSL may not inherit its newly-installed PATH entry.
+if command -v pwsh.exe >/dev/null 2>&1; then
+  POWERSHELL="$(command -v pwsh.exe)"
+elif [ -x '/mnt/c/Program Files/PowerShell/7/pwsh.exe' ]; then
+  POWERSHELL='/mnt/c/Program Files/PowerShell/7/pwsh.exe'
+else
+  echo "ERROR: PowerShell 7 is required. Install Microsoft.PowerShell on Windows." >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 WIN_REPO='C:\projects\cicada-mobile'
@@ -23,9 +33,9 @@ WSL_UNC="$(wslpath -w "$MAIN_ROOT")"
 # Run a PowerShell command with PATH rebuilt from the registry, so tools installed
 # earlier in this same run become visible without a terminal restart.
 ps() {
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "
+  "$POWERSHELL" -NoProfile -ExecutionPolicy Bypass -Command "
     \$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User');
-    $1"
+    $1; if (\$LASTEXITCODE -and \$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }"
 }
 
 echo "==> Checking Git for Windows..."
@@ -64,17 +74,17 @@ fi
 # (a Linux uid) differs from the Windows user ("dubious ownership"). Whitelist it
 # so the clone and the build's later `git fetch wsl` can read the source repo.
 echo "==> Allowing git to read the WSL repo over UNC (safe.directory)..."
-if ps "git config --global --get-all safe.directory" | grep -qF '*'; then
+if ps "git config --global --get-all safe.directory" | grep -qF "$WSL_UNC"; then
   echo "    already configured."
 else
-  ps "git config --global --add safe.directory '*'"
+  ps "git config --global --add safe.directory '$WSL_UNC'"
 fi
 
 echo "==> Setting up Windows checkout at $WIN_REPO..."
 if [ -d "$WIN_REPO_MNT/.git" ]; then
   echo "    already exists."
 else
-  if ! powershell.exe -NoProfile -Command "if (Test-Path '$WSL_UNC') { exit 0 } else { exit 1 }" 2>/dev/null; then
+  if ! "$POWERSHELL" -NoProfile -Command "if (Test-Path '$WSL_UNC') { exit 0 } else { exit 1 }" 2>/dev/null; then
     echo "ERROR: WSL tree not reachable from Windows at $WSL_UNC (is WSL running?)." >&2
     exit 1
   fi

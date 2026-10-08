@@ -9,6 +9,16 @@
 # Usage:  npm run build:windows   (or: bash scripts/build-windows.sh)
 set -euo pipefail
 
+# Require PowerShell 7; WSL may not inherit its newly-installed PATH entry.
+if command -v pwsh.exe >/dev/null 2>&1; then
+  POWERSHELL="$(command -v pwsh.exe)"
+elif [ -x '/mnt/c/Program Files/PowerShell/7/pwsh.exe' ]; then
+  POWERSHELL='/mnt/c/Program Files/PowerShell/7/pwsh.exe'
+else
+  echo "ERROR: PowerShell 7 is required. Install Microsoft.PowerShell on Windows." >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
@@ -36,7 +46,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 echo "==> Building branch '$BRANCH' on Windows ($WIN_REPO)..."
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
+"$POWERSHELL" -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
   -Branch "$BRANCH" -WslRemote "$WSL_UNC"
 build_status=$?
 if [ "$build_status" -ne 0 ]; then

@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.2.0"
+version = "0.2.1"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -26,3 +26,7 @@ tauri-plugin-log = "2"
 tauri-plugin-sql = { version = "2.4.0", features = ["sqlite"] }
 tauri-plugin-http = "2"
 tauri-plugin-store = "2"
+
+sqlx = { version = "0.8.6", default-features = false, features = ["sqlite", "runtime-tokio"] }
+tokio = { version = "1", features = ["sync"] }
+keyring = { version = "3.6.3", features = ["windows-native", "apple-native", "sync-secret-service"] }

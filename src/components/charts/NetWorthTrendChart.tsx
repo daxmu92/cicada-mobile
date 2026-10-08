@@ -91,8 +91,8 @@ export function NetWorthTrendChart({ points, color, height = 150 }: Props) {
           xAxisColor={c.border}
           rulesColor={c.border}
           rulesType="solid"
-          yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
-          xAxisLabelTextStyle={{ color: c.muted, fontSize: 10 }}
+          yAxisTextStyle={{ color: c.muted, fontSize: 12 }}
+          xAxisLabelTextStyle={{ color: c.muted, fontSize: 12 }}
           formatYLabel={(label: string) => abbrev(Number(label) + axis.offset)}
           yAxisLabelWidth={Y_AXIS_WIDTH}
           initialSpacing={8}

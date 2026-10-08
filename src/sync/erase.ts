@@ -21,10 +21,7 @@ export async function eraseAllData(db: CicadaDB, deps: EraseDeps): Promise<void>
   );
   const trans = await db.getAllAsync<{ uuid: string }>('SELECT uuid FROM tran');
 
-  // Not wrapped in a transaction: like restore, this is intentionally non-atomic on
-  // Tauri desktop (withTransactionAsync is a no-op there). A crash mid-erase leaves
-  // tombstones for still-present rows, which the next merge suppresses (tombstone
-  // stamp >= row stamp), so the sequence still converges safely.
+  // The maintenance caller wraps tombstones and deletes in one transaction.
   await recordTombstonesAt(db, 'account', accounts.map((r) => r.uuid), deletedAt);
   await recordTombstonesAt(db, 'asset', assets.map((r) => r.uuid), deletedAt);
   await recordTombstonesAt(db, 'snapshot', snapshots.map((r) => r.k), deletedAt);

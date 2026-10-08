@@ -47,3 +47,7 @@ app-example
 
 # Superpowers visual brainstorm scratch
 .superpowers/
+
+# Personal exports and tool working copies (existing tracked files are preserved).
+/cicada-backup-*.json
+.claire/

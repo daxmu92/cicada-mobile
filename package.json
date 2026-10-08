@@ -1,7 +1,7 @@
 {
   "name": "cicada-mobile",
   "main": "expo-router/entry",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "engines": {
     "node": ">=20"
   },
@@ -19,7 +19,8 @@
     "build:windows": "bash scripts/build-windows.sh",
     "lint": "expo lint",
     "screenshot": "node scripts/dev-screenshot.mjs",
-    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts src/utils/date.test.ts src/utils/composition.test.ts src/sync/tombstone.test.ts src/sync/erase.test.ts src/sync/debounce.test.ts src/sync/scheduler.test.ts"
+    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts src/utils/date.test.ts src/utils/composition.test.ts src/sync/tombstone.test.ts src/sync/erase.test.ts src/sync/debounce.test.ts src/sync/scheduler.test.ts src/utils/money.test.ts src/db/valuation.test.ts src/utils/allocation.test.ts src/db/serialized-db.test.ts",
+    "test:web": "node scripts/test-web.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -27,6 +28,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-http": "^2.5.9",
     "@tauri-apps/plugin-sql": "^2.4.0",
     "@tauri-apps/plugin-store": "^2.4.3",
@@ -72,10 +74,8 @@
     "eslint-config-expo": "~10.0.0",
     "playwright-core": "^1.61.0",
     "tsx": "^4.19.2",
-    "typescript": "~5.9.2"
-  },
-  "optionalDependencies": {
-    "better-sqlite3": "^11.10.0"
+    "typescript": "~5.9.2",
+    "better-sqlite3": "^12.11.1"
   },
   "private": true
 }

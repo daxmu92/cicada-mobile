@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +11,7 @@ import {
 } from '../../src/db/tran-repo';
 import {
   currentYearMonth,
+  currentDate,
   prevYearMonth,
   nextYearMonth,
   formatMonthYear,
@@ -24,6 +27,7 @@ type Tab = 'list' | 'breakdown';
 export default function TransactionsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
@@ -34,19 +38,23 @@ export default function TransactionsScreen() {
   const [totals, setTotals] = useState({ income: 0, outlay: 0 });
   const [tab, setTab] = useState<Tab>('list');
 
+  const request = useRef(0);
   const loadData = useCallback(async () => {
+    const generation = ++request.current;
     const [txs, t] = await Promise.all([
       listTransactionsInMonth(selectedMonth),
       getIncomeOutlayTotalsForMonth(selectedMonth),
     ]);
+    if (generation !== request.current) return;
     setTransactions(txs);
     setTotals(t);
   }, [selectedMonth]);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
   const breakdowns = useMemo(() => {
@@ -222,7 +230,8 @@ export default function TransactionsScreen() {
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push(`/modals/add-transaction?date=${selectedMonth}-01`)}>
+        accessibilityRole="button" accessibilityLabel={t('nav.addTransaction')}
+        onPress={() => router.push(`/modals/add-transaction?date=${selectedMonth === currentYearMonth() ? currentDate() : selectedMonth + '-01'}`)}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </View>
@@ -247,6 +256,7 @@ const makeStyles = (c: ThemeColors) =>
       fontWeight: '600',
     },
     monthLabel: {
+      color: c.ink,
       fontSize: 16,
       fontWeight: '600',
     },

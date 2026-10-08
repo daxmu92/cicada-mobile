@@ -1,0 +1,42 @@
+name: Checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run export:web
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - run: |
+          node scripts/serve-web.js 8085 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:8085/ && break || sleep 1; done
+          npm run test:web
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm test
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - run: npm run tauri:build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-installers
+          path: src-tauri/target/release/bundle/

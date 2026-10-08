@@ -7,6 +7,7 @@ import {
   type SyncDocument,
 } from './document';
 import { merge } from './merge';
+import { notifyDataChanged } from '../db/changes';
 import { applyMerge } from './apply';
 import { compareHlc, parseHlc } from './hlc';
 import { ConflictError, type SyncRemote, type WritePrecondition } from './providers/types';
@@ -151,11 +152,10 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     assertCompatible(remoteDoc);
 
     await setState(SYNC_IN_PROGRESS_KEY, '1');
-    const merged = merge(await buildLocal(), remoteDoc);
-    const applied = await applyMerge(db, merged);
-
     const max = maxRemoteStamp(remoteDoc);
     if (max) await receiveRemote(max);
+    const merged = merge(await buildLocal(), remoteDoc);
+    const applied = await applyMerge(db, merged);
 
     // Rebuild AFTER apply so we push the canonical merged local state.
     const localDoc = await buildLocal();
@@ -220,7 +220,7 @@ export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcom
   const db = await getDatabase();
   const deviceId = await getDeviceId();
   const conditionalEtag = mode === 'conditional' ? (await getSyncState(CLOUD_ETAG_KEY)) ?? undefined : undefined;
-  return runSync({
+  const outcome = await runSync({
     db,
     remote,
     deviceId,
@@ -230,6 +230,8 @@ export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcom
     receiveRemote: recv,
     conditionalEtag,
   });
+  notifyDataChanged();
+  return outcome;
 }
 
 /** Run a full sync against the configured remote. Returns null if sync is
@@ -257,6 +259,7 @@ export async function overwriteCloud(): Promise<void> {
   );
   const existing = await remote.read();
   // ifNoneMatch only on a truly-absent file (it MKCOLs the folder); else overwrite.
-  await remote.write(doc, existing === null ? { kind: 'ifNoneMatch' } : { kind: 'none' });
+  const written = await remote.write(doc, existing === null ? { kind: 'ifNoneMatch' } : { kind: 'none' });
+  if (written.etag) await setSyncState(CLOUD_ETAG_KEY, written.etag);
   await setSyncState(LAST_SYNCED_KEY, String(Date.now()));
 }

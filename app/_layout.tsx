@@ -1,12 +1,12 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import '../src/i18n';
 import { useTranslation } from 'react-i18next';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { SettingsProvider } from '../src/hooks/SettingsContext';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { SettingsProvider, useSettings, useTheme } from '../src/hooks/SettingsContext';
 import { SyncProvider } from '../src/hooks/SyncContext';
 
 export const unstable_settings = {
@@ -14,13 +14,22 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  return <SettingsProvider><ReadyLayout /></SettingsProvider>;
+}
+
+function ReadyLayout() {
+  const { ready, error, reload } = useSettings();
+  const c = useTheme();
   const { t } = useTranslation();
+  if (!ready) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg, gap: 16 }}>
+    {!error && <ActivityIndicator color={c.primary} />}
+    <Text style={{ color: c.ink }}>{t(error ? 'common.loadFailed' : 'common.loading')}</Text>
+    {error && <TouchableOpacity accessibilityRole="button" onPress={() => { void reload().catch(() => {}); }}><Text style={{ color: c.primary }}>{t('common.retry')}</Text></TouchableOpacity>}
+  </View>;
 
   return (
-    <SettingsProvider>
       <SyncProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: c.primary, background: c.bg, card: c.card, text: c.ink, border: c.border } }}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -48,9 +57,8 @@ export default function RootLayout() {
             options={{ presentation: 'modal', title: t('eraseData.title') }}
           />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         </ThemeProvider>
       </SyncProvider>
-    </SettingsProvider>
   );
 }

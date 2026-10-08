@@ -1,4 +1,6 @@
-import { useCallback, useState } from 'react';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +30,7 @@ const EMPTY_COMP: CompositionResult = { slices: [], chartedTotal: 0, trueTotal: 
 
 export default function AnalysisScreen() {
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const shared = useShared();
@@ -42,7 +45,9 @@ export default function AnalysisScreen() {
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [compInput, setCompInput] = useState<CompositionInput[]>([]);
 
+  const request = useRef(0);
   const loadData = useCallback(async () => {
+    const generation = ++request.current;
     // Trend window: 1Y/3Y end at selectedMonth; All spans full history.
     let start = selectedMonth;
     let end = selectedMonth;
@@ -55,15 +60,16 @@ export default function AnalysisScreen() {
         end = dr.end;
       }
     }
-    // Trend uses raw monthly sums (gaps allowed, no forward-fill); composition forward-fills — so the two cards can intentionally differ for a sparse selected month.
-    const months = await getMonthlyTotals(start, end);
-    setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
+    // Trend and composition use the same monthly valuation policy.
+    const months = await getMonthlyTotals(start, end, { forwardFill });
 
     // Composition at selectedMonth: join snapshots with assets for categories.
     const [snaps, assets] = await Promise.all([
       listSnapshotsByDate(selectedMonth, { forwardFill }),
-      listAssets({ includeArchived: false }),
+      listAssets({ includeArchived: true }),
     ]);
+    if (generation !== request.current) return;
+    setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
     const catById = new Map(assets.map((a) => [a.id, a.categories]));
     setCompInput(
       snaps.map((s) => ({
@@ -77,8 +83,9 @@ export default function AnalysisScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
   // Derived (render-time, no extra state):

@@ -27,6 +27,8 @@ export type AssetSnapshot = {
 export type SnapshotWithAsset = AssetSnapshot & {
   accountName: string;
   assetName: string;
+  estimated?: boolean;
+  sourceDate?: string;
 };
 
 export type TranType = 'INCOME' | 'OUTLAY';

@@ -12,7 +12,15 @@
     "archived": "已归档",
     "error": "错误",
     "working": "处理中…",
-    "today": "今天"
+    "today": "今天",
+    "saving": "保存中…",
+    "saveFailed": "保存失败，请重试。",
+    "invalidAmount": "请输入完整金额，最多两位小数；千位分隔符须正确。",
+    "retry": "重试",
+    "loading": "正在加载账本…",
+    "loadFailed": "无法加载账本，请重试。",
+    "previousMonth": "上个月",
+    "nextMonth": "下个月"
   },
   "nav": {
     "home": "首页",
@@ -34,7 +42,10 @@
     "greetingMorning": "早上好",
     "greetingAfternoon": "下午好",
     "greetingEvening": "晚上好",
-    "thisMonth": "本月"
+    "thisMonth": "本月",
+    "noSnapshot": "该月没有净值记录",
+    "noComparison": "缺少本月或上月数据，无法比较增长",
+    "estimated": "包含沿用上次记录的估值；归档资产仅计入实际记录。"
   },
   "assets": {
     "noAccountsTitle": "还没有账户",
@@ -176,7 +187,7 @@
     "resetConfirm": "重置",
     "resetDone": "数据库已重置。",
     "loadSampleTitle": "加载示例数据",
-    "loadSampleBody": "这将用生成的示例账户、资产、快照和交易替换所有当前数据。",
+    "loadSampleBody": "这将替换当前账本，并同步到云端及其他已连接设备。替换前会保存本机自动备份。",
     "loadConfirm": "加载",
     "doneTitle": "完成",
     "sampleLoaded": "示例数据已加载。请查看首页和资产标签页。",
@@ -184,7 +195,7 @@
     "exportFailedTitle": "导出失败",
     "exportFailedBody": "无法导出",
     "importTitle": "导入备份",
-    "importBody": "这将替换所有现有数据。是否继续？",
+    "importBody": "这将替换当前账本，并同步到其他已连接设备。导入前会保存自动备份；失败时保留原账本。是否继续？",
     "importConfirm": "导入",
     "importedTitle": "导入成功",
     "importedBody": "账户：{{accounts}}\n资产：{{assets}}\n快照：{{snapshots}}\n交易：{{transactions}}",
@@ -221,7 +232,10 @@
     "themeSeaGlass": "海玻璃",
     "themeDuskBlue": "暮蓝",
     "themeSky": "天青白",
-    "themeLilac": "藕荷白"
+    "themeLilac": "藕荷白",
+    "exportRecovery": "导出最近的自动备份",
+    "exportRecoverySub": "导入或加载示例前自动保留，最多五份；清空数据会删除这些备份。",
+    "noRecovery": "暂无自动备份。"
   },
   "eraseData": {
     "title": "清除所有数据",
@@ -235,7 +249,8 @@
   "charts": {
     "noData": "暂无数据",
     "noDataToDisplay": "暂无数据显示",
-    "noDataYet": "暂无数据"
+    "noDataYet": "暂无数据",
+    "liabilities": "负债：{{value}}（资产比例按正资产计算）"
   },
   "analysis": {
     "composition": "构成",

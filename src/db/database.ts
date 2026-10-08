@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { serializeExpoDatabase } from './serialized-db';
 
 import { migrate, resetSchema, type CicadaDB } from './migrations';
 
@@ -11,10 +12,10 @@ let dbPromise: Promise<CicadaDB> | null = null;
 export function getDatabase(): Promise<CicadaDB> {
   if (!dbPromise) {
     dbPromise = (async () => {
-      const db = (await SQLite.openDatabaseAsync(DB_NAME)) as unknown as CicadaDB;
+      const db = serializeExpoDatabase(await SQLite.openDatabaseAsync(DB_NAME));
       await migrate(db);
       return db;
-    })();
+    })().catch((error) => { dbPromise = null; throw error; });
   }
   return dbPromise;
 }

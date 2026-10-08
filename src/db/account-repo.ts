@@ -1,5 +1,6 @@
+import { tick } from '../sync/clock';
 import { getDatabase } from './database';
-import { stampWrite, recordTombstones } from '../sync/stamp';
+import { stampWrite, recordTombstonesAt } from '../sync/stamp';
 import { collectSnapshotTombstoneKeys } from './snapshot-repo';
 import { bumpDirty } from '../sync/dirty';
 import type { Account } from '../utils/types';
@@ -63,25 +64,28 @@ export async function renameAccount(id: number, name: string): Promise<void> {
 
 export async function deleteAccount(id: number): Promise<void> {
   const db = await getDatabase();
-  const account = await db.getFirstAsync<{ uuid: string }>(
-    'SELECT uuid FROM account WHERE id = ?',
-    [id]
-  );
-  if (!account) return;
-  const assets = await db.getAllAsync<{ id: number; uuid: string }>(
-    'SELECT id, uuid FROM asset WHERE account_id = ?',
-    [id]
-  );
-  const snapshotKeys = await collectSnapshotTombstoneKeys(
-    db,
-    assets.map((a) => a.id)
-  );
-  // Record tombstones BEFORE the delete (the rows still exist to read).
-  await recordTombstones(db, 'account', [account.uuid]);
-  await recordTombstones(db, 'asset', assets.map((a) => a.uuid));
-  await recordTombstones(db, 'snapshot', snapshotKeys);
-  // FK ON DELETE CASCADE clears assets + snapshots locally.
-  await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
+  const deletedAt = await tick();
+  await db.withTransactionAsync(async (db) => {
+    const account = await db.getFirstAsync<{ uuid: string }>(
+      'SELECT uuid FROM account WHERE id = ?',
+      [id]
+    );
+    if (!account) return;
+    const assets = await db.getAllAsync<{ id: number; uuid: string }>(
+      'SELECT id, uuid FROM asset WHERE account_id = ?',
+      [id]
+    );
+    const snapshotKeys = await collectSnapshotTombstoneKeys(
+      db,
+      assets.map((a) => a.id)
+    );
+    // Record tombstones BEFORE the delete (the rows still exist to read).
+    await recordTombstonesAt(db, 'account', [account.uuid], deletedAt);
+    await recordTombstonesAt(db, 'asset', assets.map((a) => a.uuid), deletedAt);
+    await recordTombstonesAt(db, 'snapshot', snapshotKeys, deletedAt);
+    // FK ON DELETE CASCADE clears assets + snapshots locally.
+    await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
+  });
   bumpDirty();
 }
 
@@ -92,7 +96,7 @@ export async function setAccountArchived(
   const db = await getDatabase();
   const flag = archived ? 1 : 0;
   const { updatedAt } = await stampWrite(db, { withUuid: false });
-  await db.withTransactionAsync(async () => {
+  await db.withTransactionAsync(async (db) => {
     await db.runAsync('UPDATE account SET archived = ?, updated_at = ? WHERE id = ?', [
       flag,
       updatedAt,

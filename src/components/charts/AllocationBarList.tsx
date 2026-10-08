@@ -1,3 +1,4 @@
+import { allocationRows } from '../../utils/allocation';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -24,17 +25,16 @@ export function AllocationBarList({ items, maxItems = 8, highlightKey }: Props) 
   const { fmt } = useFormat();
   const c = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const sorted = [...items].sort((a, b) => b.value - a.value);
-  const visible = sorted.slice(0, maxItems);
-  const total = sorted.reduce((sum, i) => sum + i.value, 0);
-  const maxValue = visible[0]?.value ?? 0;
+  const { visible, total, liabilities } = allocationRows(items, maxItems, t('analysis.others'));
+  const maxValue = Math.max(0, ...visible.map((item) => item.value));
 
   if (total <= 0 || visible.length === 0) {
-    return <Text style={{ color: c.muted }}>{t('charts.noDataToDisplay')}</Text>;
+    return <Text style={{ color: c.muted }}>{liabilities > 0 ? t('charts.liabilities', { value: fmt(liabilities) }) : t('charts.noDataToDisplay')}</Text>;
   }
 
   return (
     <View>
+      {liabilities > 0 && <Text style={{ color: c.inkSoft, marginBottom: spacing.md }}>{t('charts.liabilities', { value: fmt(liabilities) })}</Text>}
       {visible.map((item, index) => {
         const pct = (item.value / total) * 100;
         const barWidth = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
