@@ -56,3 +56,35 @@ app deliberately. Production profile migration and a real cloud provider remain
 separate acceptance steps, using a dedicated test environment.
 
 Fixture configuration follows the [official WsgiDAV configuration reference](https://wsgidav.readthedocs.io/en/stable/user_guide_configure.html).
+
+## Desktop 0.2.2 follow-up acceptance
+
+Application binaries were built from `f0fb20b` on 2026-10-09, using PowerShell 7
+and an independent `target-f0fb20b` directory. The running 0.2.1 process was not
+closed. Built outputs: portable EXE, x64 MSI, x64 NSIS installer and matching
+update signatures. Production frontend export, 142 TypeScript tests, type check,
+Lint and Expo compatibility check passed. Two Windows native tests passed
+(transaction commit/rollback and an isolated credential-store round trip).
+
+The 12 browser groups passed in Edge: Demo generation/export; matching-ID ledger
+switch isolation; delayed month write/delete gates; amount/date input; combined
+transaction search/type/tag filtering; unsaved cancel/discard; reviewed profit
+recalculation/recovery; deletion return after delayed preview; invalid import
+atomicity; settings/recovery export; offline cached reload; and exact preservation
+of the main ledger/settings after Demo use. The real HTTPS WebDAV check above
+was rerun successfully with all eight groups.
+
+0.2.1 → 0.2.2 upgrade, 0.2.2 reinstall and uninstall passed using isolated NSIS
+identifiers with the original compiled EXEs. Installed binary hashes and registry
+versions matched, and synthetic profile data survived. All isolated installation
+and profile state was cleaned. The production-namespace limitations above apply.
+
+Independent Minisign verification accepted both MSI and NSIS update signatures;
+changing one byte in either installer caused verification to fail. The release
+manifest refers to the matching NSIS signature and download name, and the flat
+artifact directory passes `sha256sum -c SHA256SUMS`. A real published-version
+updater download/install is still a release-channel acceptance step; the cryptographic
+and mocked consent/draft/installation-lock checks do not replace that end-to-end test.
+
+GitHub checks and review are available from
+[the draft pull request](https://github.com/daxmu92/cicada-mobile/pull/2).

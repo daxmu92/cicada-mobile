@@ -42,7 +42,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
       - run: npm test
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - run: cargo test --release --locked --manifest-path src-tauri/Cargo.toml
       - name: Build installers (sign updates when repository secret is available)
         shell: pwsh
         env:
@@ -50,10 +50,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           if ($env:TAURI_SIGNING_PRIVATE_KEY) {
-            npm run tauri:build
+            npm run tauri:build -- --ci
           } else {
             '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Encoding utf8NoBOM unsigned-build.json
-            npm run tauri:build -- --config unsigned-build.json
+            npm run tauri:build -- --ci --config unsigned-build.json
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - run: node scripts/release-artifacts.mjs

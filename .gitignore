@@ -48,7 +48,7 @@ app-example
 # Superpowers visual brainstorm scratch
 .superpowers/
 
-# Personal exports and tool working copies (existing tracked files are preserved).
+# Personal exports and tool working copies; keep ledger exports out of Git.
 /cicada-backup-*.json
 .claire/
 .venv-webdav/

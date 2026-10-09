@@ -34,3 +34,8 @@ A future Expo/RN upgrade should follow the
 [official incremental upgrade workflow](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/),
 with new mobile builds, native-module compatibility checks and device acceptance.
 It is a separate migration rather than a forced transitive dependency swap.
+
+The ambiguous personal export `cicada-backup-2026-06-01.json` is retained locally
+but excluded from the current Git tree. Removing it does not erase earlier
+public history; deciding whether history cleanup is needed requires confirming
+whether that export contains real personal data. No history rewrite is performed.

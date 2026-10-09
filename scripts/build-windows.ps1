@@ -68,11 +68,11 @@ Write-Host "==> Building Windows bundle (npm run tauri:build)..."
 $override = $null
 try {
   if ($env:TAURI_SIGNING_PRIVATE_KEY) {
-    npm run tauri:build
+    npm run tauri:build -- --ci
   } else {
     $override = Join-Path ([System.IO.Path]::GetTempPath()) ("cicada-unsigned-" + [guid]::NewGuid() + ".json")
     '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Encoding utf8NoBOM $override
-    npm run tauri:build -- --config $override
+    npm run tauri:build -- --ci --config $override
   }
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   node scripts/release-artifacts.mjs "$env:CARGO_TARGET_DIR\release\bundle"
