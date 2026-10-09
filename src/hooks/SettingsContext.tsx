@@ -1,3 +1,4 @@
+import { getLedgerMode } from '../ledger/mode';
 import {
   createContext,
   ReactNode,
@@ -5,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -81,19 +83,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const version = useDataVersion();
 
+  const request=useRef(0);
   const reload = useCallback(async () => {
+    const generation=++request.current;const mode=getLedgerMode();
     try {
       const stored = await getAllSettings();
+      if(generation!==request.current||mode!==getLedgerMode())return;
       setCurrencyState(stored.currency || DEFAULT_CURRENCY);
       setForwardFillState(stored.forwardFill === 'true');
       setGainColorState(stored.gainColor === 'red' ? 'red' : 'green');
       const lang = isLanguage(stored.language) ? stored.language : DEFAULT_LANGUAGE;
       setLanguageState(lang);
       await i18n.changeLanguage(lang);
+      if(generation!==request.current||mode!==getLedgerMode())return;
       if (typeof document !== 'undefined') document.documentElement.lang = lang;
       setThemeState(stored.theme && Object.hasOwn(themes, stored.theme) ? stored.theme as ThemeName : DEFAULT_THEME);
       setError(null); setReady(true);
     } catch (e) {
+      if(generation!==request.current||mode!==getLedgerMode())return;
       setError(e instanceof Error ? e.message : String(e));
       throw e;
     }
@@ -101,29 +108,39 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => { void reload().catch(() => {}); }, [reload, version]);
 
   const updateCurrency = useCallback(async (symbol: string) => {
+    const mode=getLedgerMode();
     await setSetting('currency', symbol);
+    if(mode!==getLedgerMode())return;
     setCurrencyState(symbol);
   }, []);
 
   const updateForwardFill = useCallback(async (v: boolean) => {
+    const mode=getLedgerMode();
     await setSetting('forwardFill', v ? 'true' : 'false');
+    if(mode!==getLedgerMode())return;
     setForwardFillState(v);
   }, []);
 
   const updateGainColor = useCallback(async (v: GainColor) => {
+    const mode=getLedgerMode();
     await setSetting('gainColor', v);
+    if(mode!==getLedgerMode())return;
     setGainColorState(v);
   }, []);
 
   const updateLanguage = useCallback(async (lang: Language) => {
+    const mode=getLedgerMode();
     await setSetting('language', lang);
+    if(mode!==getLedgerMode())return;
     await i18n.changeLanguage(lang);
     if (typeof document !== 'undefined') document.documentElement.lang = lang;
     setLanguageState(lang);
   }, []);
 
   const updateTheme = useCallback(async (name: ThemeName) => {
+    const mode=getLedgerMode();
     await setSetting('theme', name);
+    if(mode!==getLedgerMode())return;
     setThemeState(name);
   }, []);
 

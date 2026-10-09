@@ -22,6 +22,16 @@ export type BackupFile = {
   tombstones?: BackupTombstone[];
 };
 
+/** Imported v3 rows may carry clocks ahead of this device's wall time. */
+export function maxBackupStamp(doc:BackupFile):string|null {
+  let max:string|null=null;
+  const consider=(stamp?:string)=>{if(stamp&&(max===null||stamp>max))max=stamp;};
+  for(const rows of [doc.accounts,doc.assets,doc.snapshots,doc.transactions])for(const row of rows)consider(row.updated_at);
+  if(Array.isArray(doc.settings))for(const row of doc.settings)consider(row.updated_at);
+  for(const row of doc.tombstones??[])consider(row.deleted_at);
+  return max;
+}
+
 export type ImportCounts = { accounts: number; assets: number; snapshots: number; transactions: number };
 
 export async function buildBackupDoc(db: CicadaDB, exportedAt: string): Promise<BackupFile> {

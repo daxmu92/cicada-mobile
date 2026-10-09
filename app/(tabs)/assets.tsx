@@ -1,3 +1,5 @@
+import { getLedgerEpoch,getLedgerMode,useLedgerMode } from '../../src/ledger/mode';
+import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
 import { parseAmount, tryAmount } from '../../src/utils/money';
 import { useSaveAction } from '../../src/hooks/use-save-action';
 import { useDataVersion } from '../../src/hooks/use-data-version';
@@ -47,6 +49,11 @@ function isDirty(d: SnapshotDraft, base: SnapshotDraft): boolean {
 export default function AssetsScreen() {
   const { t } = useTranslation();
   const dataVersion = useDataVersion();
+  const mode=useLedgerMode();const epoch=getLedgerEpoch();
+  const entryEpoch=useRef(epoch);
+  const [groupEpoch,setGroupEpoch]=useState(-1);
+  const [entryLedger,setEntryLedger]=useState(mode);
+  const [groupLedger,setGroupLedger]=useState(mode);
   const router = useRouter();
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
@@ -62,6 +69,7 @@ export default function AssetsScreen() {
 
   // Entry-mode state
   const [entryMode, setEntryMode] = useState(false);
+  const activeEntry=entryMode&&entryLedger===mode&&entryEpoch.current===epoch;
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [monthSnapshots, setMonthSnapshots] = useState<Map<number, SnapshotWithAsset>>(new Map());
   const [drafts, setDrafts] = useState<Map<number, SnapshotDraft>>(new Map());
@@ -70,15 +78,17 @@ export default function AssetsScreen() {
   const [expandedAssetId, setExpandedAssetId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
+    void mode;
     const generation = ++overviewRequest.current;
+    const ledger=getLedgerMode();const capturedEpoch=getLedgerEpoch();
     const [accounts, enriched] = await Promise.all([listAccounts(), listAssetOverview(currentYearMonth(), forwardFill)]);
 
     const byAccount = accounts.map((acc) => ({
       account: acc,
       assets: enriched.filter((a) => a.accountId === acc.id),
     }));
-    if (generation === overviewRequest.current) setGroups(byAccount);
-  }, [forwardFill]);
+    if (generation === overviewRequest.current&&ledger===getLedgerMode()&&capturedEpoch===getLedgerEpoch()) {setGroups(byAccount);setGroupLedger(ledger);setGroupEpoch(capturedEpoch);}
+  }, [forwardFill,mode]);
 
   const loadMonthSnapshots = useCallback(async () => {
     const generation = ++snapshotRequest.current;
@@ -97,9 +107,9 @@ export default function AssetsScreen() {
   );
 
   useEffect(() => {
-    if (entryMode) void loadMonthSnapshots().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    if (activeEntry) void loadMonthSnapshots().catch(() => notify(t('common.error'), t('common.loadFailed')));
     void dataVersion;
-  }, [entryMode, loadMonthSnapshots, dataVersion, t]);
+  }, [activeEntry, loadMonthSnapshots, dataVersion, t]);
 
   const assetNameById = (id: number): string => {
     for (const g of groups) {
@@ -131,7 +141,14 @@ export default function AssetsScreen() {
     setEntryMode(false);
   };
 
+  useUnsavedChanges(activeEntry&&dirtyCount>0,saving,exitEntryMode);
+  useEffect(()=>{
+    entrySession.current++;snapshotRequest.current++;
+    setDrafts(new Map());setBaselines(new Map());setLastNetWorthByAsset(new Map());setExpandedAssetId(null);setMonthSnapshots(new Map());setEntryMode(false);
+  },[mode,epoch]);
+
   const enterEntryMode = () => {
+    entryEpoch.current=getLedgerEpoch();setEntryLedger(getLedgerMode());
     setSelectedMonth(currentYearMonth());
     clearDrafts();
     setEntryMode(true);
@@ -156,6 +173,7 @@ export default function AssetsScreen() {
   };
 
   const expand = async (assetId: number) => {
+    if(!activeEntry||entryLedger!==getLedgerMode())return;
     const session = entrySession.current;
     if (!baselines.has(assetId)) {
       const last = await getLastSnapshotBefore(assetId, selectedMonth);
@@ -165,7 +183,7 @@ export default function AssetsScreen() {
       // after entering entry mode — a stale empty map would mis-prefill from
       // last-known net worth and cache a wrong baseline for the session.
       const existing = await getSnapshot(assetId, selectedMonth);
-      if (session !== entrySession.current) return;
+      if (session !== entrySession.current||entryLedger!==getLedgerMode()) return;
       const base: SnapshotDraft = existing
         ? {
             netWorth: String(existing.netWorth),
@@ -178,10 +196,11 @@ export default function AssetsScreen() {
       setBaselines((prev) => new Map(prev).set(assetId, base));
       setDrafts((prev) => (prev.has(assetId) ? prev : new Map(prev).set(assetId, base)));
     }
-    if (session === entrySession.current) setExpandedAssetId(assetId);
+    if (session === entrySession.current&&entryLedger===getLedgerMode()) setExpandedAssetId(assetId);
   };
 
   const onDraftChange = (assetId: number, draft: SnapshotDraft) => {
+    if(entryLedger!==getLedgerMode())return;
     setDrafts((prev) => new Map(prev).set(assetId, draft));
   };
 
@@ -191,6 +210,7 @@ export default function AssetsScreen() {
   };
 
   const submit = () => save(async () => {
+    if(!activeEntry||entryLedger!==getLedgerMode())return;
     const dirty = dirtyEntries();
     const failed: string[] = [];
     const succeeded: number[] = [];
@@ -227,11 +247,11 @@ export default function AssetsScreen() {
   });
 
   const renderHeader = () => {
-    if (!entryMode) {
+    if (!activeEntry) {
       return (
         <View style={styles.topBar}>
           <TouchableOpacity accessibilityRole="button" style={styles.enterBtn} onPress={() => router.push('/modals/manage-accounts')}><Text style={styles.enterText}>{t('settings.accountsAssets')}</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.enterBtn} onPress={enterEntryMode}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('batchEntry.enter')} style={styles.enterBtn} onPress={enterEntryMode}>
             <Text style={styles.enterText}>{t('batchEntry.enter')}</Text>
           </TouchableOpacity>
         </View>
@@ -287,6 +307,7 @@ export default function AssetsScreen() {
     );
   };
 
+  if(groupLedger!==mode||groupEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   if (groups.length === 0) {
     return (
       <View style={[shared.screen, styles.empty]}>
@@ -309,7 +330,7 @@ export default function AssetsScreen() {
           <Text style={styles.accountName}>{item.account.name}</Text>
           {item.assets.length === 0 ? (
             <Text style={shared.muted}>{t('assets.noAssets')}</Text>
-          ) : entryMode ? (
+          ) : activeEntry ? (
             item.assets.map((asset) => renderEntryRow(asset))
           ) : (
             item.assets.map((asset) => {

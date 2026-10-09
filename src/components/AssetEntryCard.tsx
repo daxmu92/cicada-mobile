@@ -73,7 +73,7 @@ export function AssetEntryCard({
       <Text style={styles.label}>{t('addRecord.netWorth')}</Text>
       <TextInput
         style={styles.input}
-        value={draft.netWorth}
+        accessibilityLabel={t('addRecord.netWorth')} value={draft.netWorth}
         onChangeText={setNetWorth}
         placeholder={t('addRecord.valuePlaceholder')}
         keyboardType="decimal-pad"
@@ -84,7 +84,7 @@ export function AssetEntryCard({
       <Text style={styles.label}>{t('addRecord.inflow')}</Text>
       <TextInput
         style={styles.input}
-        value={draft.inflow}
+        accessibilityLabel={t('addRecord.inflow')} value={draft.inflow}
         onChangeText={setInflow}
         placeholder={t('addRecord.valuePlaceholder')}
         keyboardType="decimal-pad"
@@ -95,7 +95,7 @@ export function AssetEntryCard({
       <Text style={styles.label}>{t('addRecord.profit')}</Text>
       <TextInput
         style={styles.input}
-        value={draft.profit}
+        accessibilityLabel={t('addRecord.profit')} value={draft.profit}
         onChangeText={setProfit}
         placeholder={t('addRecord.valuePlaceholder')}
         keyboardType="decimal-pad"

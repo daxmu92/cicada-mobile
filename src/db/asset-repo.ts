@@ -1,3 +1,4 @@
+import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { getDatabase } from './database';
 import { stampWrite, recordTombstonesAt } from '../sync/stamp';
@@ -78,14 +79,15 @@ export async function createAsset(
   name: string,
   categories: Record<string, string> = {}
 ): Promise<number> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
     'INSERT INTO asset (account_id, name, categories, uuid, updated_at) VALUES (?, ?, ?, ?, ?)',
     [accountId, name, JSON.stringify(categories), uuid, updatedAt]
   );
-  bumpDirty();
+  bumpDirty(db);
   return result.lastInsertRowId;
+  });
 }
 
 export async function updateAsset(
@@ -93,18 +95,19 @@ export async function updateAsset(
   name: string,
   categories: Record<string, string>
 ): Promise<void> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(
     'UPDATE asset SET name = ?, categories = ?, updated_at = ? WHERE id = ?',
     [name, JSON.stringify(categories), updatedAt, id]
   );
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function deleteAsset(id: number): Promise<void> {
-  const db = await getDatabase();
-  const deletedAt = await tick();
+  return runLedgerWrite(async (db) => {
+  const deletedAt = await tick(db);
   await db.withTransactionAsync(async (db) => {
     const asset = await db.getFirstAsync<{ uuid: string }>(
       'SELECT uuid FROM asset WHERE id = ?',
@@ -116,21 +119,23 @@ export async function deleteAsset(id: number): Promise<void> {
     await recordTombstonesAt(db, 'snapshot', snapshotKeys, deletedAt);
     await db.runAsync('DELETE FROM asset WHERE id = ?', [id]);
   });
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function setAssetArchived(
   id: number,
   archived: boolean
 ): Promise<void> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync('UPDATE asset SET archived = ?, updated_at = ? WHERE id = ?', [
     archived ? 1 : 0,
     updatedAt,
     id,
   ]);
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 /** Two queries for the entire active list, regardless of the number of assets. */

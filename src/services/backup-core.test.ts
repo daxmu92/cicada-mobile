@@ -1,9 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { makeMigratedDb } from '../sync/test-support/sqlite';
-import { buildBackupDoc, parseBackup, restoreBackupDoc, BACKUP_VERSION } from './backup-core';
+import { buildBackupDoc, parseBackup, restoreBackupDoc, BACKUP_VERSION, maxBackupStamp,replaceBackupDoc } from './backup-core';
+import { updateDatabaseClock } from '../sync/clock-core';
+import { encodeHlc } from '../sync/hlc';
+import { buildDocument } from '../sync/document';
+import { merge } from '../sync/merge';
+import { applyMerge } from '../sync/apply';
 
 const STAMP = '000000000000123-00000-aaaaaa';
+
+test('future backup clocks do not let an older imported tombstone erase a restored live row',async()=>{
+  const {db}=await makeMigratedDb();
+  const future=Date.now()+365*86400000;
+  const doc=parseBackup(JSON.stringify({version:3,exportedAt:new Date().toISOString(),accounts:[],assets:[],snapshots:[],transactions:[{id:1,uuid:'future-row',updated_at:encodeHlc(future,1,'aaaaaa'),date:'2026-10-09',type:'INCOME',value:1,cat:'',note:''}],settings:[],tombstones:[{entity:'tran',uuid:'future-row',deleted_at:encodeHlc(future,0,'aaaaaa')}]}));
+  await updateDatabaseClock(db,Date.now(),maxBackupStamp(doc)!);
+  const deletedAt=await updateDatabaseClock(db,Date.now());const freshStamp=await updateDatabaseClock(db,Date.now());
+  await replaceBackupDoc(db,doc,{deletedAt,freshStamp});
+  const local=await buildDocument(db,{generatedBy:'test',generatedAt:new Date().toISOString()});
+  await applyMerge(db,merge(local,local));
+  assert.equal((await db.getFirstAsync<{value:number}>('SELECT value FROM tran WHERE uuid=?',['future-row']))?.value,1);
+  assert.ok(freshStamp>maxBackupStamp(doc)!);
+});
 
 async function seed(db: any) {
   await db.runAsync('INSERT INTO account (id, name, archived, uuid, updated_at) VALUES (1, ?, 0, ?, ?)', ['Cash', 'acc-1', STAMP]);

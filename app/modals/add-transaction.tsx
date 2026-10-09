@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -46,13 +47,24 @@ export default function AddTransactionModal() {
   const [note, setNote] = useState('');
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
-  const loadData = useCallback(async () => {
+  const [loadedId,setLoadedId]=useState<number|null>(null);
+  const ready=editingId===null||editingId===loadedId;
+  const busy=saving||!ready;
+  const baseline=useRef(JSON.stringify(['OUTLAY',params.date??currentDate(),'','','']));
+  const dirty=ready&&JSON.stringify([type,date,value,cat,note])!==baseline.current;
+  const markSaved=useUnsavedChanges(dirty,saving);
+  const loadData = useCallback(async (cancelled:()=>boolean) => {
     const tags = await getAllTags();
+    if(cancelled())return;
     setExistingTags(tags);
 
     if (editingId !== null) {
       const tx = await getTransaction(editingId);
+      if(cancelled())return;
+      if(!tx)throw new Error('Transaction not found');
       if (tx) {
+        baseline.current=JSON.stringify([tx.type,tx.date,String(tx.value),tx.cat,tx.note]);
+        setLoadedId(editingId);
         setType(tx.type);
         setDate(tx.date);
         setValue(String(tx.value));
@@ -63,8 +75,10 @@ export default function AddTransactionModal() {
   }, [editingId]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled=false;
+    void loadData(()=>cancelled).catch(()=>{if(!cancelled)notify(t('common.error'),t('common.loadFailed'));});
+    return()=>{cancelled=true;};
+  }, [loadData,t]);
 
   const activeTags = cat
     .split(',')
@@ -72,6 +86,7 @@ export default function AddTransactionModal() {
     .filter(Boolean);
 
   const toggleTag = (tag: string) => {
+    if(busy)return;
     if (activeTags.includes(tag)) {
       setCat(activeTags.filter((s) => s !== tag).join(', '));
     } else {
@@ -80,6 +95,7 @@ export default function AddTransactionModal() {
   };
 
   const submit = () => save(async () => {
+    if(!ready)return;
     const v = parseAmount(value);
     if (v <= 0) {
       notify(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
@@ -90,11 +106,11 @@ export default function AddTransactionModal() {
     } else {
       await createTransaction(date, type, v, cat.trim(), note.trim());
     }
-    router.back();
+    markSaved();router.back();
   });
 
-  const confirmDelete = async () => {
-    if (!editingId) return;
+  const confirmDelete = () => save(async () => {
+    if (editingId===null||!ready) return;
     const ok = await confirmAsync(
       t('addTransaction.deleteTitle'),
       t('addTransaction.deleteBody'),
@@ -103,8 +119,8 @@ export default function AddTransactionModal() {
     );
     if (!ok) return;
     await deleteTransaction(editingId);
-    router.back();
-  };
+    markSaved();router.back();
+  });
 
   return (
     <KeyboardAvoidingView
@@ -117,7 +133,7 @@ export default function AddTransactionModal() {
             {(['INCOME', 'OUTLAY'] as const).map((opt) => (
               <TouchableOpacity
                 key={opt}
-                onPress={() => setType(opt)}
+                disabled={busy} onPress={() => {if(!busy)setType(opt);}}
                 style={[
                   styles.typeBtn,
                   type === opt && {
@@ -137,7 +153,7 @@ export default function AddTransactionModal() {
           </View>
 
           <Text style={styles.label}>{t('addTransaction.date')}</Text>
-          <DateField value={date} onChange={setDate} label={t('addTransaction.date')} disabled={saving} />
+          <DateField value={date} onChange={setDate} label={t('addTransaction.date')} disabled={busy} />
 
           <Text style={styles.label}>{t('addTransaction.value')}</Text>
           <TextInput
@@ -147,7 +163,7 @@ export default function AddTransactionModal() {
             onChangeText={setValue}
             placeholder={t('addTransaction.valuePlaceholder')}
             keyboardType="decimal-pad"
-            editable={!saving}
+            editable={!busy}
           />
 
           <Text style={styles.label}>{t('addTransaction.tags')}</Text>
@@ -157,7 +173,7 @@ export default function AddTransactionModal() {
             value={cat}
             onChangeText={setCat}
             placeholder={t('addTransaction.tagsPlaceholder')}
-            autoCapitalize="none"
+            autoCapitalize="none" editable={!busy}
           />
 
           {existingTags.length > 0 && (
@@ -166,7 +182,7 @@ export default function AddTransactionModal() {
                 const active = activeTags.includes(tag);
                 return (
                   <TouchableOpacity
-                    key={tag}
+                    key={tag} disabled={busy}
                     onPress={() => toggleTag(tag)}
                     style={[styles.tagChip, active && styles.tagChipActive]}>
                     <Text
@@ -189,16 +205,16 @@ export default function AddTransactionModal() {
             value={note}
             onChangeText={setNote}
             placeholder={t('addTransaction.notePlaceholder')}
-            multiline
+            multiline editable={!busy}
           />
         </View>
 
-        <TouchableOpacity accessibilityRole="button" style={styles.submitBtn} onPress={submit} disabled={saving}>
+        <TouchableOpacity accessibilityRole="button" style={styles.submitBtn} onPress={submit} disabled={busy}>
           <Text style={styles.submitText}>{saving ? t('common.saving') : editingId !== null ? t('common.update') : t('common.save')}</Text>
         </TouchableOpacity>
 
         {editingId && (
-          <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete}>
+          <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete} disabled={busy}>
             <Text style={styles.deleteText}>{t('common.delete')}</Text>
           </TouchableOpacity>
         )}

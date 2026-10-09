@@ -1,3 +1,4 @@
+import { getLedgerMode, type LedgerMode } from '../ledger/mode';
 import * as SQLite from 'expo-sqlite';
 import { serializeExpoDatabase } from './serialized-db';
 
@@ -8,15 +9,17 @@ import { migrate, resetSchema, type CicadaDB } from './migrations';
 //   - Browser / PWA  -> expo-sqlite's WASM engine (OPFS; works in Chromium)
 // Mobile uses database.ts instead.
 
-const DB_NAME = 'cicada.db';
+const databases = new Map<string, Promise<CicadaDB>>();
 
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-let dbPromise: Promise<CicadaDB> | null = null;
 
-export function getDatabase(): Promise<CicadaDB> {
+
+export function getDatabase(mode: LedgerMode = getLedgerMode()): Promise<CicadaDB> {
+  const name = mode === 'demo' ? 'cicada-demo.db' : 'cicada.db';
+  let dbPromise = databases.get(name);
   if (!dbPromise) {
     dbPromise = (async () => {
       let db: CicadaDB;
@@ -24,13 +27,15 @@ export function getDatabase(): Promise<CicadaDB> {
         // Lazy-load so the plugin bundle only ships in the desktop chunk and is
         // never evaluated in a plain browser.
         const { openTauriDatabase } = await import('./tauri-sqlite');
-        db = await openTauriDatabase();
+        db = await openTauriDatabase(name);
       } else {
-        db = serializeExpoDatabase(await SQLite.openDatabaseAsync(DB_NAME));
+        db = serializeExpoDatabase(await SQLite.openDatabaseAsync(name));
       }
+      db.ledgerMode=mode;
       await migrate(db);
       return db;
-    })().catch((error) => { dbPromise = null; throw error; });
+    })().catch((error) => { databases.delete(name); throw error; });
+    databases.set(name, dbPromise);
   }
   return dbPromise;
 }

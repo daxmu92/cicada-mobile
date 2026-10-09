@@ -1,3 +1,4 @@
+import { getLedgerMode, type LedgerMode } from '../ledger/mode';
 import { createDebouncer } from './debounce';
 import { createAsyncLock } from '../utils/async-lock';
 
@@ -12,7 +13,7 @@ export type SchedulerDeps = {
   periodicMs: number;
 };
 export type Scheduler = {
-  markDirty(): void;
+  markDirty(mode?:LedgerMode): void;
   requestSync(reason: SyncReason): Promise<void>;
   start(): void;
   stop(): void;
@@ -134,6 +135,7 @@ export const syncScheduler: Scheduler & {
   });
   return {
     ...base,
+    markDirty(mode=getLedgerMode()) { if (mode==='live') base.markDirty(); },
     subscribe(cb) { subscribers.add(cb); return () => subscribers.delete(cb); },
     getSnapshot() { return snapshot; },
   };

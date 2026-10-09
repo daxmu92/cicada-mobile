@@ -13,10 +13,12 @@ impl Transactions {
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 
 #[tauri::command]
-pub async fn cicada_begin_transaction(instances: State<'_, DbInstances>, txs: State<'_, Transactions>) -> Result<String, String> {
+pub async fn cicada_begin_transaction(instances: State<'_, DbInstances>, txs: State<'_, Transactions>, database_url: Option<String>) -> Result<String, String> {
+    let url = database_url.as_deref().unwrap_or("sqlite:cicada.db");
+    if url != "sqlite:cicada.db" && url != "sqlite:cicada-demo.db" { return Err("Unsupported ledger".into()); }
     let pool = {
         let instances = instances.0.read().await;
-        match instances.get("sqlite:cicada.db") {
+        match instances.get(url) {
             Some(DbPool::Sqlite(pool)) => pool.clone(),
             _ => return Err("Database not loaded".into()),
         }

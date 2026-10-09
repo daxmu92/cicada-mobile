@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "CicadaFinScape",
   "mainBinaryName": "CicadaFinScape",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "identifier": "com.daxmu.cicada",
   "build": {
     "frontendDist": "../dist",
@@ -40,6 +40,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZBRUNDRTM0RThFNzU2OUEKUldTYVZ1Zm9OTTdzYWhGTko0M0NzTExqQnEyY1p4V0NPL2MzRDNYb1VMbzhVbEYwMzBvSHVoZ0gK",
+      "endpoints": [
+        "https://github.com/daxmu92/cicada-mobile/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

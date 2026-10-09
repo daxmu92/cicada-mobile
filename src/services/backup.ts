@@ -1,11 +1,13 @@
+import { runLedgerMaintenance } from './ledger-maintenance';
+import { getLedgerMode } from '../ledger/mode';
 import { Platform } from 'react-native';
 import { File, Paths } from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
 import { getDatabase } from '../db/database';
-import { tick } from '../sync/clock';
-import { buildBackupDoc, parseBackup, replaceBackupDoc, latestRecoveryBackup, type ImportCounts } from './backup-core';
+import { tick,receiveRemote } from '../sync/clock';
+import { buildBackupDoc, parseBackup, maxBackupStamp, replaceBackupDoc, latestRecoveryBackup, type ImportCounts } from './backup-core';
 import { notifyDataChanged } from '../db/changes';
 import { syncScheduler } from '../sync/scheduler';
 
@@ -94,6 +96,7 @@ export async function exportBackup(): Promise<void> {
 }
 
 export async function importBackup(): Promise<ImportCounts> {
+  const expected=getLedgerMode();
   let content: string;
 
   if (Platform.OS === 'web') {
@@ -112,11 +115,12 @@ export async function importBackup(): Promise<ImportCounts> {
   }
 
   const parsed = parseBackup(content);
-  return syncScheduler.runExclusive(async (sync) => {
+  return runLedgerMaintenance(expected,async (db,sync) => {
     await sync().catch(() => {}); // Offline replacement remains local until retry.
-    const db = await getDatabase();
-    const deletedAt = await tick();
-    const freshStamp = await tick();
+    const incoming=maxBackupStamp(parsed);
+    if(incoming)await receiveRemote(incoming);
+    const deletedAt = await tick(db);
+    const freshStamp = await tick(db);
     const counts = await replaceBackupDoc(db, parsed, { deletedAt, freshStamp });
     notifyDataChanged();
     syncScheduler.markDirty();

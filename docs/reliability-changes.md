@@ -1,3 +1,7 @@
+For desktop 0.2.2 follow-up features and current release checks, see
+[Product workflows](product-workflows.md) and [Release preparation](release-preparation.md).
+The notes below describe the 0.2.1 reliability repair.
+
 # Reliability changes
 
 The repair keeps the SQLite domain schema and sync format compatible with existing v1/v2/v3 backups and sync-format v1 clients. Local automatic backups are stored in a separate, unsynced table.

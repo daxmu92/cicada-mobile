@@ -8,6 +8,8 @@ export type SqlParam = string | number | null;
 
 /** The subset of expo-sqlite's SQLiteDatabase the app actually uses. */
 export interface CicadaDB {
+  /** Local database identity; never exported or synchronized. */
+  ledgerMode?: 'live' | 'demo';
   getAllAsync<T = any>(sql: string, params?: SqlParam[]): Promise<T[]>;
   getFirstAsync<T = any>(sql: string, params?: SqlParam[]): Promise<T | null>;
   runAsync(

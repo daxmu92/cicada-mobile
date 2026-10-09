@@ -77,7 +77,11 @@
     "incomeByCategory": "收入分类",
     "outlayByCategory": "支出分类",
     "noIncome": "本月暂无收入",
-    "noOutlay": "本月暂无支出"
+    "noOutlay": "本月暂无支出",
+    "search": "搜索备注、标签、日期或金额",
+    "all": "全部",
+    "allTags": "全部标签",
+    "filteredCount": "当前筛选：{{count}} 笔"
   },
   "assetDetail": {
     "netWorth": "净值",
@@ -263,5 +267,39 @@
     "noPositiveHoldings": "暂无正值持仓可展示",
     "calendarTitle": "年历",
     "calendarIntro": "点击月份查看。"
+  },
+  "demo": {
+    "banner": "示例账本 · 数据独立 · 云同步已关闭",
+    "enter": "打开示例账本",
+    "enterBody": "示例使用独立账本，不会替换你的数据，也不会同步到云端。可以随时返回个人账本。",
+    "reset": "重置示例数据",
+    "resetBody": "仅重置示例账本中的数据。",
+    "return": "返回我的账本",
+    "changed": "账本已切换，请重新操作。",
+    "importBody": "只替换示例账本，不影响个人账本或云端。继续？"
+  },
+  "drafts": {
+    "title": "未保存的修改",
+    "body": "放弃未保存的修改并离开？"
+  },
+  "reconcile": {
+    "title": "检查收益差额",
+    "help": "按“本次净值 − 前次记录净值 − 本次流入”检查收益，首条记录不重算。跨缺失月份使用上次记录。手工收益可能有不同口径，请核对预览后再确认。确认时会保存自动备份。",
+    "clean": "没有发现收益差额。",
+    "previous": "前次记录：{{date}}",
+    "apply": "确认重算收益",
+    "confirm": "按预览更新 {{count}} 条收益记录？净值和流入不会被改写。",
+    "stale": "记录已经变化，请重新核对预览。",
+    "offer": "后续记录存在收益差额，是否查看预览？"
+  },
+  "updates": {
+    "check": "检查更新",
+    "available": "新版本 {{version}} 可用",
+    "install": "下载并安装",
+    "confirm": "应用将关闭以安装更新，是否继续？",
+    "latest": "当前已是最新发布版本。",
+    "failed": "无法检查或安装更新，请稍后重试。",
+    "draft": "请先保存或放弃正在编辑的内容。",
+    "busy": "正在准备更新…"
   }
 }

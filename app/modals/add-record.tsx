@@ -1,3 +1,5 @@
+import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
+import { getReconciliationPreview } from '../../src/services/reconciliation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -55,6 +57,9 @@ export default function AddRecordModal() {
   const recordKey = `${assetId}|${date}`;
   const ready = loadedKey === recordKey;
   const busy = saving || !ready;
+  const [baseline,setBaseline]=useState('');
+  const dirty=ready&&JSON.stringify([netWorth,inflow,profit])!==baseline;
+  const markSaved=useUnsavedChanges(dirty,saving);
   const request = useRef(0);
   const loadData = useCallback(async (isCancelled: () => boolean) => {
     const generation = ++request.current;
@@ -70,6 +75,7 @@ export default function AddRecordModal() {
     setInflow(existing ? String(existing.inflow) : '');
     setProfit(existing ? String(existing.profit) : '');
     setLastNetWorth(last?.netWorth ?? 0);
+    setBaseline(JSON.stringify(existing?[String(existing.netWorth),String(existing.inflow),String(existing.profit)]:['','','']));
     setLoadedKey(`${assetId}|${date}`);
   }, [assetId, date]);
 
@@ -106,6 +112,14 @@ export default function AddRecordModal() {
     }
   };
 
+  const changeDate=async(next:string)=>{
+    if(!dirty||await confirmAsync(t('drafts.title'),t('drafts.body')))setDate(next);
+  };
+  const afterWrite=async()=>{
+    const preview=await getReconciliationPreview(assetId).catch(()=>null);
+    if(preview?.changes.some(change=>change.date>date)&&await confirmAsync(t('reconcile.title'),t('reconcile.offer'))){markSaved();router.replace(`/modals/reconcile-asset?assetId=${assetId}`);}
+    else {markSaved();router.back();}
+  };
   const submit = () => {
     if (!ready) return;
     return save(async () => {
@@ -113,7 +127,7 @@ export default function AddRecordModal() {
       const i = parseAmount(inflow, true);
       const p = parseAmount(profit, true);
       await upsertSnapshot(assetId, date, n, i, p);
-      router.back();
+      await afterWrite();
     });
   };
 
@@ -128,7 +142,7 @@ export default function AddRecordModal() {
       );
       if (!ok) return;
       await deleteSnapshot(assetId, date);
-      router.back();
+      await afterWrite();
     });
   };
 
@@ -141,7 +155,7 @@ export default function AddRecordModal() {
           <Text style={shared.sectionTitle}>
             {accountName} · {assetName}
           </Text>
-          <DateField value={date} onChange={setDate} month label={t('addTransaction.date')} disabled={saving} />
+          <DateField value={date} onChange={(next)=>{void changeDate(next);}} month label={t('addTransaction.date')} disabled={saving} />
           <Text style={shared.muted}>
             {t('addRecord.previousNetWorth', { value: fmt(lastNetWorth) })}
           </Text>

@@ -1,3 +1,4 @@
+import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { getDatabase } from './database';
 import { stampWrite, recordTombstonesAt } from '../sync/stamp';
@@ -41,30 +42,32 @@ export async function getAccount(id: number): Promise<Account | null> {
 }
 
 export async function createAccount(name: string): Promise<number> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
     'INSERT INTO account (name, uuid, updated_at) VALUES (?, ?, ?)',
     [name, uuid, updatedAt]
   );
-  bumpDirty();
+  bumpDirty(db);
   return result.lastInsertRowId;
+  });
 }
 
 export async function renameAccount(id: number, name: string): Promise<void> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync('UPDATE account SET name = ?, updated_at = ? WHERE id = ?', [
     name,
     updatedAt,
     id,
   ]);
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function deleteAccount(id: number): Promise<void> {
-  const db = await getDatabase();
-  const deletedAt = await tick();
+  return runLedgerWrite(async (db) => {
+  const deletedAt = await tick(db);
   await db.withTransactionAsync(async (db) => {
     const account = await db.getFirstAsync<{ uuid: string }>(
       'SELECT uuid FROM account WHERE id = ?',
@@ -86,14 +89,15 @@ export async function deleteAccount(id: number): Promise<void> {
     // FK ON DELETE CASCADE clears assets + snapshots locally.
     await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
   });
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function setAccountArchived(
   id: number,
   archived: boolean
 ): Promise<void> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const flag = archived ? 1 : 0;
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.withTransactionAsync(async (db) => {
@@ -111,5 +115,6 @@ export async function setAccountArchived(
       );
     }
   });
-  bumpDirty();
+  bumpDirty(db);
+  });
 }

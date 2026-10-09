@@ -1,3 +1,4 @@
+import { getLedgerEpoch } from '../../src/ledger/mode';
 import { notify } from '../../src/utils/dialog';
 import { useDataVersion } from '../../src/hooks/use-data-version';
 import { useCallback, useRef, useState } from 'react';
@@ -31,6 +32,8 @@ const EMPTY_COMP: CompositionResult = { slices: [], chartedTotal: 0, trueTotal: 
 export default function AnalysisScreen() {
   const { t } = useTranslation();
   const dataVersion = useDataVersion();
+  const epoch=getLedgerEpoch();
+  const [loadedEpoch,setLoadedEpoch]=useState(-1);
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const shared = useShared();
@@ -48,6 +51,7 @@ export default function AnalysisScreen() {
   const request = useRef(0);
   const loadData = useCallback(async () => {
     const generation = ++request.current;
+    const capturedEpoch=getLedgerEpoch();
     // Trend window: 1Y/3Y end at selectedMonth; All spans full history.
     let start = selectedMonth;
     let end = selectedMonth;
@@ -68,7 +72,8 @@ export default function AnalysisScreen() {
       listSnapshotsByDate(selectedMonth, { forwardFill }),
       listAssets({ includeArchived: true }),
     ]);
-    if (generation !== request.current) return;
+    if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
+    setLoadedEpoch(capturedEpoch);
     setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
     const catById = new Map(assets.map((a) => [a.id, a.categories]));
     setCompInput(
@@ -118,6 +123,7 @@ export default function AnalysisScreen() {
 
   const dimLabel = (d: string) => (d === ACCOUNT_DIMENSION ? t('analysis.byAccount') : d);
 
+  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
     <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
       <View style={styles.selectorRow}>

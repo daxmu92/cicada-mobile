@@ -77,7 +77,11 @@
     "incomeByCategory": "Income by Category",
     "outlayByCategory": "Outlay by Category",
     "noIncome": "No income this month",
-    "noOutlay": "No outlay this month"
+    "noOutlay": "No outlay this month",
+    "search": "Search notes, tags, dates or amounts",
+    "all": "All",
+    "allTags": "All tags",
+    "filteredCount": "{{count}} matching transactions"
   },
   "assetDetail": {
     "netWorth": "Net Worth",
@@ -263,5 +267,39 @@
     "noPositiveHoldings": "No positive holdings to chart",
     "calendarTitle": "Calendar",
     "calendarIntro": "Tap a month to view it."
+  },
+  "demo": {
+    "banner": "Demo ledger · separate data · cloud sync disabled",
+    "enter": "Open Demo Ledger",
+    "enterBody": "Demo data uses a separate ledger. Your data and cloud are preserved. You can return to your own ledger at any time.",
+    "reset": "Reset Demo Data",
+    "resetBody": "Only the demo ledger will be reset.",
+    "return": "Return to My Ledger",
+    "changed": "The ledger changed. Please try again.",
+    "importBody": "Only the demo ledger will be replaced. Your own ledger and cloud are preserved. Continue?"
+  },
+  "drafts": {
+    "title": "Unsaved changes",
+    "body": "Discard unsaved changes and leave?"
+  },
+  "reconcile": {
+    "title": "Check Profit Differences",
+    "help": "Compare profit with current net worth minus the previous recorded net worth and current inflow. The first record is excluded; gaps use the previous record. Manual profits may use a different basis. Review before applying; an automatic backup is saved.",
+    "clean": "No profit differences found.",
+    "previous": "Previous record: {{date}}",
+    "apply": "Apply Profit Recalculation",
+    "confirm": "Apply the preview to {{count}} profit records? Net worth and inflow are preserved.",
+    "stale": "Records changed. Please review the refreshed preview.",
+    "offer": "Later records have profit differences. Open a preview?"
+  },
+  "updates": {
+    "check": "Check for updates",
+    "available": "Version {{version}} is available",
+    "install": "Download and install",
+    "confirm": "The app will close to install the update. Continue?",
+    "latest": "You are using the latest published version.",
+    "failed": "Could not check or install the update. Try again later.",
+    "draft": "Save or discard your edits before updating.",
+    "busy": "Preparing update…"
   }
 }

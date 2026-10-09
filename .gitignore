@@ -51,3 +51,4 @@ app-example
 # Personal exports and tool working copies (existing tracked files are preserved).
 /cicada-backup-*.json
 .claire/
+.venv-webdav/

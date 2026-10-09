@@ -15,6 +15,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Real HTTPS WebDAV acceptance
+        run: |
+          python3 -m venv .venv-webdav
+          .venv-webdav/bin/pip install -r scripts/fixtures/requirements-webdav.txt
+          CICADA_DAV_PYTHON=.venv-webdav/bin/python npm run test:webdav:local
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run export:web
@@ -35,7 +40,20 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: cargo test --manifest-path src-tauri/Cargo.toml
-      - run: npm run tauri:build
+      - name: Build installers (sign updates when repository secret is available)
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ($env:TAURI_SIGNING_PRIVATE_KEY) {
+            npm run tauri:build
+          } else {
+            '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Encoding utf8NoBOM unsigned-build.json
+            npm run tauri:build -- --config unsigned-build.json
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run: node scripts/release-artifacts.mjs
       - uses: actions/upload-artifact@v7
         with:
           name: windows-installers

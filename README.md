@@ -93,7 +93,11 @@ npm run export:web
 
 Optional WebDAV synchronization, desktop build instructions, automatic recovery
 backups and repair semantics are documented in [Reliability changes](docs/reliability-changes.md)
-and [Windows builds](docs/windows-build.md).
+and [Windows builds](docs/windows-build.md). Real HTTPS WebDAV and isolated installer
+validation are documented in [Acceptance checks](docs/acceptance-checks.md).
+Desktop 0.2.2 adds [Demo, reconciliation, search and draft protection](docs/product-workflows.md),
+with [dependency review](docs/dependency-security.md) and
+[update/release preparation](docs/release-preparation.md).
 
 ## Building a standalone app (EAS)
 

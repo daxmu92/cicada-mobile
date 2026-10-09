@@ -4,7 +4,8 @@
 param(
   [Parameter(Mandatory=$true)][string]$Branch,
   [Parameter(Mandatory=$true)][string]$WslRemote,
-  [string]$RepoDir = "C:\projects\cicada-mobile"
+  [string]$RepoDir = "C:\projects\cicada-mobile",
+  [string]$TargetDir = ""
 )
 $ErrorActionPreference = "Stop"
 
@@ -55,9 +56,28 @@ if (-not (Test-Path "node_modules") -or -not (Test-Path $marker) -or
   Write-Host "==> Dependencies up to date, skipping npm ci."
 }
 
+if ($TargetDir) { $env:CARGO_TARGET_DIR = $TargetDir }
+if (-not $env:CARGO_TARGET_DIR) {
+  $commit = (git rev-parse --short=7 HEAD).Trim()
+  $env:CARGO_TARGET_DIR = "C:\projects\cicada-build-tools\target-$commit"
+}
+# Clear generated installers/signatures so unsigned rebuilds cannot reuse old signatures.
+$bundleDir = Join-Path $env:CARGO_TARGET_DIR 'release\bundle'
+if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 Write-Host "==> Building Windows bundle (npm run tauri:build)..."
-npm run tauri:build
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$override = $null
+try {
+  if ($env:TAURI_SIGNING_PRIVATE_KEY) {
+    npm run tauri:build
+  } else {
+    $override = Join-Path ([System.IO.Path]::GetTempPath()) ("cicada-unsigned-" + [guid]::NewGuid() + ".json")
+    '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Encoding utf8NoBOM $override
+    npm run tauri:build -- --config $override
+  }
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  node scripts/release-artifacts.mjs "$env:CARGO_TARGET_DIR\release\bundle"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+} finally { if ($override) { Remove-Item $override -ErrorAction SilentlyContinue } }
 
 Write-Host "==> Build complete. Artifacts in:"
-Write-Host "    $RepoDir\src-tauri\target\release\bundle\"
+Write-Host "    $env:CARGO_TARGET_DIR\release\bundle\"

@@ -19,7 +19,7 @@ fallback when WSL has not picked up the updated PATH.
 - Git for Windows (used to sync the build checkout)
 - Microsoft Visual Studio 2022 Build Tools — "Desktop development with C++" (MSVC linker)
 - Rust (via rustup; MSVC target by default)
-- Node.js 20 LTS
+- Node.js 20+ and Rust 1.90+
 
 WebView2 ships with Windows 11. The Tauri CLI is **not** installed globally — the
 build uses the repo-local `@tauri-apps/cli` through `npm run tauri:build`.
@@ -46,15 +46,20 @@ npm run build:windows
 
 This syncs the Windows checkout to your current branch's latest commit, installs
 dependencies when the lockfile changed, runs `expo export` + the Tauri bundle, and
-copies the installers to `~/cicada-builds/`.
+copies installers and checksums to `../cicada-builds/<commit>/`.
+Each commit uses an independent `C:\projects\cicada-build-tools\target-<commit>`
+so a running EXE from an earlier build is not overwritten. The script discovers
+the protected local update key if available; without it, installers build without
+update signatures.
 
 ## Artifacts
 
-- `C:\projects\cicada-mobile\src-tauri\target\release\bundle\msi\CicadaFinScape_<version>_x64_en-US.msi`
-- `C:\projects\cicada-mobile\src-tauri\target\release\bundle\nsis\CicadaFinScape_<version>_x64-setup.exe`
-- Copies of both in `~/cicada-builds/` (WSL).
+- `C:\projects\cicada-build-tools\target-<commit>\release\bundle\msi\CicadaFinScape_<version>_x64_en-US.msi`
+- `C:\projects\cicada-build-tools\target-<commit>\release\bundle\nsis\CicadaFinScape_<version>_x64-setup.exe`
+- Copies of both in `../cicada-builds/<commit>/` (WSL).
 
-## Out of scope
+## Publishing
 
-Code signing, auto-update, and CI builds are not configured. See
-`docs/superpowers/specs/2026-06-20-windows-build-design.md`.
+GitHub CI builds Windows installers; package-signature based updates are configured.
+See [Release preparation](release-preparation.md) for signing, manifests and the
+remaining Authenticode/cloud acceptance prerequisites.

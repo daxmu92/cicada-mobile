@@ -1,4 +1,5 @@
-import { getDatabase } from '../db/database';
+import { runLedgerMaintenance } from './ledger-maintenance';
+import { getLedgerMode } from '../ledger/mode';
 import { eraseAllData } from '../sync/erase';
 import { tick } from '../sync/clock';
 import { syncScheduler } from '../sync/scheduler';
@@ -21,9 +22,9 @@ const SETTING_DEFAULTS: Record<string, string> = {
  * offline, the tombstones are recorded locally and pushed on the next sync.
  */
 export async function eraseAllDataAndSync(opts: { resetSettings: boolean }): Promise<void> {
-  await syncScheduler.runExclusive(async (sync) => {
+  const expected=getLedgerMode();
+  await runLedgerMaintenance(expected,async (db,sync) => {
     await sync().catch(() => {});
-    const db = await getDatabase();
     const deletedAt = await tick();
     const updatedAt = await tick();
     await db.withTransactionAsync(async (tx) => {

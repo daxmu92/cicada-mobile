@@ -1,7 +1,9 @@
+import { getLedgerEpoch } from '../../src/ledger/mode';
+import { filterTransactions } from '../../src/utils/transaction-filter';
 import { notify } from '../../src/utils/dialog';
 import { useDataVersion } from '../../src/hooks/use-data-version';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +30,8 @@ export default function TransactionsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const dataVersion = useDataVersion();
+  const epoch=getLedgerEpoch();
+  const [loadedEpoch,setLoadedEpoch]=useState(-1);
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
@@ -36,16 +40,22 @@ export default function TransactionsScreen() {
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totals, setTotals] = useState({ income: 0, outlay: 0 });
+  const [search,setSearch]=useState('');
+  const [typeFilter,setTypeFilter]=useState<'ALL'|'INCOME'|'OUTLAY'>('ALL');
+  const [tagFilter,setTagFilter]=useState('');
   const [tab, setTab] = useState<Tab>('list');
 
+  useEffect(()=>{setSearch('');setTypeFilter('ALL');setTagFilter('');},[epoch]);
   const request = useRef(0);
   const loadData = useCallback(async () => {
     const generation = ++request.current;
+    const capturedEpoch=getLedgerEpoch();
     const [txs, t] = await Promise.all([
       listTransactionsInMonth(selectedMonth),
       getIncomeOutlayTotalsForMonth(selectedMonth),
     ]);
-    if (generation !== request.current) return;
+    if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
+    setLoadedEpoch(capturedEpoch);
     setTransactions(txs);
     setTotals(t);
   }, [selectedMonth]);
@@ -57,10 +67,14 @@ export default function TransactionsScreen() {
     }, [loadData, dataVersion, t])
   );
 
+  const filtered=useMemo(()=>filterTransactions(transactions,{search,type:typeFilter,tag:tagFilter}),[transactions,search,typeFilter,tagFilter]);
+  const tags=useMemo(()=>Array.from(new Set(transactions.flatMap(row=>row.cat.split(',').map(tag=>tag.trim()).filter(Boolean)))).sort(),[transactions]);
+  const visibleTotals=filtered.reduce((sum,row)=>({...sum,[row.type==='INCOME'?'income':'outlay']:sum[row.type==='INCOME'?'income':'outlay']+row.value}),{income:0,outlay:0});
+  const shownTotals=(search.trim()||typeFilter!=='ALL'||tagFilter)?visibleTotals:totals;
   const breakdowns = useMemo(() => {
     const groupBy = (type: 'INCOME' | 'OUTLAY') => {
       const agg = new Map<string, number>();
-      transactions
+      filtered
         .filter((tx) => tx.type === type)
         .forEach((tx) => {
           const tags = tx.cat.split(',').map((t) => t.trim()).filter(Boolean);
@@ -75,11 +89,11 @@ export default function TransactionsScreen() {
       return Array.from(agg.entries()).map(([label, value]) => ({ label, value }));
     };
     return { income: groupBy('INCOME'), outlay: groupBy('OUTLAY') };
-  }, [transactions]);
+  }, [filtered]);
 
   const sections = useMemo(() => {
     const byDate = new Map<string, Transaction[]>();
-    for (const tx of transactions) {
+    for (const tx of filtered) {
       const list = byDate.get(tx.date);
       if (list) {
         list.push(tx);
@@ -94,15 +108,17 @@ export default function TransactionsScreen() {
         title: formatDate(date),
         data: [...items].sort((a, b) => b.id - a.id),
       }));
-  }, [transactions, locale]);
+  }, [filtered, locale]);
 
-  const net = totals.income - totals.outlay;
+  const net = shownTotals.income - shownTotals.outlay;
 
+  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
     <View style={shared.screen}>
       <View style={{ padding: spacing.lg, paddingBottom: 0 }}>
         <View style={[shared.card, styles.selectorCard]}>
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel={t('common.previousMonth')}
             onPress={() => setSelectedMonth(prevYearMonth(selectedMonth))}
             style={styles.arrowBtn}>
             <Text style={styles.arrow}>‹</Text>
@@ -111,23 +127,30 @@ export default function TransactionsScreen() {
             {formatMonthYear(selectedMonth, locale)}
           </Text>
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel={t('common.nextMonth')}
             onPress={() => setSelectedMonth(nextYearMonth(selectedMonth))}
             style={styles.arrowBtn}>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
         </View>
 
+        <View style={shared.card}>
+          <TextInput accessibilityLabel={t('transactions.search')} placeholder={t('transactions.search')} value={search} onChangeText={setSearch} style={{color:shared.heading.color,padding:10}} />
+          <View style={{flexDirection:'row',gap:16,flexWrap:'wrap'}}>{(['ALL','INCOME','OUTLAY'] as const).map(type=><TouchableOpacity accessibilityRole="button" key={type} onPress={()=>setTypeFilter(type)}><Text style={typeFilter===type?shared.heading:shared.muted}>{t(type==='ALL'?'transactions.all':type==='INCOME'?'transactions.income':'transactions.outlay')}</Text></TouchableOpacity>)}</View>
+          <View style={{flexDirection:'row',gap:12,flexWrap:'wrap',marginTop:12}}><TouchableOpacity onPress={()=>setTagFilter('')}><Text style={shared.muted}>{t('transactions.allTags')}</Text></TouchableOpacity>{tags.map(tag=><TouchableOpacity accessibilityRole="button" accessibilityLabel={tag} key={tag} onPress={()=>setTagFilter(tag)}><Text style={tagFilter===tag?shared.heading:shared.muted}>{tag}</Text></TouchableOpacity>)}</View>
+          <Text style={shared.muted}>{t('transactions.filteredCount',{count:filtered.length})}</Text>
+        </View>
         <View style={styles.totalsRow}>
           <View style={[shared.card, styles.totalCard]}>
             <Text style={shared.sectionTitle}>{t('transactions.income')}</Text>
             <Text style={[styles.totalValue, { color: gain }]}>
-              {fmt(totals.income)}
+              {fmt(shownTotals.income)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>
             <Text style={shared.sectionTitle}>{t('transactions.outlay')}</Text>
             <Text style={[styles.totalValue, { color: loss }]}>
-              {fmt(totals.outlay)}
+              {fmt(shownTotals.outlay)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>

@@ -1,3 +1,4 @@
+import { getLedgerEpoch } from '../../src/ledger/mode';
 import { notify } from '../../src/utils/dialog';
 import { useDataVersion } from '../../src/hooks/use-data-version';
 import { useCallback, useRef, useState } from 'react';
@@ -30,6 +31,8 @@ function greetingKey(hour: number): string {
 export default function HomeScreen() {
   const { t } = useTranslation();
   const dataVersion = useDataVersion();
+  const epoch=getLedgerEpoch();
+  const [loadedEpoch,setLoadedEpoch]=useState(-1);
   const wide = useWindowDimensions().width >= 1000;
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
@@ -46,6 +49,7 @@ export default function HomeScreen() {
   const request = useRef(0);
   const loadData = useCallback(async () => {
     const generation = ++request.current;
+    const capturedEpoch=getLedgerEpoch();
     const [cur, prevSnaps, snaps] = await Promise.all([
       getTotalsForDate(selectedMonth, { forwardFill }),
       listSnapshotsByDate(prevYearMonth(selectedMonth), { forwardFill }),
@@ -56,7 +60,8 @@ export default function HomeScreen() {
     let start = selectedMonth;
     for (let i = 0; i < 11; i++) start = prevYearMonth(start);
     const months = await getMonthlyTotals(start, selectedMonth, { forwardFill });
-    if (generation !== request.current) return;
+    if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
+    setLoadedEpoch(capturedEpoch);
     setTotals(cur);
     setPrevNetWorth(prevSnaps.length ? prevSnaps.reduce((sum, row) => sum + row.netWorth, 0) : null);
     setAllocations(snaps);
@@ -79,6 +84,7 @@ export default function HomeScreen() {
     value: s.netWorth,
   }));
 
+  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
     <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
       {/* Greeting + month selector */}

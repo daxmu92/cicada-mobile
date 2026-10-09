@@ -1,3 +1,4 @@
+import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { requireAmount, requireId, requireMonth } from '../utils/validation';
 import { getDatabase } from './database';
@@ -117,7 +118,7 @@ export async function upsertSnapshot(
 ): Promise<void> {
   requireId(assetId, 'snapshot.assetId'); requireMonth(date, 'snapshot.date');
   requireAmount(netWorth, 'snapshot.netWorth'); requireAmount(inflow, 'snapshot.inflow'); requireAmount(profit, 'snapshot.profit');
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(`
     INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit, updated_at)
@@ -128,12 +129,13 @@ export async function upsertSnapshot(
       profit = excluded.profit,
       updated_at = excluded.updated_at
   `, [assetId, date, netWorth, inflow, profit, updatedAt]);
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function deleteSnapshot(assetId: number, date: string): Promise<void> {
-  const db = await getDatabase();
-  const deletedAt = await tick();
+  return runLedgerWrite(async (db) => {
+  const deletedAt = await tick(db);
   await db.withTransactionAsync(async (db) => {
     const asset = await db.getFirstAsync<{ uuid: string }>(
       'SELECT uuid FROM asset WHERE id = ?',
@@ -147,7 +149,8 @@ export async function deleteSnapshot(assetId: number, date: string): Promise<voi
       await recordTombstonesAt(db, 'snapshot', [`${asset.uuid}|${date}`], deletedAt);
     }
   });
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function getDateRange(): Promise<{ start: string; end: string } | null> {

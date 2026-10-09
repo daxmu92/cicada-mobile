@@ -1,3 +1,4 @@
+import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { requireAmount, requireDate, requireId } from '../utils/validation';
 import { nextYearMonth } from '../utils/date';
@@ -59,14 +60,15 @@ export async function createTransaction(
 ): Promise<number> {
   requireDate(date, 'transaction.date'); requireAmount(value, 'transaction.value');
   if (value <= 0 || !['INCOME', 'OUTLAY'].includes(type)) throw new Error('Invalid transaction');
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
     'INSERT INTO tran (date, type, value, cat, note, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [date, type, value, cat, note, uuid, updatedAt]
   );
-  bumpDirty();
+  bumpDirty(db);
   return result.lastInsertRowId;
+  });
 }
 
 export async function updateTransaction(
@@ -79,18 +81,19 @@ export async function updateTransaction(
 ): Promise<void> {
   requireId(id, 'transaction.id'); requireDate(date, 'transaction.date'); requireAmount(value, 'transaction.value');
   if (value <= 0 || !['INCOME', 'OUTLAY'].includes(type)) throw new Error('Invalid transaction');
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync(
     'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE id = ?',
     [date, type, value, cat, note, updatedAt, id]
   );
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
-  const db = await getDatabase();
-  const deletedAt = await tick();
+  return runLedgerWrite(async (db) => {
+  const deletedAt = await tick(db);
   await db.withTransactionAsync(async (db) => {
     const tran = await db.getFirstAsync<{ uuid: string }>(
       'SELECT uuid FROM tran WHERE id = ?',
@@ -101,7 +104,8 @@ export async function deleteTransaction(id: number): Promise<void> {
       await recordTombstonesAt(db, 'tran', [tran.uuid], deletedAt);
     }
   });
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function getAllTags(): Promise<string[]> {

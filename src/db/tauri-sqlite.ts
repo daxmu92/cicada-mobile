@@ -9,7 +9,7 @@ import type { CicadaDB, SqlParam } from './migrations';
 // (WebKitGTK on Linux, WKWebView on macOS) don't reliably expose OPFS.
 //
 // The DB file lives in the OS app-config dir (resolved by the plugin).
-const DB_URL = 'sqlite:cicada.db';
+
 
 // The repos use "?" placeholders (expo-sqlite style); tauri-plugin-sql's SQLite
 // driver uses "$1, $2, …". None of our queries contain "?" inside string
@@ -29,7 +29,8 @@ function splitStatements(sql: string): string[] {
     .filter((s) => s.length > 0);
 }
 
-export async function openTauriDatabase(): Promise<CicadaDB> {
+export async function openTauriDatabase(name = 'cicada.db'): Promise<CicadaDB> {
+  const DB_URL = `sqlite:${name}`;
   const db = await Database.load(DB_URL);
 
   return serializeDatabase({
@@ -63,7 +64,7 @@ export async function openTauriDatabase(): Promise<CicadaDB> {
     },
 
     async withTransactionAsync(task: (tx: CicadaDB) => Promise<void>): Promise<void> {
-      const transactionId = await invoke<string>('cicada_begin_transaction');
+      const transactionId = await invoke<string>('cicada_begin_transaction', { databaseUrl: DB_URL });
       const query = <T>(sql: string, params: SqlParam[] = [], select = true) => invoke<T>(
         'cicada_transaction_query', { transactionId, sql: toNumberedPlaceholders(sql), params, select }
       );

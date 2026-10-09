@@ -1,3 +1,6 @@
+import { checkDesktopUpdates, desktopUpdatesAvailable } from '../../src/components/DesktopUpdates';
+import { useLedgerMode } from '../../src/ledger/mode';
+import { switchLedger } from '../../src/services/demo-ledger';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -43,6 +46,7 @@ const THEME_LABEL_KEYS: Record<ThemeName, string> = {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const mode=useLedgerMode();
   const { t } = useTranslation();
   const {
     currency,
@@ -68,17 +72,18 @@ export default function SettingsScreen() {
   const confirmLoadSample = async () => {
     const ok = await confirmAsync(
       t('settings.loadSampleTitle'),
-      t('settings.loadSampleBody'),
+      mode==='demo' ? t('demo.resetBody') : t('demo.enterBody'),
       t('settings.loadConfirm'),
       true
     );
     if (!ok) return;
     setLoading(true);
     try {
-      await loadSampleData();
+      if(mode==='live') await switchLedger('demo');
+      else await loadSampleData();
       notify(t('settings.doneTitle'), t('settings.sampleLoaded'));
     } catch (e: any) {
-      notify(t('common.error'), e?.message ?? t('settings.loadSampleFailed'));
+      notify(t('common.error'), e?.message==='LEDGER_CHANGED'?t('demo.changed'):e?.message ?? t('settings.loadSampleFailed'));
     } finally {
       setLoading(false);
     }
@@ -86,6 +91,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
+      {mode==='demo' && <TouchableOpacity accessibilityRole="button" disabled={loading} style={shared.card} onPress={() => { void switchLedger('live').catch(()=>notify(t('common.error'),t('common.loadFailed'))); }}><Text style={{color:c.primary}}>{t('demo.return')}</Text></TouchableOpacity>}
       <Text style={shared.sectionTitle}>{t('settings.preferences')}</Text>
       <View style={shared.card}>
         <View style={styles.toggleRow}>
@@ -95,7 +101,7 @@ export default function SettingsScreen() {
               {t('settings.forwardFillHelp')}
             </Text>
           </View>
-          <Switch value={forwardFill} onValueChange={setForwardFill} />
+          <Switch value={forwardFill} disabled={loading} onValueChange={(v)=>{void setForwardFill(v).catch(()=>notify(t('common.error'),t('common.saveFailed')));}} />
         </View>
       </View>
       <View style={shared.card}>
@@ -105,7 +111,7 @@ export default function SettingsScreen() {
           {CURRENCY_OPTIONS.map((symbol) => (
             <TouchableOpacity
               key={symbol}
-              onPress={() => setCurrency(symbol)}
+              disabled={loading} onPress={() => { void setCurrency(symbol).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
               style={[
                 styles.currencyChip,
                 currency === symbol && styles.currencyChipActive,
@@ -132,7 +138,7 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={opt.value}
-                onPress={() => setGainColor(opt.value)}
+                disabled={loading} onPress={() => { void setGainColor(opt.value).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
                 style={[
                   styles.currencyChip,
                   styles.gainChip,
@@ -158,7 +164,7 @@ export default function SettingsScreen() {
           {LANGUAGES.map((lang) => (
             <TouchableOpacity
               key={lang}
-              onPress={() => setLanguage(lang)}
+              disabled={loading} onPress={() => { void setLanguage(lang).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
               style={[
                 styles.currencyChip,
                 styles.gainChip,
@@ -186,7 +192,7 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={name}
-                onPress={() => setTheme(name)}
+                disabled={loading} onPress={() => { void setTheme(name).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
                 style={[
                   styles.themeSwatch,
                   { backgroundColor: p.bg, borderColor: active ? p.accent : c.border },
@@ -203,6 +209,7 @@ export default function SettingsScreen() {
       </View>
 
       <CloudSyncSection />
+      {desktopUpdatesAvailable() && <TouchableOpacity accessibilityRole="button" style={shared.card} onPress={checkDesktopUpdates}><Text style={{color:c.primary}}>{t('updates.check')}</Text></TouchableOpacity>}
 
       <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.manage')}</Text>
       <Row
@@ -235,7 +242,7 @@ export default function SettingsScreen() {
           // user gesture that importBackup() needs.
           const proceed = await confirmAsync(
             t('settings.importTitle'),
-            t('settings.importBody'),
+            mode==='demo'?t('demo.importBody'):t('settings.importBody'),
             t('settings.importConfirm'),
             true
           );
@@ -249,7 +256,7 @@ export default function SettingsScreen() {
             );
           } catch (e: any) {
             if (e?.message !== 'CANCELLED') {
-              notify(t('settings.importFailedTitle'), e?.message ?? t('settings.importFailedBody'));
+              notify(t('settings.importFailedTitle'), e?.message==='LEDGER_CHANGED'?t('demo.changed'):e?.message ?? t('settings.importFailedBody'));
             }
           } finally {
             setLoading(false);
@@ -267,7 +274,7 @@ export default function SettingsScreen() {
 
       <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.data')}</Text>
       <Row
-        title={t('settings.loadSample')}
+        title={t(mode==='demo'?'demo.reset':'demo.enter')}
         subtitle={t('settings.loadSampleSub')}
         onPress={confirmLoadSample}
         disabled={loading}
@@ -307,6 +314,7 @@ function Row({
   const styles = useThemedStyles(makeStyles);
   return (
     <TouchableOpacity
+      accessibilityRole="button" accessibilityLabel={title}
       onPress={onPress}
       disabled={disabled}
       style={[shared.card, styles.row, disabled && { opacity: 0.5 }]}>

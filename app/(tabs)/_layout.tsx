@@ -1,3 +1,6 @@
+import { CommonActions } from '@react-navigation/native';
+import { hasUnsavedDrafts,hasSavingDrafts,discardDrafts } from '../../src/ledger/drafts';
+import { confirmAsync } from '../../src/utils/dialog';
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
@@ -12,6 +15,15 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      screenListeners={({navigation,route})=>({tabPress:event=>{
+        const state=navigation.getState();
+        if(state.routes[state.index].key===route.key||!hasUnsavedDrafts())return;
+        event.preventDefault();
+        if(hasSavingDrafts())return;
+        void confirmAsync(t('drafts.title'),t('drafts.body')).then(ok=>{
+          if(ok){discardDrafts();navigation.dispatch(CommonActions.navigate(route.name));}
+        });
+      }})}
       screenOptions={{
         tabBarActiveTintColor: c.accent,
         headerShown: true,

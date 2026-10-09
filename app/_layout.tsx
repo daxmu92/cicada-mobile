@@ -1,3 +1,6 @@
+import { DesktopUpdates } from '../src/components/DesktopUpdates';
+import { DraftExitGuard } from '../src/components/DraftExitGuard';
+import { useLedgerMode } from '../src/ledger/mode';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -21,6 +24,7 @@ function ReadyLayout() {
   const { ready, error, reload } = useSettings();
   const c = useTheme();
   const { t } = useTranslation();
+  const mode=useLedgerMode();
   if (!ready) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg, gap: 16 }}>
     {!error && <ActivityIndicator color={c.primary} />}
     <Text style={{ color: c.ink }}>{t(error ? 'common.loadFailed' : 'common.loading')}</Text>
@@ -29,7 +33,10 @@ function ReadyLayout() {
 
   return (
       <SyncProvider>
+        <DraftExitGuard />
+        <DesktopUpdates />
         <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: c.primary, background: c.bg, card: c.card, text: c.ink, border: c.border } }}>
+        {mode==='demo' && <View style={{backgroundColor:c.accentSoft,padding:10}}><Text style={{color:c.ink}}>{t('demo.banner')}</Text></View>}
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -52,6 +59,7 @@ function ReadyLayout() {
             name="modals/edit-asset"
             options={{ presentation: 'modal', title: t('nav.editAsset') }}
           />
+          <Stack.Screen name="modals/reconcile-asset" options={{presentation:'modal',title:t('reconcile.title')}} />
           <Stack.Screen
             name="modals/erase-data"
             options={{ presentation: 'modal', title: t('eraseData.title') }}
