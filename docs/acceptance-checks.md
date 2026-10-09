@@ -88,3 +88,25 @@ and mocked consent/draft/installation-lock checks do not replace that end-to-end
 
 GitHub checks and review are available from
 [the draft pull request](https://github.com/daxmu92/cicada-mobile/pull/2).
+
+## 0.2.3: native desktop regression correction
+
+The earlier browser checks and native SQL unit tests did not validate the bundled
+WebView2 application. A user reported loading placeholders, ineffective Settings
+controls and a window that would not close. Native diagnosis exposed blocked
+`style-src-attr` and `style-src-elem` inline styles and font-loader timeouts:
+Tauri's injected style nonces made the fallback `unsafe-inline` ineffective.
+This broke runtime styling and visibility of cached navigation screens.
+
+The correction explicitly permits inline style attributes and trusted runtime
+style elements; script nonces and the other CSP restrictions remain enabled.
+The close listener also needed `core:window:allow-destroy`: Tauri's JavaScript
+`onCloseRequested` implementation calls `destroy()` when closing is approved.
+
+Use `npm run test:desktop` on Windows with PowerShell 7 and WebView2 installed.
+The test builds a separate app identity and a unique credential-store namespace,
+then checks the actual bundled CSP, native SQLite settings saves, navigation,
+Demo/main switching, Chinese display, font loading and WM_CLOSE. It does not
+read personal credentials or launch against the production database. The Windows
+CI runs this check before accepting its build artifacts. Browser checks alone
+are not desktop runtime acceptance.

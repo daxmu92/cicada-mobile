@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright-core';
+const endpoint=process.env.CICADA_DESKTOP_CDP;
+if(!endpoint)throw new Error('Run through scripts/test-desktop.ps1 with an isolated test application');
+let browser;
+for(let attempt=0;attempt<30;attempt++){
+ try{browser=await chromium.connectOverCDP(endpoint);if(browser.contexts()[0]?.pages()[0])break;await browser.close();browser=undefined;}catch{ await new Promise(r=>setTimeout(r,500));}
+}
+if(!browser)throw new Error('Isolated WebView2 did not start');
+try{
+ const page=browser.contexts()[0].pages()[0];
+ await page.waitForURL(url=>url.hostname==='tauri.localhost',{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>Boolean(window.__TAURI_INTERNALS__?.invoke));
+ await page.locator('body').waitFor();
+ assert.equal(await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('plugin:app|name')),'CicadaNativeSmoke','Refusing to modify a production app');
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>{void d.accept();});
+ const css=await page.evaluate(()=>{
+  const style=document.createElement('style');style.textContent='.cicada-style-probe{width:37px;position:fixed;display:none}';document.head.append(style);
+  const element=document.createElement('div');element.className='cicada-style-probe';document.body.append(element);
+  const attr=document.createElement('div');attr.setAttribute('style','margin-left:23px');document.body.append(attr);
+  const computed=getComputedStyle(element);const result={width:computed.width,position:computed.position,display:computed.display,margin:getComputedStyle(attr).marginLeft};
+  element.remove();attr.remove();style.remove();return result;
+ });
+ assert.deepEqual(css,{width:'37px',position:'fixed',display:'none',margin:'23px'});
+ console.log('PASS actual bundled CSP permits runtime styles and style attributes');
+ await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Assets$/}).click();await page.getByRole('button',{name:'Accounts & Assets',exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('€',{exact:true}).click();
+ await page.waitForFunction(async()=>{const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada.db',query:"SELECT value FROM setting WHERE key='currency'",values:[]});return rows[0]?.value==='€';});
+ console.log('PASS desktop settings click persists through native SQLite and clock transaction');
+ await page.getByText('Open Demo Ledger',{exact:true}).click();await page.getByRole('button',{name:'Return to My Ledger',exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Checking',{exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('中文',{exact:true}).click();
+ await page.getByRole('button',{name:'返回我的账本',exact:true}).click();await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('中文',{exact:true}).click();await page.getByRole('tab',{name:/首页$/}).click();await page.getByText('总净值',{exact:true}).waitFor({state:'visible'});
+ for(const node of await page.getByText(/^(正在加载账本…|Loading ledger…)$/).all()){
+  const shown=await node.evaluate(element=>{
+   for(let current=element;current;current=current.parentElement){
+    const style=getComputedStyle(current);
+    if(current.getAttribute('aria-hidden')==='true'||style.opacity==='0'||style.display==='none'||style.visibility==='hidden')return false;
+   }
+   return true;
+  });
+  assert.equal(shown,false,'Active screen must not remain on the ledger loading placeholder');
+ }
+ await page.waitForTimeout(7000);assert.deepEqual(errors,[]);
+ console.log('PASS native demo/main switching, Chinese UI and font loading without page errors');
+}finally{await browser.close();}

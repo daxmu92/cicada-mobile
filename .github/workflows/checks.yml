@@ -56,6 +56,8 @@ jobs:
             npm run tauri:build -- --ci --config unsigned-build.json
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Actual isolated Windows WebView2 acceptance
+        run: npm run test:desktop
       - run: node scripts/release-artifacts.mjs
       - uses: actions/upload-artifact@v7
         with:
