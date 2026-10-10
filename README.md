@@ -10,6 +10,10 @@
 
 Ported from the original [Streamlit app](https://github.com/daxmu92/CicadaFinScape).
 
+Desktop 0.2.7 uses a dedicated sidebar and toolbar, an asset inspector, transaction
+columns and inline settings feedback. Mobile retains bottom navigation. See
+[desktop workflows](docs/product-workflows.md#desktop-027-layout).
+
 ## Features
 
 - 📊 **Dashboard** — total net worth, a year-at-a-glance calendar of monthly net growth, and asset allocation

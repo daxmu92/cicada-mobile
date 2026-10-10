@@ -35,7 +35,7 @@ try{
  const chart=page.locator('svg[aria-label="Net worth trend"]').last();await chart.locator('circle').last().click({force:true});
  await page.getByText('1Y',{exact:true}).click();await activeText('Jan 2026');assert.deepEqual(errors,[]);
  console.log('PASS selected trend points remain safe when shortening the range');
- await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Alpha',{exact:true}).click();await page.waitForURL(/asset\/1$/);await page.getByText('All',{exact:true}).filter({visible:true}).last().click();
+ await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Alpha',{exact:true}).click();await page.getByRole('button',{name:'Open full details',exact:true}).click();await page.waitForURL(/asset\/1$/);await page.getByText('All',{exact:true}).filter({visible:true}).last().click();
  await page.waitForFunction(()=>[...document.querySelectorAll('svg[aria-label="Net worth trend"]')].some(svg=>{
   for(let el=svg;el;el=el.parentElement){const style=getComputedStyle(el);if(el.getAttribute('aria-hidden')==='true'||style.opacity==='0'||style.display==='none'||style.visibility==='hidden')return false;}
   return (svg.querySelector('path')?.getAttribute('d')??'').split('M').length>=3;

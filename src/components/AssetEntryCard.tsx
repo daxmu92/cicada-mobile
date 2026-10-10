@@ -1,3 +1,4 @@
+import { useDesktopLayout } from '../hooks/use-desktop-layout';
 import { tryAmount } from '../utils/money';
 import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,7 @@ export function AssetEntryCard({
   onCollapse,
 }: Props) {
   const { t } = useTranslation();
+  const { desktop } = useDesktopLayout();
   const { fmt } = useFormat();
   const styles = useThemedStyles(makeStyles);
 
@@ -70,6 +72,8 @@ export function AssetEntryCard({
         <Switch disabled={disabled} value={draft.autoFill} onValueChange={(v) => onChange({ ...draft, autoFill: v })} />
       </View>
 
+      <View style={desktop?{flexDirection:'row',gap:16}:undefined}>
+      <View style={desktop?{flex:1,minWidth:0}:undefined}>
       <Text style={styles.label}>{t('addRecord.netWorth')}</Text>
       <TextInput
         style={styles.input}
@@ -81,6 +85,7 @@ export function AssetEntryCard({
         returnKeyType="next"
       />
 
+      </View><View style={desktop?{flex:1,minWidth:0}:undefined}>
       <Text style={styles.label}>{t('addRecord.inflow')}</Text>
       <TextInput
         style={styles.input}
@@ -92,6 +97,7 @@ export function AssetEntryCard({
         returnKeyType="next"
       />
 
+      </View><View style={desktop?{flex:1,minWidth:0}:undefined}>
       <Text style={styles.label}>{t('addRecord.profit')}</Text>
       <TextInput
         style={styles.input}
@@ -103,6 +109,7 @@ export function AssetEntryCard({
         returnKeyType="done"
       />
 
+      </View></View>
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerBtn} onPress={onReset} disabled={disabled}>
           <Text style={styles.footerText}>↺ {t('batchEntry.reset')}</Text>

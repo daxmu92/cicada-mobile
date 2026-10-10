@@ -1,3 +1,4 @@
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
 import { ObservationNotice } from '../../src/components/ObservationNotice';
 import { getObservationMetadata, getTrendCoverage, type ObservationMetadata } from '../../src/db/observation-repo';
 import { compareRecordedAssets, completeTrend } from '../../src/utils/observation';
@@ -8,7 +9,7 @@ import { getLedgerEpoch } from '../../src/ledger/mode';
 import { notify } from '../../src/utils/dialog';
 import { useDataVersion } from '../../src/hooks/use-data-version';
 import { useCallback, useRef, useState } from 'react';
-import { ScrollView, Text, View, StyleSheet, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +40,8 @@ export default function HomeScreen() {
   const dataVersion = useDataVersion();
   const epoch=getLedgerEpoch();
   const [loadedEpoch,setLoadedEpoch]=useState(-1);
-  const wide = useWindowDimensions().width >= 1000;
+  const { desktop, contentWidth } = useDesktopLayout();
+  const wide = contentWidth >= 920;
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
@@ -100,10 +102,10 @@ export default function HomeScreen() {
   return (
     <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
       {/* Greeting + month selector */}
-      <View style={styles.topRow}>
+      {!desktop && <View style={styles.topRow}>
         <Text style={styles.greeting}>{greeting} 👋</Text>
         <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
-      </View>
+      </View>}
 
       <ObservationNotice meta={metadata} month={selectedMonth} onLatest={setSelectedMonth}/>
       <View style={wide ? styles.desktopGrid : undefined}>

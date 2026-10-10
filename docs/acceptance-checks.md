@@ -185,3 +185,14 @@ and transaction/snapshot/batch draft recovery across reloads. The legacy browser
 and real HTTPS/WebDAV suites remain separate regression checks. Personal-ledger
 cloud convergence, mobile device acceptance and published updater installation
 remain outside these isolated checks.
+
+## Desktop 0.2.7 navigation and layout
+
+`npm run test:desktop-layout` imports a synthetic ledger, checks sidebar placement,
+a single month toolbar, asset inspector/edit routing without losing the list,
+batch month ownership, transaction columns and shared month, inline preference
+feedback, compact side navigation and narrow-browser bottom tabs. Optional
+`CICADA_SCREENSHOTS` stores screenshots of these layouts with synthetic data.
+The isolated Windows acceptance checks the actual desktop navigation and useful
+inline SQLITE_BUSY feedback, alongside the existing sync/cache/draft/lifecycle
+checks. Native mobile device acceptance is still pending.

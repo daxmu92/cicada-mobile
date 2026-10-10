@@ -1,3 +1,6 @@
+import { useDesktopEntry } from '../../src/hooks/use-desktop-entry';
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { AssetInspector } from '../../src/components/desktop/AssetInspector';
 import { useRecoverableDraft } from '../../src/hooks/use-recoverable-draft';
 import { DraftRecoveryNotice } from '../../src/components/DraftRecoveryNotice';
 import { ObservationNotice } from '../../src/components/ObservationNotice';
@@ -9,7 +12,7 @@ import { parseAmount, tryAmount } from '../../src/utils/money';
 import { useSaveAction } from '../../src/hooks/use-save-action';
 import { useDataVersion } from '../../src/hooks/use-data-version';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -73,7 +76,9 @@ export default function AssetsScreen() {
   const overviewRequest = useRef(0);
   const snapshotRequest = useRef(0);
   const [observationMonth,setObservationMonth]=useObservationMonth();
-  const wide=useWindowDimensions().width>=1000;
+  const { desktop, contentWidth, split }=useDesktopLayout();
+  const [inspectedAsset,setInspectedAsset]=useState<number|null>(null);
+  const wide=desktop&&contentWidth>=820;
   const [search,setSearch]=useState('');
   const [category,setCategory]=useState('');
   const [sort,setSort]=useState<'name'|'value'>('name');
@@ -84,6 +89,8 @@ export default function AssetsScreen() {
   // Entry-mode state
   const [entryMode, setEntryMode] = useState(false);
   const activeEntry=entryMode&&entryLedger===mode&&entryEpoch.current===epoch;
+  const {setActive:setDesktopEntryActive}=useDesktopEntry();
+  useEffect(()=>{setDesktopEntryActive(activeEntry);return()=>setDesktopEntryActive(false);},[activeEntry,setDesktopEntryActive]);
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
   const [snapshotsMonth,setSnapshotsMonth]=useState('');
   const [monthSnapshots, setMonthSnapshots] = useState<Map<number, SnapshotWithAsset>>(new Map());
@@ -291,7 +298,7 @@ export default function AssetsScreen() {
     if (!activeEntry) {
       return (
         <View>
-          <MonthSelector value={observationMonth} onChange={setObservationMonth}/>
+          {!desktop&&<MonthSelector value={observationMonth} onChange={setObservationMonth}/>}
           <ObservationNotice meta={metadata} month={observationMonth} onLatest={setObservationMonth}/>
           <TextInput accessibilityLabel={t('assets.search')} placeholder={t('assets.search')} value={search} onChangeText={setSearch} style={{borderWidth:1,borderColor:c.border,color:c.ink,padding:10,borderRadius:8,marginBottom:10}}/>
           <View style={{flexDirection:'row',flexWrap:'wrap',gap:8,marginBottom:12}}>
@@ -372,9 +379,10 @@ export default function AssetsScreen() {
   }
 
   return (
+    <View style={[shared.screen,{flexDirection:'row'}]}>
     <FlatList
       style={shared.screen}
-      contentContainerStyle={shared.scrollContent}
+      contentContainerStyle={[shared.scrollContent,desktop&&{maxWidth:1440,padding:24}]}
       data={visibleGroups}
       ListEmptyComponent={<Text style={shared.muted}>{t('assets.noMatches')}</Text>}
       keyExtractor={(g) => String(g.account.id)}
@@ -397,8 +405,8 @@ export default function AssetsScreen() {
               return (
                 <TouchableOpacity
                   key={asset.id}
-                  onPress={() => router.push(`/asset/${asset.id}`)}
-                  style={styles.assetRow}>
+                  onPress={() => split ? setInspectedAsset(asset.id) : router.push(`/asset/${asset.id}`)}
+                  style={[styles.assetRow,desktop&&{paddingVertical:12,borderBottomWidth:1,borderColor:c.border},inspectedAsset===asset.id&&split&&{backgroundColor:c.accentSoft}]}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.assetName}>{asset.name}</Text>
                     {Object.keys(asset.categories).length > 0 && (
@@ -418,6 +426,8 @@ export default function AssetsScreen() {
         </View>
       )}
     />
+    {split&&!activeEntry&&inspectedAsset!==null&&groups.some(g=>g.assets.some(a=>a.id===inspectedAsset))&&<AssetInspector key={`${mode}:${epoch}`} assetId={inspectedAsset} month={observationMonth} onClose={()=>setInspectedAsset(null)}/>}
+    </View>
   );
 }
 

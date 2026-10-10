@@ -32,6 +32,7 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://localhost:8085/ && break || sleep 1; done
           npm run test:web
           npm run test:observation
+          npm run test:desktop-layout
   windows:
     runs-on: windows-latest
     steps:

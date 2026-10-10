@@ -44,6 +44,11 @@ pub fn run() {
       });
       #[cfg(desktop)]
       if let Some(window) = app.get_webview_window("main") {
+        if let (Ok(Some(monitor)), Ok(size)) = (window.current_monitor(), window.inner_size()) {
+          let screen = monitor.size();
+          let bounded = tauri::PhysicalSize::new(size.width.min(screen.width * 9 / 10), size.height.min(screen.height * 9 / 10));
+          if bounded != size { let _ = window.set_size(bounded); let _ = window.center(); }
+        }
         window.set_title(&format!("{} {}", app.package_info().name, app.package_info().version))?;
       }
       #[cfg(desktop)]

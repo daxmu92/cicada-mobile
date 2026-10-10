@@ -1,3 +1,4 @@
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
 import { getObservationMetadata, getTrendCoverage } from '../../src/db/observation-repo';
 import { useObservationMonth } from '../../src/hooks/use-observation-month';
 import { completeTrend } from '../../src/utils/observation';
@@ -34,6 +35,7 @@ const EMPTY_COMP: CompositionResult = { slices: [], chartedTotal: 0, trueTotal: 
 
 export default function AnalysisScreen() {
   const { t } = useTranslation();
+  const { desktop, contentWidth } = useDesktopLayout();
   const dataVersion = useDataVersion();
   const epoch=getLedgerEpoch();
   const [loadedEpoch,setLoadedEpoch]=useState(-1);
@@ -129,10 +131,10 @@ export default function AnalysisScreen() {
 
   if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
-      <View style={styles.selectorRow}>
+    <ScrollView style={shared.screen} contentContainerStyle={[styles.content,desktop&&{maxWidth:1440,width:'100%',alignSelf:'center'}]}>
+      {!desktop && <View style={styles.selectorRow}>
         <MonthSelector value={selectedMonth} onChange={handleMonthChange} disablePicker />
-      </View>
+      </View>}
 
       <SectionCard title={t('analysis.trendTitle')}>
         <View style={styles.chipRow}>
@@ -152,6 +154,8 @@ export default function AnalysisScreen() {
         )}
       </SectionCard>
 
+      <View style={desktop&&contentWidth>=950?{flexDirection:'row',gap:20,alignItems:'flex-start'}:undefined}>
+      <View style={desktop&&contentWidth>=950?{flex:1,minWidth:0}:undefined}>
       <SectionCard title={t('analysis.composition')}>
         <ScrollView
           horizontal
@@ -184,10 +188,13 @@ export default function AnalysisScreen() {
         )}
       </SectionCard>
 
+      </View>
+      <View style={desktop&&contentWidth>=950?{width:370}:undefined}>
       <SectionCard title={t('analysis.calendarTitle')}>
         <Text style={styles.intro}>{t('analysis.calendarIntro')}</Text>
         <YearCalendar selected={selectedMonth} onChange={handleMonthChange} />
       </SectionCard>
+      </View></View>
     </ScrollView>
   );
 }

@@ -22,7 +22,7 @@ export function NetWorthTrendChart({points,color,height=150}:{points:TrendPoint[
  return <View onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
   {width>left+right&&<Svg width={width} height={height} accessibilityRole="image" accessibilityLabel={t('analysis.trendTitle')}>
    {Array.from({length:axis.noOfSections+1},(_,i)=>{const v=axis.offset+axis.niceStep*i,yy=y(v);return <Line key={'grid'+i} x1={left} x2={width-right} y1={yy} y2={yy} stroke={c.border}/>;})}
-   {Array.from({length:axis.noOfSections+1},(_,i)=>{const v=axis.offset+axis.niceStep*i;return <SvgText key={'axis'+i} x={left-8} y={y(v)+4} fill={c.muted} fontSize={10} textAnchor="end">{abbrev(v)}</SvgText>;})}
+   {Array.from({length:axis.noOfSections+1},(_,i)=>{const v=axis.offset+axis.niceStep*i;return <SvgText key={'axis'+i} x={left-8} y={y(v)+4} fill={c.muted} fontSize={10} textAnchor="end">{abbrev(v,axis.niceStep)}</SvgText>;})}
    <Path d={trendPath(points,x,y)} fill="none" stroke={lineColor} strokeWidth={2.5}/>
    {points.map((p,i)=><Circle key={p.label} cx={x(i)} cy={p.value===null?height-bottom:y(p.value)} r={p.value===null?3:selected===i?5:3} fill={p.value===null?c.border:p.partial?'#b98842':lineColor} onPress={()=>setSelected(i)}/>)}
    {points.map((p,i)=>i%labelStep===0||i===points.length-1?<SvgText key={p.label} x={x(i)} y={height-7} fill={c.muted} fontSize={10} textAnchor="middle">{p.label.endsWith('-01')||i===0?p.label:monthShort(Number(p.label.slice(5)),locale)}</SvgText>:null)}

@@ -357,5 +357,23 @@
       "uploading": "正在上传修改…",
       "retrying": "云端数据已变化，正在重试…"
     }
+  },
+  "desktop": {
+    "workspace": "财务总览与记录",
+    "mainLedger": "主账本",
+    "demoLedger": "演示账本",
+    "localLedger": "本地账本",
+    "syncReady": "同步已连接",
+    "assetDetails": "资产详情",
+    "openDetails": "打开完整详情",
+    "closeDetails": "关闭详情",
+    "recordMonth": "录入本月数据",
+    "transactionDate": "日期",
+    "transactionCategory": "分类",
+    "transactionNote": "备注",
+    "transactionValue": "金额",
+    "appearance": "外观",
+    "dataManagement": "数据管理",
+    "saved": "已保存"
   }
 }

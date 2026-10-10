@@ -1,20 +1,32 @@
+import { DesktopEntryProvider } from '../../src/hooks/use-desktop-entry';
 import { CommonActions } from '@react-navigation/native';
 import { hasUnsavedDrafts,hasSavingDrafts,discardDrafts } from '../../src/ledger/drafts';
 import { confirmAsync, notify } from '../../src/utils/dialog';
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
+import { View } from 'react-native';
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { DesktopNavigation, DesktopToolbar } from '../../src/components/desktop/DesktopChrome';
 import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { useTheme } from '../../src/hooks/SettingsContext';
 
 export default function TabLayout() {
+  return <DesktopEntryProvider><TabContent/></DesktopEntryProvider>;
+}
+
+function TabContent() {
   const { t } = useTranslation();
   const c = useTheme();
+  const { desktop } = useDesktopLayout();
 
   return (
+    <View style={{flex:1,backgroundColor:c.bg}}>
+    {desktop && <DesktopToolbar/>}
     <Tabs
+      tabBar={desktop ? props => <DesktopNavigation {...props}/> : undefined}
       screenListeners={({navigation,route})=>({tabPress:event=>{
         const state=navigation.getState();
         if(state.routes[state.index].key===route.key||!hasUnsavedDrafts())return;
@@ -26,7 +38,8 @@ export default function TabLayout() {
       }})}
       screenOptions={{
         tabBarActiveTintColor: c.accent,
-        headerShown: true,
+        headerShown: !desktop,
+        tabBarPosition: desktop ? 'left' : 'bottom',
         tabBarButton: HapticTab,
         // On web the tab button is vertically tight, so the label (a flex item)
         // gets shrunk ~1px below its natural height and `overflow: hidden` clips
@@ -69,5 +82,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }

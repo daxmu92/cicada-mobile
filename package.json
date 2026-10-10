@@ -1,7 +1,7 @@
 {
   "name": "cicada-mobile",
   "main": "expo-router/entry",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "engines": {
     "node": ">=20"
   },
@@ -24,7 +24,8 @@
     "test:webdav:local": "node --import tsx scripts/test-webdav-local.ts",
     "postinstall": "node scripts/patch-metro-images.cjs",
     "test:desktop": "pwsh -NoProfile -File scripts/test-desktop.ps1",
-    "test:observation": "node scripts/test-observation-web.mjs"
+    "test:observation": "node scripts/test-observation-web.mjs",
+    "test:desktop-layout": "node scripts/test-desktop-layout-web.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

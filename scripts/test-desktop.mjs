@@ -27,19 +27,27 @@ try{
  });
  assert.deepEqual(css,{width:'37px',position:'fixed',display:'none',margin:'23px'});
  console.log('PASS actual bundled CSP permits runtime styles and style attributes');
+ await page.getByTestId('desktop-navigation').waitFor();
+ await page.getByTestId('desktop-toolbar').waitFor();
+ const nativeSidebar=await page.getByTestId('desktop-navigation').boundingBox();assert.equal(nativeSidebar.x,0);assert([76,212].some(width=>Math.abs(width-nativeSidebar.width)<1),JSON.stringify(nativeSidebar));
+ console.log('PASS native Windows uses desktop side navigation and a persistent toolbar');
  await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Assets$/}).click();await page.getByRole('button',{name:'Accounts & Assets',exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('€',{exact:true}).click();
  await page.waitForFunction(async()=>{const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada.db',query:"SELECT value FROM setting WHERE key='currency'",values:[]});return rows[0]?.value==='€';});
+ await page.getByTestId('desktop-settings-feedback').getByText('Saved',{exact:true}).waitFor();
  console.log('PASS desktop settings click persists through native SQLite and clock transaction');
  const identifier=process.env.CICADA_SMOKE_IDENTIFIER;
  assert.match(identifier??'',/^com\.daxmu\.cicada\.native-smoke\.[a-f0-9]{32}$/,'Refusing to open a production ledger');
  const holder=new Database(path.join(process.env.APPDATA,identifier,'cicada.db'),{fileMustExist:true});
  try{
+  const actualFiles=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada.db',query:'PRAGMA database_list',values:[]}));
+  const expectedFile=path.join(process.env.APPDATA,identifier,'cicada.db');
+  assert.equal(path.normalize(actualFiles.find(file=>file.name==='main').file).toLowerCase(),path.normalize(expectedFile).toLowerCase(),'Native and external lock checks must use the same isolated database');
+  assert.equal(holder.prepare("SELECT value FROM setting WHERE key='currency'").get()?.value,'€','Initial preference must be committed before acquiring the test lock');
   holder.exec('BEGIN IMMEDIATE');
-  const dialog=page.waitForEvent('dialog');
   await page.getByText('£',{exact:true}).click();
-  assert.match((await dialog).message(),/Close other Cicada windows/);
+  await page.getByTestId('desktop-settings-feedback').getByText(/Close other Cicada windows/).waitFor();
   assert.equal(holder.prepare("SELECT value FROM setting WHERE key='currency'").get().value,'€','Failed settings must preserve their previous value');
  }finally{if(holder.inTransaction)holder.exec('ROLLBACK');holder.close();}
  await page.getByText('£',{exact:true}).click();

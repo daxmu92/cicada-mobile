@@ -1,3 +1,4 @@
+import { abbrev } from './chart';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compareRecordedAssets, completeTrend, trendPath } from './observation';
@@ -19,4 +20,9 @@ test('calendar compares matching records instead of interpreting omitted assets 
  const rows=[{...row(1,100),date:'2026-01'},{...row(2,1000),date:'2026-01'},{...row(1,110),date:'2026-02'}];
  const result=calendarChanges('2026-02','2026-03',rows);
  assert.equal(result[0].change,10);assert.equal(result[0].count,1);assert.equal(result[1].change,null);
+});
+
+test('trend labels retain meaningful differences for narrow monetary ranges',()=>{
+ assert.deepEqual([10000,10200,10400].map(value=>abbrev(value,200)),['10K','10.2K','10.4K']);
+ assert.deepEqual([.1,.2,.3].map(value=>abbrev(value,.1)),['0.1','0.2','0.3']);
 });

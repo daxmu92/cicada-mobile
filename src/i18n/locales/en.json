@@ -357,5 +357,23 @@
       "uploading": "Uploading changes…",
       "retrying": "Cloud changed; retrying…"
     }
+  },
+  "desktop": {
+    "workspace": "Financial workspace",
+    "mainLedger": "Main ledger",
+    "demoLedger": "Demo ledger",
+    "localLedger": "Local ledger",
+    "syncReady": "Sync connected",
+    "assetDetails": "Asset details",
+    "openDetails": "Open full details",
+    "closeDetails": "Close details",
+    "recordMonth": "Record this month",
+    "transactionDate": "Date",
+    "transactionCategory": "Category",
+    "transactionNote": "Note",
+    "transactionValue": "Amount",
+    "appearance": "Appearance",
+    "dataManagement": "Data management",
+    "saved": "Saved"
   }
 }

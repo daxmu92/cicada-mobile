@@ -1,3 +1,5 @@
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { useObservationMonth } from '../../src/hooks/use-observation-month';
 import { getLedgerEpoch } from '../../src/ledger/mode';
 import { filterTransactions } from '../../src/utils/transaction-filter';
 import { notify } from '../../src/utils/dialog';
@@ -28,16 +30,21 @@ type Tab = 'list' | 'breakdown';
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { desktop } = useDesktopLayout();
+  const [observationMonth,setObservationMonth]=useObservationMonth();
   const { t } = useTranslation();
   const dataVersion = useDataVersion();
   const epoch=getLedgerEpoch();
   const [loadedEpoch,setLoadedEpoch]=useState(-1);
+  const [loadedMonth,setLoadedMonth]=useState('');
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
-  const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [mobileMonth, setMobileMonth] = useState(currentYearMonth());
+  const selectedMonth=desktop?observationMonth:mobileMonth;
+  const setSelectedMonth=desktop?setObservationMonth:setMobileMonth;
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totals, setTotals] = useState({ income: 0, outlay: 0 });
   const [search,setSearch]=useState('');
@@ -55,7 +62,7 @@ export default function TransactionsScreen() {
       getIncomeOutlayTotalsForMonth(selectedMonth),
     ]);
     if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
-    setLoadedEpoch(capturedEpoch);
+    setLoadedEpoch(capturedEpoch);setLoadedMonth(selectedMonth);
     setTransactions(txs);
     setTotals(t);
   }, [selectedMonth]);
@@ -112,11 +119,11 @@ export default function TransactionsScreen() {
 
   const net = shownTotals.income - shownTotals.outlay;
 
-  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
+  if(loadedEpoch!==epoch||loadedMonth!==selectedMonth)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
-    <View style={shared.screen}>
+    <View style={[shared.screen,desktop&&{paddingHorizontal:24}]}>
       <View style={{ padding: spacing.lg, paddingBottom: 0 }}>
-        <View style={[shared.card, styles.selectorCard]}>
+        {!desktop&&<View style={[shared.card, styles.selectorCard]}>
           <TouchableOpacity
             accessibilityRole="button" accessibilityLabel={t('common.previousMonth')}
             onPress={() => setSelectedMonth(prevYearMonth(selectedMonth))}
@@ -132,7 +139,7 @@ export default function TransactionsScreen() {
             style={styles.arrowBtn}>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
-        </View>
+        </View>}
 
         <View style={shared.card}>
           <TextInput accessibilityLabel={t('transactions.search')} placeholder={t('transactions.search')} value={search} onChangeText={setSearch} style={{color:shared.heading.color,padding:10}} />
@@ -179,13 +186,14 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
+      {desktop&&tab==='list'&&<View testID="desktop-transaction-columns" style={{flexDirection:'row',gap:16,paddingHorizontal:16,paddingVertical:12,borderBottomWidth:1,borderColor:shared.card.backgroundColor}}>{([['desktop.transactionDate',110],['addTransaction.type',80],['desktop.transactionCategory',130],['desktop.transactionNote',0],['desktop.transactionValue',150]] as const).map(([key,width])=><Text key={key} style={[shared.muted,{width:width||undefined,flex:width?undefined:1,textAlign:key==='desktop.transactionValue'?'right':'left'}]}>{t(String(key))}</Text>)}</View>}
       {tab === 'list' ? (
         <SectionList
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: desktop?0:spacing.lg, paddingBottom: 100 }}
           sections={sections}
           keyExtractor={(t) => String(t.id)}
-          stickySectionHeadersEnabled={false}
+          stickySectionHeadersEnabled={desktop}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={shared.muted}>{t('transactions.noTransactions')}</Text>
@@ -196,9 +204,9 @@ export default function TransactionsScreen() {
           )}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[shared.card, styles.txRow]}
+              style={desktop?[styles.txRow,{backgroundColor:shared.card.backgroundColor,paddingHorizontal:16,paddingVertical:12,borderBottomWidth:1,borderColor:shared.screen.backgroundColor}]:[shared.card, styles.txRow]}
               onPress={() => router.push(`/modals/add-transaction?id=${item.id}`)}>
-              <View style={{ flex: 1 }}>
+              {desktop?<View style={{flex:1,flexDirection:'row',gap:16,alignItems:'center'}}><Text style={[styles.txDate,{width:110}]}>{item.date}</Text><Text style={{width:80,color:item.type==='INCOME'?gain:loss,fontSize:12}}>{t(item.type==='INCOME'?'transactions.income':'transactions.outlay')}</Text><Text style={[styles.txCat,{width:130}]} numberOfLines={1}>{item.cat||'—'}</Text><Text style={[styles.txNote,{flex:1}]} numberOfLines={2}>{item.note||'—'}</Text></View>:<View style={{ flex: 1 }}>
                 <View style={styles.txHeader}>
                   <Text style={styles.txType}>
                     {item.type === 'INCOME' ? '+' : '−'}
@@ -207,10 +215,10 @@ export default function TransactionsScreen() {
                 </View>
                 {item.cat ? <Text style={styles.txCat}>{item.cat}</Text> : null}
                 {item.note ? <Text style={styles.txNote}>{item.note}</Text> : null}
-              </View>
+              </View>}
               <Text
                 style={[
-                  styles.txValue,
+                  styles.txValue,desktop&&{width:150,textAlign:'right',fontVariant:['tabular-nums']},
                   { color: item.type === 'INCOME' ? gain : loss },
                 ]}>
                 {fmt(item.value)}

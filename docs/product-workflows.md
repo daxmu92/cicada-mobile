@@ -85,3 +85,26 @@ writes from resurrecting consumed drafts.
 The sync section shows the actual read/compare/apply/upload/retry stage, the last
 attempt and elapsed duration, and actionable error guidance without displaying
 raw credentials or server response content.
+
+## Desktop 0.2.7 layout
+
+Windows has a separate navigation shell: a left sidebar and persistent toolbar.
+The sidebar collapses to icons in smaller windows; it never changes to bottom
+navigation inside Tauri. Wide browser windows use the same desktop preview,
+while native mobile and narrow browser windows retain the touch layout.
+Home, Assets, Insights and desktop Transactions share the observation month.
+While batch entry is open its form owns the month selector, preserving the
+existing discard/saving guards and avoiding duplicate controls.
+
+Desktop Home uses columns, Assets opens a read-only inspector beside the list
+when space permits, Transactions uses labeled columns with explicit income/outlay
+text, and Insights places composition and the calendar side by side. The asset
+inspector filters history to the observation month; its edit action opens that
+month, and full detail remains available. Smaller work areas use the full detail
+route. Settings has section links and persistent inline save/error feedback;
+normal preference failures do not open blocking browser alerts on desktop.
+Expanded batch forms arrange net worth, inflow and profit inputs horizontally.
+
+The initial Windows size is 1280×820 with an 800×600 minimum; startup bounds the
+window against the current monitor. Window-position persistence, multi-row paste,
+multiple selection and a universal search are not implemented in this iteration.
