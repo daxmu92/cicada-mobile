@@ -28,6 +28,7 @@ export async function eraseAllData(db: CicadaDB, deps: EraseDeps): Promise<void>
   await recordTombstonesAt(db, 'tran', trans.map((r) => r.uuid), deletedAt);
 
   // Delete in FK-safe order. Keep sync_state + tombstone.
+  await db.runAsync('DELETE FROM local_draft');
   await db.runAsync('DELETE FROM tran');
   await db.runAsync('DELETE FROM asset_snapshot');
   await db.runAsync('DELETE FROM asset');

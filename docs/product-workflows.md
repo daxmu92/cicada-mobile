@@ -37,8 +37,8 @@ reflect the visible filtered rows. Filters reset when switching ledgers.
 Transaction/snapshot forms and asset batch entry warn before leaving unsaved
 changes. Saving disables edits. Web refresh/close uses the browser's standard
 warning; desktop close confirms before discarding. Month changes invalidate
-pending entry work. OS termination cannot be prevented, and drafts are not
-persisted automatically.
+pending entry work. OS termination cannot be prevented; supported transaction,
+snapshot and batch forms offer local draft recovery as described below.
 
 ## Concurrency and restore
 
@@ -48,3 +48,40 @@ local writes never wait for network sync. Each operation checks its initiating
 ledger identity and uses its bound database. Write clocks bind to that same
 database. Restore observes imported future clocks before stamping replacement
 and deletion records, preventing restored rows from losing to older tombstones.
+
+## Desktop 0.2.6 observation and recovery
+
+Home, Assets and Insights share a month within each ledger session. A batch-entry
+form retains its own month while it is open; changing its month or leaving dirty
+input still requires the existing discard confirmation. The overview shows the
+latest snapshot and transaction dates, exact-month coverage of currently active
+assets, and an explicit action to inspect the latest recorded month. Current
+archive status does not reconstruct historical ownership. A missing entry stays
+missing unless the existing forward-fill preference is enabled; inferred values
+are labeled and do not count as fresh records.
+
+Home compares only assets with actual records in both adjacent months. Net worth,
+net inflow and recorded profit reconcile in integer cents, with an unexplained
+difference shown separately. This is a comparison of recorded assets, not an
+investment-return calculation. The SVG trend retains calendar positions for
+missing months and breaks the line. Partial active-asset coverage is marked on
+trend points. The month calendar uses the same comparable-asset changes as Home;
+months with no actual records show no profit even when old net worth is carried
+forward. Assets supports name/account search,
+classification filters and name/value sorting; wide windows add column labels
+and the most recent recorded month for each asset.
+
+Transactions, individual snapshots and batch entry persist local drafts after
+500ms of inactivity. Reopening the same form offers Restore, Inspect or Discard.
+Keys are bound to the owning ledger and stable record UUIDs; changed baselines
+prevent automatic restoration. Drafts are local SQLite records, excluded from
+cloud documents and exports. Erasing or replacing a ledger clears its drafts.
+The latest input may not survive an OS termination before its asynchronous save
+finishes. Saved financial changes consume their drafts in the same transaction;
+failed consumption rolls back the financial change, and partial batch saves
+consume only successful items. Timers pause during submission to prevent late
+writes from resurrecting consumed drafts.
+
+The sync section shows the actual read/compare/apply/upload/retry stage, the last
+attempt and elapsed duration, and actionable error guidance without displaying
+raw credentials or server response content.

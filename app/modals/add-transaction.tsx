@@ -1,3 +1,5 @@
+import { useRecoverableDraft } from '../../src/hooks/use-recoverable-draft';
+import { DraftRecoveryNotice } from '../../src/components/DraftRecoveryNotice';
 import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -49,10 +51,12 @@ export default function AddTransactionModal() {
 
   const [loadedId,setLoadedId]=useState<number|null>(null);
   const ready=editingId===null||editingId===loadedId;
-  const busy=saving||!ready;
+  const [recordUuid,setRecordUuid]=useState<string|null>(null);
   const baseline=useRef(JSON.stringify(['OUTLAY',params.date??currentDate(),'','','']));
   const dirty=ready&&JSON.stringify([type,date,value,cat,note])!==baseline.current;
-  const markSaved=useUnsavedChanges(dirty,saving);
+  const recovery=useRecoverableDraft({key:editingId===null?'transaction:new':recordUuid?`transaction:${recordUuid}`:null,ready,dirty,baseline:editingId===null?'new-transaction':baseline.current,value:[type,date,value,cat,note],valid:value=>Array.isArray(value)&&value.length===5&&value.every(v=>typeof v==='string')&&['INCOME','OUTLAY'].includes(value[0]),restore:value=>{const values=value as string[];setType(values[0] as TranType);setDate(values[1]);setValue(values[2]);setCat(values[3]);setNote(values[4]);}});
+  const busy=saving||!ready||recovery.blocked;
+  const markSaved=useUnsavedChanges(dirty,saving,async()=>{if(!await recovery.clear())throw new Error('Draft cleanup failed');});
   const loadData = useCallback(async (cancelled:()=>boolean) => {
     const tags = await getAllTags();
     if(cancelled())return;
@@ -64,6 +68,7 @@ export default function AddTransactionModal() {
       if(!tx)throw new Error('Transaction not found');
       if (tx) {
         baseline.current=JSON.stringify([tx.type,tx.date,String(tx.value),tx.cat,tx.note]);
+        setRecordUuid(tx.uuid??null);
         setLoadedId(editingId);
         setType(tx.type);
         setDate(tx.date);
@@ -101,12 +106,15 @@ export default function AddTransactionModal() {
       notify(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
       return;
     }
+    recovery.pause();
+    try {
     if (editingId !== null) {
-      await updateTransaction(editingId, date, type, v, cat.trim(), note.trim());
+      await updateTransaction(editingId, date, type, v, cat.trim(), note.trim(),{key:`transaction:${recordUuid}`});
     } else {
-      await createTransaction(date, type, v, cat.trim(), note.trim());
+      await createTransaction(date, type, v, cat.trim(), note.trim(),{key:'transaction:new'});
     }
-    markSaved();router.back();
+    recovery.consumed();markSaved();router.back();
+    }catch(error){recovery.resume();throw error;}
   });
 
   const confirmDelete = () => save(async () => {
@@ -118,8 +126,9 @@ export default function AddTransactionModal() {
       true
     );
     if (!ok) return;
-    await deleteTransaction(editingId);
-    markSaved();router.back();
+    recovery.pause();
+    try{await deleteTransaction(editingId,{key:`transaction:${recordUuid}`});recovery.consumed();markSaved();router.back();}
+    catch(error){recovery.resume();throw error;}
   });
 
   return (
@@ -127,6 +136,7 @@ export default function AddTransactionModal() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
+        <DraftRecoveryNotice recovery={recovery}/>
         <View style={shared.card}>
           <Text style={styles.label}>{t('addTransaction.type')}</Text>
           <View style={styles.typeRow}>

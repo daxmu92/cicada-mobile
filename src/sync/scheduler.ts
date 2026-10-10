@@ -1,3 +1,4 @@
+import type { SyncPhase } from './diagnostics';
 import { getLedgerMode, type LedgerMode } from '../ledger/mode';
 import { createDebouncer } from './debounce';
 import { createAsyncLock } from '../utils/async-lock';
@@ -93,11 +94,14 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
 export type SyncSnapshot = {
   status: 'idle' | 'syncing' | 'ok' | 'offline' | 'authError' | 'error';
   lastError: string | null;
+  phase?:SyncPhase|null;
+  lastAttemptAt?:number|null;
+  lastDurationMs?:number|null;
 };
 
 let snapshot: SyncSnapshot = { status: 'idle', lastError: null };
 const subscribers = new Set<(s: SyncSnapshot) => void>();
-function setSnapshot(s: SyncSnapshot) { snapshot = s; subscribers.forEach((cb) => cb(s)); }
+function setSnapshot(s: SyncSnapshot) { snapshot = {...snapshot,...s}; subscribers.forEach((cb) => cb(snapshot)); }
 
 function classify(e: unknown): SyncSnapshot {
   // AuthError/offline classification mirrors the old SyncContext.classify.
@@ -114,15 +118,16 @@ export const syncScheduler: Scheduler & {
 } = (() => {
   const base = createScheduler({
     execute: async (mode) => {
-      setSnapshot({ status: 'syncing', lastError: null });
+      const started=Date.now();
+      setSnapshot({ status: 'syncing', lastError: null,phase:'readingRemote',lastAttemptAt:started,lastDurationMs:null });
       try {
         const { syncOnce } = await import('./sync');
-        const result = await syncOnce(mode);
-        if (result === null) { setSnapshot({ status: 'idle', lastError: null }); return false; }
-        setSnapshot({ status: 'ok', lastError: null });
+        const result = await syncOnce(mode,phase=>setSnapshot({status:'syncing',lastError:null,phase}));
+        if (result === null) { setSnapshot({ status: 'idle', lastError: null,phase:null,lastDurationMs:Date.now()-started }); return false; }
+        setSnapshot({ status: 'ok', lastError: null,phase:null,lastDurationMs:Date.now()-started });
         return true;
       } catch (e) {
-        setSnapshot(classify(e));
+        setSnapshot({...classify(e),lastDurationMs:Date.now()-started});
         throw e; // The scheduler must know this write was not acknowledged.
       }
     },

@@ -38,6 +38,23 @@ try {
   node --import tsx (Join-Path $repo 'scripts\test-desktop.mjs')
   if($LASTEXITCODE -ne 0){throw 'Native desktop acceptance failed'}
  } finally { Pop-Location }
+ Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public class CicadaSmokeWindow {
+ [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
+ [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr window);
+}
+'@
+ [void][CicadaSmokeWindow]::ShowWindow($process.MainWindowHandle,6)
+ if(-not [CicadaSmokeWindow]::IsIconic($process.MainWindowHandle)){throw 'Could not minimize the original window for the duplicate-launch test'}
+ $duplicatePath=Join-Path $fixture 'CicadaSecondLaunch.exe'
+ Copy-Item (Join-Path $target 'release\CicadaNativeSmoke.exe') $duplicatePath
+ $duplicate=Start-Process $duplicatePath -PassThru
+ if(-not $duplicate.WaitForExit(5000)){Stop-Process -Id $duplicate.Id -Force;throw 'Second launch did not exit'}
+ $process.Refresh()
+ if($process.HasExited -or [CicadaSmokeWindow]::IsIconic($process.MainWindowHandle)){throw 'Second launch did not restore the existing window'}
+ Write-Output 'PASS launching a renamed copy exits and restores the original window'
  [void]$process.CloseMainWindow()
  if(-not $process.WaitForExit(5000)){throw 'Normal X close did not exit the isolated application'}
  Write-Output 'PASS real native window close via WM_CLOSE'

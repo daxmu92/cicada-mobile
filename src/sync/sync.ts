@@ -1,3 +1,4 @@
+import type { SyncPhase } from './diagnostics';
 import type { CicadaDB } from '../db/migrations';
 import { SCHEMA_VERSION } from '../db/migrations';
 import {
@@ -60,6 +61,7 @@ export type RunSyncDeps = {
   conditionalEtag?: string;
   onLocalChanged?:()=>void;
   onLocalObserved?:(doc:SyncDocument)=>void;
+  onPhase?:(phase:SyncPhase)=>void;
 };
 
 export type SyncOutcome = {
@@ -119,12 +121,14 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
   const maxRetries = deps.maxRetries ?? 5;
 
   const buildLocal = async () => {
+    deps.onPhase?.('readingLocal');
     const doc=await buildDocument(db,{generatedBy:deviceId,generatedAt:new Date(now()).toISOString()});
     deps.onLocalObserved?.(doc);
     return doc;
   };
 
   // Initial read — conditional when the caller knows local is clean.
+  deps.onPhase?.('readingRemote');
   const firstRaw = await remote.read(deps.conditionalEtag ? { ifNoneMatch: deps.conditionalEtag } : undefined);
   if (firstRaw === 'not-modified') {
     // Another desktop process can change SQLite without this process's revision notifications.
@@ -138,7 +142,9 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
   // Seed an empty remote. ifNoneMatch is the only path that MKCOLs the folder.
   if (pulled === null) {
     try {
-      const seeded = await remote.write(serializeDocument(await buildLocal()), { kind: 'ifNoneMatch' });
+      const content=serializeDocument(await buildLocal());
+      deps.onPhase?.('uploading');
+      const seeded = await remote.write(content, { kind: 'ifNoneMatch' });
       const t = now();
       await setState(LAST_SYNCED_KEY, String(t));
       if (seeded.etag) await setState(CLOUD_ETAG_KEY, seeded.etag);
@@ -162,8 +168,10 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     const max = maxRemoteStamp(remoteDoc);
     if (max) await receiveRemote(max);
     const before=await buildLocal();
+    deps.onPhase?.('merging');
     const merged = merge(before, remoteDoc);
     const changed=dataFingerprint(before)!==dataFingerprint({...before,...merged});
+    if(changed)deps.onPhase?.('writingLocal');
     const applied = changed?await applyMerge(db, merged):{suffixed:[]};
     if(changed)deps.onLocalChanged?.();
 
@@ -187,6 +195,7 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
       : { kind: 'none' };
 
     try {
+      deps.onPhase?.('uploading');
       const written = await remote.write(outDoc, pre);
       const t = now();
       await setState(LAST_SYNCED_KEY, String(t));
@@ -196,6 +205,7 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
       return { status: 'merged', suffixed: applied.suffixed };
     } catch (e) {
       if (e instanceof ConflictError && attempt < maxRetries) {
+        deps.onPhase?.('retrying');
         attempt++;
         await sleep(backoffMs(attempt));
         const reRaw = await remote.read();
@@ -221,7 +231,7 @@ function observeLocal(doc:SyncDocument){
  if(financial!==observedFinancial){observedFinancial=financial;notifyDataChanged();}
  if(preferences!==observedPreferences){observedPreferences=preferences;notifySettingsChanged();}
 }
-export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcome | null> {
+export async function syncOnce(mode: 'full' | 'conditional', onPhase?:(phase:SyncPhase)=>void): Promise<SyncOutcome | null> {
   // Dynamic imports keep platform-specific modules (react-native, expo-secure-store,
   // expo-sqlite) out of the module graph at test time.
   const [{ isSyncAvailable }, { loadRemote }, { getDatabase }, { getDeviceId }, { getSyncState, setSyncState }, { receiveRemote: recv }] =
@@ -250,6 +260,7 @@ export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcom
     receiveRemote: recv,
     onLocalChanged:()=>{localChanged=true;},
     onLocalObserved:observeLocal,
+    onPhase,
     conditionalEtag,
   });
   } finally {if(localChanged)notifyDataChanged();}

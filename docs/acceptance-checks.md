@@ -155,3 +155,33 @@ SQLite connection, verifies the useful error and unchanged preference, releases
 the lock, and verifies that saving succeeds without restarting the application.
 This extends the earlier single-process acceptance coverage. It does not forcibly
 terminate other applications or change the production ledger.
+
+## 0.2.6: observation, process lifecycle and draft durability
+
+A desktop single-instance plugin is registered before other plugins, as required
+by the [official Tauri guide](https://v2.tauri.app/plugin/single-instance/). A
+second launch, including a renamed copy with the same application identifier,
+restores and focuses the existing window. Versions predating this mechanism do
+not participate and must be closed before running the new build. Main-window
+destruction exits the application. Native transactions with no query activity
+for 60 seconds are periodically dropped and rolled back; active operations keep
+refreshing their activity timestamp. Long imports are not limited to 60 seconds
+as long as they continue issuing queries.
+
+Native Rust tests cover transaction rollback/commit, abandoned transaction
+rollback while retaining active transactions, and isolated credential storage.
+The native desktop acceptance additionally minimizes the original window,
+launches a renamed copy, checks that the copy exits and the original is restored,
+then verifies normal close exits. In its separate ledger namespace it reloads
+an unsaved draft, injects a SQLite DELETE-trigger failure, verifies that neither
+a financial row nor consumed draft is committed partially, and retries to create
+exactly one transaction. It also retains the earlier CSP, settings/lock, cached
+navigation, large-ledger sync, language and font checks.
+
+`npm run test:observation` uses a synthetic browser profile to verify coverage,
+comparable change and unexplained residual, historical archived totals, shared
+months, search/category filtering, shortening a selected chart range safely,
+and transaction/snapshot/batch draft recovery across reloads. The legacy browser
+and real HTTPS/WebDAV suites remain separate regression checks. Personal-ledger
+cloud convergence, mobile device acceptance and published updater installation
+remain outside these isolated checks.

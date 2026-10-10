@@ -6,9 +6,13 @@ use tauri_plugin_sql::{DbInstances, DbPool};
 use tokio::sync::Mutex;
 
 #[derive(Default)]
-pub struct Transactions(Mutex<HashMap<String, Transaction<'static, Sqlite>>>);
+pub struct Transactions(Mutex<HashMap<String, ManagedTransaction>>);
+struct ManagedTransaction { transaction: Transaction<'static, Sqlite>, last_activity: std::time::Instant }
 impl Transactions {
     pub async fn abort_all(&self) { self.0.lock().await.clear(); }
+    pub async fn abort_idle(&self, timeout: std::time::Duration) {
+        self.0.lock().await.retain(|_, transaction| transaction.last_activity.elapsed() < timeout);
+    }
 }
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -25,21 +29,23 @@ pub async fn cicada_begin_transaction(instances: State<'_, DbInstances>, txs: St
     };
     let transaction = pool.begin().await.map_err(|e| e.to_string())?;
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed).to_string();
-    txs.0.lock().await.insert(id.clone(), transaction);
+    txs.0.lock().await.insert(id.clone(), ManagedTransaction { transaction, last_activity: std::time::Instant::now() });
     Ok(id)
 }
 
 #[tauri::command]
 pub async fn cicada_end_transaction(txs: State<'_, Transactions>, transaction_id: String, commit: bool) -> Result<(), String> {
     let transaction = txs.0.lock().await.remove(&transaction_id).ok_or("Transaction not found")?;
-    if commit { transaction.commit().await } else { transaction.rollback().await }.map_err(|e| e.to_string())
+    if commit { transaction.transaction.commit().await } else { transaction.transaction.rollback().await }.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn cicada_transaction_query(txs: State<'_, Transactions>, transaction_id: String, sql: String, params: Vec<Value>, select: bool) -> Result<Value, String> {
     let mut transactions = txs.0.lock().await;
     let transaction = transactions.get_mut(&transaction_id).ok_or("Transaction not found")?;
-    execute_query(transaction, &sql, params, select).await
+    let result = execute_query(&mut transaction.transaction, &sql, params, select).await;
+    transaction.last_activity = std::time::Instant::now();
+    result
 }
 
 async fn execute_query(transaction: &mut Transaction<'static, Sqlite>, sql: &str, params: Vec<Value>, select: bool) -> Result<Value, String> {
@@ -81,6 +87,26 @@ async fn execute_query(transaction: &mut Transaction<'static, Sqlite>, sql: &str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn abandoned_transactions_rollback_and_active_transactions_survive() {
+        tauri::async_runtime::block_on(async {
+            let pool = sqlx::sqlite::SqlitePoolOptions::new().max_connections(1).connect("sqlite::memory:").await.unwrap();
+            sqlx::query("CREATE TABLE ledger(value INTEGER)").execute(&pool).await.unwrap();
+            let state = Transactions::default();
+            let mut transaction = pool.begin().await.unwrap();
+            sqlx::query("INSERT INTO ledger VALUES(1)").execute(&mut *transaction).await.unwrap();
+            state.0.lock().await.insert("expired".into(), ManagedTransaction { transaction, last_activity: std::time::Instant::now() - std::time::Duration::from_secs(61) });
+            state.abort_idle(std::time::Duration::from_secs(60)).await;
+            let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM ledger").fetch_one(&pool).await.unwrap();
+            assert_eq!(count.0, 0);
+            let transaction = pool.begin().await.unwrap();
+            state.0.lock().await.insert("active".into(), ManagedTransaction { transaction, last_activity: std::time::Instant::now() });
+            state.abort_idle(std::time::Duration::from_secs(60)).await;
+            assert_eq!(state.0.lock().await.len(), 1);
+            state.abort_all().await;
+            assert_eq!(state.0.lock().await.len(), 0);
+        });
+    }
     #[test]
     fn native_query_roundtrip_commit_and_rollback() {
         tauri::async_runtime::block_on(async {

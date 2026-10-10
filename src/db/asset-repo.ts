@@ -9,6 +9,7 @@ import type { Asset, AssetWithAccount } from '../utils/types';
 
 type AssetRow = {
   id: number;
+  uuid?:string;
   account_id: number;
   name: string;
   categories: string;
@@ -30,6 +31,7 @@ function parseCategories(raw: string): Record<string, string> {
 function rowToAsset(row: AssetRow): Asset {
   return {
     id: row.id,
+    uuid:row.uuid,
     accountId: row.account_id,
     name: row.name,
     categories: parseCategories(row.categories),
@@ -69,7 +71,7 @@ export async function listAssetsByAccount(
 export async function getAsset(id: number): Promise<Asset | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<AssetRow>(
-    'SELECT id, account_id, name, categories, archived FROM asset WHERE id = ?',
+    'SELECT id, uuid, account_id, name, categories, archived FROM asset WHERE id = ?',
     [id]
   );
   return row ? rowToAsset(row) : null;
@@ -143,16 +145,17 @@ export async function setAssetArchived(
 export async function listAssetOverview(date: string, forwardFill: boolean) {
   return readCached(['asset-overview',date,forwardFill],async()=>{
   const db = await getDatabase();
-  let result!: (AssetWithAccount & { netWorth: number | null; sourceDate: string | null; history: number[] })[];
+  let result!: (AssetWithAccount & { netWorth: number | null; sourceDate: string | null; lastRecorded: string | null; history: number[] })[];
   await db.withTransactionAsync(async (db) => {
   const [rows, history] = await Promise.all([
-    db.getAllAsync<AssetWithAccountRow & { net_worth: number | null; source_date: string | null }>(`
-      SELECT a.id,a.account_id,a.name,a.categories,a.archived,acc.name AS account_name,
-             s.net_worth,s.date AS source_date
+    db.getAllAsync<AssetWithAccountRow & { net_worth: number | null; source_date: string | null; last_recorded: string | null }>(`
+      SELECT a.id,a.uuid,a.account_id,a.name,a.categories,a.archived,acc.name AS account_name,
+             s.net_worth,s.date AS source_date,
+             (SELECT MAX(date) FROM asset_snapshot WHERE asset_id=a.id AND date<=?) AS last_recorded
       FROM asset a JOIN account acc ON acc.id=a.account_id
       LEFT JOIN asset_snapshot s ON s.asset_id=a.id AND s.date=(
         SELECT MAX(p.date) FROM asset_snapshot p WHERE p.asset_id=a.id AND (p.date=? OR (?=1 AND p.date<?))
-      ) WHERE a.archived=0 AND acc.archived=0 ORDER BY acc.name,a.name`, [date,forwardFill?1:0,date]),
+      ) WHERE a.archived=0 AND acc.archived=0 ORDER BY acc.name,a.name`, [date,date,forwardFill?1:0,date]),
     db.getAllAsync<{ asset_id: number; net_worth: number }>(`
       SELECT asset_id,net_worth FROM (
         SELECT s.asset_id,s.date,s.net_worth,ROW_NUMBER() OVER(PARTITION BY s.asset_id ORDER BY s.date DESC) AS n
@@ -162,7 +165,7 @@ export async function listAssetOverview(date: string, forwardFill: boolean) {
   ]);
   const values = new Map<number,number[]>();
   for (const row of history) { const list=values.get(row.asset_id)??[];list.push(row.net_worth);values.set(row.asset_id,list); }
-  result = rows.map(row=>({...rowToAsset(row),accountName:row.account_name,netWorth:row.net_worth,sourceDate:row.source_date,history:values.get(row.id)??[]}));
+  result = rows.map(row=>({...rowToAsset(row),accountName:row.account_name,netWorth:row.net_worth,sourceDate:row.source_date,lastRecorded:row.last_recorded,history:values.get(row.id)??[]}));
   });
   return result;
   });

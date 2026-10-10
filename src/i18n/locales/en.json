@@ -51,7 +51,15 @@
   "assets": {
     "noAccountsTitle": "No accounts yet",
     "noAccountsBody": "Go to Settings to create an account and add assets.",
-    "noAssets": "No assets"
+    "noAssets": "No assets",
+    "search": "Search assets or accounts",
+    "allCategories": "All categories",
+    "sortName": "Sort: name",
+    "sortValue": "Sort: net worth ↓",
+    "noMatches": "No matching assets",
+    "assetColumn": "Asset / classification",
+    "latestRecord": "Latest record",
+    "carriedFrom": "Carried from {{date}}"
   },
   "batchEntry": {
     "enter": "Enter data",
@@ -302,5 +310,52 @@
     "failed": "Could not check or install the update. Try again later.",
     "draft": "Save or discard your edits before updating.",
     "busy": "Preparing update…"
+  },
+  "observation": {
+    "coverage": "{{month}} · {{count}} / {{total}} current active assets recorded",
+    "latest": "Latest asset record: {{date}}",
+    "transactionLatest": "Latest transaction: {{date}}",
+    "goLatest": "View latest recorded month · {{month}}",
+    "coverageHelp": "Coverage refers to assets currently active, not historical ownership. Missing entries are not zero; carried values are not new records.",
+    "comparableChange": "Comparable net-worth change",
+    "comparableCount": "{{count}} assets with records in both months",
+    "explainChange": "Explain comparable change",
+    "comparableInflow": "Recorded net inflow",
+    "comparableProfit": "Recorded profit",
+    "residual": "Unexplained difference",
+    "comparisonHelp": "For {{count}} assets recorded in both adjacent months: change = net inflow + profit + unexplained difference. Carried values are excluded; coverage changes are not investment profit.",
+    "notRecorded": "Not recorded",
+    "trendHelp": "Tap a point to inspect. Missing months break the line; amber marks incomplete current active-asset coverage.",
+    "partial": "Current active-asset coverage incomplete",
+    "calendarHelp": "Calendar changes compare actual records in both adjacent months; carried values are excluded."
+  },
+  "draftRecovery": {
+    "found": "Unsaved local draft · {{date}}",
+    "changed": "The source record has changed or the asset no longer matches. Automatic recovery is unavailable; inspect the draft before discarding.",
+    "restore": "Restore draft",
+    "discard": "Discard stored draft",
+    "preview": "Inspect draft",
+    "saving": "Saving a local recovery draft…",
+    "saved": "Local recovery draft saved",
+    "error": "Draft recovery could not complete. Keep your inputs and retry after checking the ledger."
+  },
+  "syncDiagnostics": {
+    "attempt": "Last attempt: {{date}}",
+    "duration": "Duration: {{seconds}}s",
+    "locked": "The ledger is busy. Close other Cicada windows and retry.",
+    "auth": "Check your WebDAV account and app password, then reconnect.",
+    "network": "Check your connection and server availability. Local changes remain pending.",
+    "conflict": "Another device changed the cloud data. Retry synchronization to merge again.",
+    "version": "The cloud format is not supported. Update the app before retrying.",
+    "document": "The cloud document could not be read. Preserve your local backup and inspect the cloud file.",
+    "generic": "Synchronization failed. Check the server configuration and retry; pending local changes are retained.",
+    "phase": {
+      "readingRemote": "Reading cloud data…",
+      "readingLocal": "Reading local records…",
+      "merging": "Comparing and merging records…",
+      "writingLocal": "Applying cloud changes…",
+      "uploading": "Uploading changes…",
+      "retrying": "Cloud changed; retrying…"
+    }
   }
 }

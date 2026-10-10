@@ -409,3 +409,10 @@ test('committed remote changes notify even if their subsequent upload fails',asy
  assert.equal(result.status,'unchanged');assert.equal(observed.length,1);
  assert.equal(observed[0].tables.account[0].name,'Another window');
  });
+test('sync reports transport, local-read and upload phases without pretending no-op data was rewritten',async()=>{
+ const {db}=await makeMigratedDb();const remote=makeFakeRemote();const {deps}=depsFor(db,remote,'aaaaaa');
+ const phases:string[]=[];await runSync({...deps,onPhase:phase=>phases.push(phase)});
+ assert.deepEqual(phases,['readingRemote','readingLocal','uploading']);
+ phases.length=0;await runSync({...deps,onPhase:phase=>phases.push(phase)});
+ assert(phases.includes('merging'));assert(!phases.includes('writingLocal'));assert(!phases.includes('uploading'));
+});

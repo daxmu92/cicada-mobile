@@ -1,3 +1,6 @@
+import { getObservationMetadata, getTrendCoverage } from '../../src/db/observation-repo';
+import { useObservationMonth } from '../../src/hooks/use-observation-month';
+import { completeTrend } from '../../src/utils/observation';
 import { getLedgerEpoch } from '../../src/ledger/mode';
 import { notify } from '../../src/utils/dialog';
 import { useDataVersion } from '../../src/hooks/use-data-version';
@@ -8,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { getDateRange, getMonthlyTotals, listSnapshotsByDate } from '../../src/db/snapshot-repo';
 import { listAssets } from '../../src/db/asset-repo';
-import { currentYearMonth, minusMonths } from '../../src/utils/date';
+import { minusMonths } from '../../src/utils/date';
 import { useFormat, useSettings, useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
 import { categoryPalette, spacing, type ThemeColors } from '../../src/utils/theme';
 import { MonthSelector } from '../../src/components/MonthSelector';
@@ -39,7 +42,7 @@ export default function AnalysisScreen() {
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
 
-  const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [selectedMonth, setSelectedMonth] = useObservationMonth();
   const [range, setRange] = useState<Range>('1Y');
   const [dimension, setDimension] = useState<string>(ACCOUNT_DIMENSION);
   const [focusedKey, setFocusedKey] = useState<string | undefined>(undefined);
@@ -61,11 +64,11 @@ export default function AnalysisScreen() {
       const dr = await getDateRange();
       if (dr) {
         start = dr.start;
-        end = dr.end;
+        end = selectedMonth;
       }
     }
     // Trend and composition use the same monthly valuation policy.
-    const months = await getMonthlyTotals(start, end, { forwardFill });
+    const [months,coverage,meta]=await Promise.all([getMonthlyTotals(start, end, { forwardFill }),getTrendCoverage(start,end),getObservationMetadata(selectedMonth)]);
 
     // Composition at selectedMonth: join snapshots with assets for categories.
     const [snaps, assets] = await Promise.all([
@@ -74,7 +77,8 @@ export default function AnalysisScreen() {
     ]);
     if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
     setLoadedEpoch(capturedEpoch);
-    setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
+    const counts=new Map(coverage.map(row=>[row.date,row.recordedActive]));
+    setTrend(completeTrend(start, end, months).map(point=>({...point,partial:point.value!==null&&(counts.get(point.label)??0)<meta.activeAssets})));
     const catById = new Map(assets.map((a) => [a.id, a.categories]));
     setCompInput(
       snaps.map((s) => ({

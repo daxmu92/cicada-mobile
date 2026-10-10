@@ -1,3 +1,4 @@
+import { consumeLocalDraft, writeWithDraftConsumption, type DraftConsumption } from '../services/local-draft-core';
 import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { requireAmount, requireDate, requireId } from '../utils/validation';
@@ -9,6 +10,7 @@ import type { Transaction, TranType } from '../utils/types';
 
 type TranRow = {
   id: number;
+  uuid?:string;
   date: string;
   type: TranType;
   value: number;
@@ -19,7 +21,7 @@ type TranRow = {
 export async function getTransaction(id: number): Promise<Transaction | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<TranRow>(
-    'SELECT id, date, type, value, cat, note FROM tran WHERE id = ?',
+    'SELECT id, uuid, date, type, value, cat, note FROM tran WHERE id = ?',
     [id]
   );
   return row ?? null;
@@ -56,16 +58,17 @@ export async function createTransaction(
   type: TranType,
   value: number,
   cat: string = '',
-  note: string = ''
+  note: string = '',
+  draft?:DraftConsumption
 ): Promise<number> {
   requireDate(date, 'transaction.date'); requireAmount(value, 'transaction.value');
   if (value <= 0 || !['INCOME', 'OUTLAY'].includes(type)) throw new Error('Invalid transaction');
   return runLedgerWrite(async (db) => {
   const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
-  const result = await db.runAsync(
+  const result = await writeWithDraftConsumption(db,draft,tx=>tx.runAsync(
     'INSERT INTO tran (date, type, value, cat, note, uuid, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [date, type, value, cat, note, uuid, updatedAt]
-  );
+  ));
   bumpDirty(db);
   return result.lastInsertRowId;
   });
@@ -77,21 +80,22 @@ export async function updateTransaction(
   type: TranType,
   value: number,
   cat: string,
-  note: string
+  note: string,
+  draft?:DraftConsumption
 ): Promise<void> {
   requireId(id, 'transaction.id'); requireDate(date, 'transaction.date'); requireAmount(value, 'transaction.value');
   if (value <= 0 || !['INCOME', 'OUTLAY'].includes(type)) throw new Error('Invalid transaction');
   return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
-  await db.runAsync(
+  await writeWithDraftConsumption(db,draft,tx=>tx.runAsync(
     'UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE id = ?',
     [date, type, value, cat, note, updatedAt, id]
-  );
+  ));
   bumpDirty(db);
   });
 }
 
-export async function deleteTransaction(id: number): Promise<void> {
+export async function deleteTransaction(id: number,draft?:DraftConsumption): Promise<void> {
   return runLedgerWrite(async (db) => {
   const deletedAt = await tick(db);
   await db.withTransactionAsync(async (db) => {
@@ -103,6 +107,7 @@ export async function deleteTransaction(id: number): Promise<void> {
     if (tran?.uuid) {
       await recordTombstonesAt(db, 'tran', [tran.uuid], deletedAt);
     }
+    if(draft)await consumeLocalDraft(db,draft);
   });
   bumpDirty(db);
   });

@@ -51,7 +51,15 @@
   "assets": {
     "noAccountsTitle": "还没有账户",
     "noAccountsBody": "前往设置创建账户并添加资产。",
-    "noAssets": "暂无资产"
+    "noAssets": "暂无资产",
+    "search": "搜索资产或账户",
+    "allCategories": "全部分类",
+    "sortName": "排序：名称",
+    "sortValue": "排序：净值从高到低",
+    "noMatches": "没有符合条件的资产",
+    "assetColumn": "资产 / 分类",
+    "latestRecord": "最近记录",
+    "carriedFrom": "沿用 {{date}} 的记录"
   },
   "batchEntry": {
     "enter": "录入",
@@ -302,5 +310,52 @@
     "failed": "无法检查或安装更新，请稍后重试。",
     "draft": "请先保存或放弃正在编辑的内容。",
     "busy": "正在准备更新…"
+  },
+  "observation": {
+    "coverage": "{{month}} · 当前未归档资产 {{count}} / {{total}} 项有记录",
+    "latest": "最新资产记录：{{date}}",
+    "transactionLatest": "最新交易录入：{{date}}",
+    "goLatest": "查看最新记录月份 · {{month}}",
+    "coverageHelp": "覆盖数按当前未归档资产计算，不推测历史持有状态。未录入不等于零，沿用旧值不算本月新记录。",
+    "comparableChange": "可比资产净值变化",
+    "comparableCount": "两个月均有记录的 {{count}} 项资产",
+    "explainChange": "净值变化从哪里来",
+    "comparableInflow": "记录净流入",
+    "comparableProfit": "记录收益",
+    "residual": "未解释差额",
+    "comparisonHelp": "只比较相邻两个月均有实际记录的 {{count}} 项资产：变化 = 净流入 + 收益 + 未解释差额。沿用旧值不参与比较，资产覆盖变化不视作投资收益。",
+    "notRecorded": "未录入",
+    "trendHelp": "点击数据点查看金额。缺失月份断线；金色点表示按当前未归档资产计算，记录有缺项。",
+    "partial": "按当前未归档资产计算，记录有缺项",
+    "calendarHelp": "日历只比较相邻月份均有实际记录的资产，沿用值不参与变化计算。"
+  },
+  "draftRecovery": {
+    "found": "发现未保存的本地草稿 · {{date}}",
+    "changed": "原记录已经变化或资产不再匹配，不能自动恢复。可以先查看草稿内容，再决定是否丢弃。",
+    "restore": "恢复草稿",
+    "discard": "丢弃已存草稿",
+    "preview": "查看草稿内容",
+    "saving": "正在保存本地恢复草稿…",
+    "saved": "本地恢复草稿已保存",
+    "error": "草稿恢复未能完成，请保留当前输入，检查账本状态后重试。"
+  },
+  "syncDiagnostics": {
+    "attempt": "最近尝试：{{date}}",
+    "duration": "耗时 {{seconds}} 秒",
+    "locked": "账本被占用，请关闭其他 Cicada 窗口后重试。",
+    "auth": "请检查 WebDAV 账号与应用密码，然后重新连接。",
+    "network": "请检查网络和服务器是否可用，本地修改仍待同步。",
+    "conflict": "其他设备修改了云端数据，请重试同步以重新合并。",
+    "version": "云端格式不受当前版本支持，请更新应用后重试。",
+    "document": "无法读取云端账本，请保留本地备份并检查云端文件。",
+    "generic": "同步失败，请检查服务器配置后重试；本地待同步修改仍保留。",
+    "phase": {
+      "readingRemote": "正在读取云端账本…",
+      "readingLocal": "正在读取本地记录…",
+      "merging": "正在比较并合并记录…",
+      "writingLocal": "正在应用云端修改…",
+      "uploading": "正在上传修改…",
+      "retrying": "云端数据已变化，正在重试…"
+    }
   }
 }

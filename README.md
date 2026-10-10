@@ -98,6 +98,9 @@ validation are documented in [Acceptance checks](docs/acceptance-checks.md).
 Desktop 0.2.2 adds [Demo, reconciliation, search and draft protection](docs/product-workflows.md),
 with [dependency review](docs/dependency-security.md) and
 [update/release preparation](docs/release-preparation.md).
+Desktop 0.2.6 adds shared observation months, data coverage, comparable changes,
+calendar gaps in trends, asset filters, local draft recovery and single-instance
+Windows startup. See [Product workflows](docs/product-workflows.md) for behavior.
 
 ## Building a standalone app (EAS)
 

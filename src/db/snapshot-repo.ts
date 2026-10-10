@@ -1,3 +1,4 @@
+import { consumeLocalDraft, writeWithDraftConsumption, type DraftConsumption } from '../services/local-draft-core';
 import {readCached} from './query-cache';
 import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
@@ -115,13 +116,14 @@ export async function upsertSnapshot(
   date: string,
   netWorth: number,
   inflow: number,
-  profit: number
+  profit: number,
+  draft?:DraftConsumption
 ): Promise<void> {
   requireId(assetId, 'snapshot.assetId'); requireMonth(date, 'snapshot.date');
   requireAmount(netWorth, 'snapshot.netWorth'); requireAmount(inflow, 'snapshot.inflow'); requireAmount(profit, 'snapshot.profit');
   return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
-  await db.runAsync(`
+  await writeWithDraftConsumption(db,draft,tx=>tx.runAsync(`
     INSERT INTO asset_snapshot (asset_id, date, net_worth, inflow, profit, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(asset_id, date) DO UPDATE SET
@@ -129,12 +131,12 @@ export async function upsertSnapshot(
       inflow = excluded.inflow,
       profit = excluded.profit,
       updated_at = excluded.updated_at
-  `, [assetId, date, netWorth, inflow, profit, updatedAt]);
+  `, [assetId, date, netWorth, inflow, profit, updatedAt]));
   bumpDirty(db);
   });
 }
 
-export async function deleteSnapshot(assetId: number, date: string): Promise<void> {
+export async function deleteSnapshot(assetId: number, date: string,draft?:DraftConsumption): Promise<void> {
   return runLedgerWrite(async (db) => {
   const deletedAt = await tick(db);
   await db.withTransactionAsync(async (db) => {
@@ -149,6 +151,7 @@ export async function deleteSnapshot(assetId: number, date: string): Promise<voi
     if (asset?.uuid) {
       await recordTombstonesAt(db, 'snapshot', [`${asset.uuid}|${date}`], deletedAt);
     }
+    if(draft)await consumeLocalDraft(db,draft);
   });
   bumpDirty(db);
   });

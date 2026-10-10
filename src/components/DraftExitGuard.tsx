@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasUnsavedDrafts, hasSavingDrafts, discardDrafts } from '../ledger/drafts';
-import { confirmAsync } from '../utils/dialog';
+import { confirmAsync, notify } from '../utils/dialog';
 export function DraftExitGuard() {
   const {t}=useTranslation();
   useEffect(()=>{
@@ -19,7 +19,8 @@ export function DraftExitGuard() {
           event.preventDefault();
           if(asking||hasSavingDrafts()) return;
           asking=true;
-          try { if(await confirmAsync(t('drafts.title'),t('drafts.body'))){discardDrafts();await appWindow.close();} }
+          try { if(await confirmAsync(t('drafts.title'),t('drafts.body'))){await discardDrafts();await appWindow.close();} }
+          catch{notify(t('common.error'),t('draftRecovery.error'));}
           finally{asking=false;}
         });
         if(cancelled) cleanup(); else unlisten=cleanup;

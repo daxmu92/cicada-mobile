@@ -1,3 +1,7 @@
+import { ObservationNotice } from '../../src/components/ObservationNotice';
+import { getObservationMetadata, getTrendCoverage, type ObservationMetadata } from '../../src/db/observation-repo';
+import { compareRecordedAssets, completeTrend } from '../../src/utils/observation';
+import { useObservationMonth } from '../../src/hooks/use-observation-month';
 import {listAssetOverview} from '../../src/db/asset-repo';
 import {listAccounts} from '../../src/db/account-repo';
 import { getLedgerEpoch } from '../../src/ledger/mode';
@@ -13,7 +17,7 @@ import {
   getTotalsForDate,
   listSnapshotsByDate,
 } from '../../src/db/snapshot-repo';
-import { currentYearMonth, prevYearMonth } from '../../src/utils/date';
+import { prevYearMonth } from '../../src/utils/date';
 import { useFormat, useSemanticColors, useSettings, useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
 import { spacing, type ThemeColors } from '../../src/utils/theme';
 import { AllocationBarList } from '../../src/components/charts/AllocationBarList';
@@ -42,9 +46,11 @@ export default function HomeScreen() {
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
 
-  const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [selectedMonth, setSelectedMonth] = useObservationMonth();
   const [totals, setTotals] = useState({ netWorth: 0, inflow: 0, profit: 0 });
-  const [prevNetWorth, setPrevNetWorth] = useState<number | null>(null);
+  const [comparison,setComparison]=useState<ReturnType<typeof compareRecordedAssets>>(compareRecordedAssets([],[]));
+  const [metadata,setMetadata]=useState<ObservationMetadata|null>(null);
+  const [loadedMonth,setLoadedMonth]=useState('');
   const [allocations, setAllocations] = useState<SnapshotWithAsset[]>([]);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
 
@@ -52,24 +58,26 @@ export default function HomeScreen() {
   const loadData = useCallback(async () => {
     const generation = ++request.current;
     const capturedEpoch=getLedgerEpoch();
-    const [cur, prevSnaps, snaps] = await Promise.all([
+    const [cur, prevSnaps, snaps,meta] = await Promise.all([
       getTotalsForDate(selectedMonth, { forwardFill }),
       listSnapshotsByDate(prevYearMonth(selectedMonth), { forwardFill }),
       listSnapshotsByDate(selectedMonth, { forwardFill }),
+      getObservationMetadata(selectedMonth),
     ]);
 
     // 12-month trend ending at selectedMonth
     let start = selectedMonth;
     for (let i = 0; i < 11; i++) start = prevYearMonth(start);
-    const months = await getMonthlyTotals(start, selectedMonth, { forwardFill });
+    const [months,coverage]=await Promise.all([getMonthlyTotals(start, selectedMonth, { forwardFill }),getTrendCoverage(start,selectedMonth)]);
     if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
     setLoadedEpoch(capturedEpoch);
     setTotals(cur);
-    setPrevNetWorth(prevSnaps.length ? prevSnaps.reduce((sum, row) => sum + row.netWorth, 0) : null);
+    setComparison(compareRecordedAssets(snaps,prevSnaps));setMetadata(meta);setLoadedMonth(selectedMonth);
     setAllocations(snaps);
-    setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
+    const counts=new Map(coverage.map(row=>[row.date,row.recordedActive]));
+    setTrend(completeTrend(start, selectedMonth, months).map(point=>({...point,partial:point.value!==null&&(counts.get(point.label)??0)<meta.activeAssets})));
     // Warm the next tab after Home has its data; never gate Home on this read.
-    void Promise.all([listAccounts(),listAssetOverview(currentYearMonth(),forwardFill)]).catch(()=>{});
+    void Promise.all([listAccounts(),listAssetOverview(selectedMonth,forwardFill)]).catch(()=>{});
   }, [selectedMonth, forwardFill]);
 
   useFocusEffect(
@@ -79,8 +87,8 @@ export default function HomeScreen() {
     }, [loadData, dataVersion, t])
   );
 
-  const netGrowth = totals.netWorth - (prevNetWorth ?? 0);
-  const growthPct = prevNetWorth !== null && prevNetWorth !== 0 ? (netGrowth / Math.abs(prevNetWorth)) * 100 : null;
+  const netGrowth = comparison.change;
+  const growthPct = comparison.percent;
   const greeting = t(greetingKey(new Date().getHours()));
 
   const allocationItems = allocations.map((s) => ({
@@ -88,7 +96,7 @@ export default function HomeScreen() {
     value: s.netWorth,
   }));
 
-  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
+  if(loadedEpoch!==epoch||loadedMonth!==selectedMonth)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
     <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
       {/* Greeting + month selector */}
@@ -97,6 +105,7 @@ export default function HomeScreen() {
         <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
       </View>
 
+      <ObservationNotice meta={metadata} month={selectedMonth} onLatest={setSelectedMonth}/>
       <View style={wide ? styles.desktopGrid : undefined}>
       {/* Hero: net worth + change + trend */}
       <View style={[shared.card, wide && styles.heroColumn]}>
@@ -105,7 +114,7 @@ export default function HomeScreen() {
         {!allocations.length && <Text style={shared.muted}>{t('home.noSnapshot')}</Text>}
         {allocations.some((row) => row.estimated) && <Text style={shared.muted}>{t('home.estimated')}</Text>}
         <View style={{ marginTop: spacing.sm }}>
-          {prevNetWorth !== null && allocations.length > 0 ? <ChangePill value={netGrowth} percent={growthPct} caption={t('home.thisMonth')} /> : <Text style={shared.muted}>{t('home.noComparison')}</Text>}
+          {netGrowth !== null ? <ChangePill value={netGrowth} percent={growthPct} caption={t('observation.comparableCount',{count:comparison.count})} /> : <Text style={shared.muted}>{t('home.noComparison')}</Text>}
         </View>
         {trend.length > 1 && (
           <View style={styles.heroTrend}>
@@ -118,13 +127,13 @@ export default function HomeScreen() {
       {/* Two metrics */}
       <View style={styles.metricsRow}>
         <MetricCard
-          label={t('home.netGrowth')}
-          value={prevNetWorth === null || !allocations.length ? '—' : fmt(netGrowth)}
-          valueColor={netGrowth >= 0 ? gain : loss}
+          label={t('observation.comparableChange')}
+          value={netGrowth===null?'—':fmt(netGrowth)}
+          valueColor={(netGrowth??0) >= 0 ? gain : loss}
         />
         <MetricCard
           label={t('home.profit')}
-          value={allocations.length ? fmt(totals.profit) : '—'}
+          value={allocations.some(row=>!row.estimated) ? fmt(totals.profit) : '—'}
           valueColor={totals.profit >= 0 ? gain : loss}
         />
       </View>
@@ -135,6 +144,14 @@ export default function HomeScreen() {
       </SectionCard>
       </View>
       </View>
+      <SectionCard title={t('observation.explainChange')}>
+        <View style={[styles.metricsRow,!wide&&{flexDirection:'column'}]}>
+          <MetricCard label={t('observation.comparableInflow')} value={comparison.inflow===null?'—':fmt(comparison.inflow)}/>
+          <MetricCard label={t('observation.comparableProfit')} value={comparison.profit===null?'—':fmt(comparison.profit)}/>
+          <MetricCard label={t('observation.residual')} value={comparison.residual===null?'—':fmt(comparison.residual)}/>
+        </View>
+        <Text style={shared.muted}>{t('observation.comparisonHelp',{count:comparison.count})}</Text>
+      </SectionCard>
     </ScrollView>
   );
 }
@@ -153,6 +170,7 @@ const makeStyles = (c: ThemeColors) =>
     sideColumn: { flex: 1, minWidth: 0 },
     topRow: {
       flexDirection: 'row',
+      flexWrap:'wrap',gap:spacing.sm,
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: spacing.lg,

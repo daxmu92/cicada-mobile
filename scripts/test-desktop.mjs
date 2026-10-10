@@ -16,6 +16,7 @@ try{
  await page.waitForFunction(()=>Boolean(window.__TAURI_INTERNALS__?.invoke));
  await page.locator('body').waitFor();
  assert.equal(await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('plugin:app|name')),'CicadaNativeSmoke','Refusing to modify a production app');
+ page.setDefaultTimeout(15000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>{void d.accept();});
  const css=await page.evaluate(()=>{
   const style=document.createElement('style');style.textContent='.cicada-style-probe{width:37px;position:fixed;display:none}';document.head.append(style);
@@ -72,6 +73,20 @@ try{
  }
  assert.equal(await page.evaluate(()=>window.__cicadaFinancialReads),0,'Appearance changes must not reload financial data');
  await exerciseNativeSync(page);
+ await page.getByRole('tab',{name:/Transactions$/}).click();await page.getByRole('button',{name:'Add Transaction',exact:true}).click();
+ await page.getByRole('textbox',{name:'Value',exact:true}).fill('12.34');await page.locator('textarea').fill('Native synthetic recovery');await page.getByText('Local recovery draft saved',{exact:true}).waitFor();
+ await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Restore draft',exact:true}).click();assert.equal(await page.getByRole('textbox',{name:'Value',exact:true}).inputValue(),'12.34');
+ await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('plugin:sql|execute',{db:'sqlite:cicada-demo.db',query:"CREATE TRIGGER block_native_draft_cleanup BEFORE DELETE ON local_draft WHEN OLD.key='transaction:new' BEGIN SELECT RAISE(ABORT,'Synthetic cleanup failure'); END",values:[]}));
+ const failedSave=page.waitForEvent('dialog');await page.getByRole('button',{name:'Save',exact:true}).click();assert.match((await failedSave).message(),/Could not save/);
+ const rollback=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada-demo.db',query:"SELECT (SELECT COUNT(*) FROM tran WHERE note='Native synthetic recovery') AS n,(SELECT COUNT(*) FROM local_draft WHERE key='transaction:new') AS drafts",values:[]}));
+ assert.equal(rollback[0].n,0);assert.equal(rollback[0].drafts,1);
+ await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('plugin:sql|execute',{db:'sqlite:cicada-demo.db',query:'DROP TRIGGER block_native_draft_cleanup',values:[]}));
+ await page.getByRole('button',{name:'Save',exact:true}).click();await page.waitForFunction(async()=>{
+  const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada-demo.db',query:"SELECT (SELECT COUNT(*) FROM tran WHERE note='Native synthetic recovery') AS n,(SELECT COUNT(*) FROM local_draft WHERE key='transaction:new') AS drafts",values:[]});return rows[0]?.n===1&&rows[0]?.drafts===0;
+ });
+ console.log('PASS actual native draft reload, cleanup-failure rollback and single transaction after retry');
+ await page.getByRole('tab',{name:/Settings$/}).click();
+
  await page.getByText('中文',{exact:true}).click();
  await page.getByRole('button',{name:'返回我的账本',exact:true}).click();await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('中文',{exact:true}).click();await page.getByRole('tab',{name:/首页$/}).click();await page.getByText('总净值',{exact:true}).waitFor({state:'visible'});

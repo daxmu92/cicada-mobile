@@ -1,10 +1,15 @@
+import { useRecoverableDraft } from '../../src/hooks/use-recoverable-draft';
+import { DraftRecoveryNotice } from '../../src/components/DraftRecoveryNotice';
+import { ObservationNotice } from '../../src/components/ObservationNotice';
+import { getObservationMetadata, type ObservationMetadata } from '../../src/db/observation-repo';
+import { useObservationMonth } from '../../src/hooks/use-observation-month';
 import { getLedgerEpoch,getLedgerMode,useLedgerMode } from '../../src/ledger/mode';
 import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
 import { parseAmount, tryAmount } from '../../src/utils/money';
 import { useSaveAction } from '../../src/hooks/use-save-action';
 import { useDataVersion } from '../../src/hooks/use-data-version';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +33,8 @@ import { AssetEntryCard, type SnapshotDraft } from '../../src/components/AssetEn
 type EnrichedAsset = AssetWithAccount & {
   netWorth: number | null;
   history: number[];
+  sourceDate?: string | null;
+  lastRecorded?: string | null;
 };
 
 type AccountGroup = {
@@ -65,12 +72,20 @@ export default function AssetsScreen() {
   const entrySession = useRef(0);
   const overviewRequest = useRef(0);
   const snapshotRequest = useRef(0);
+  const [observationMonth,setObservationMonth]=useObservationMonth();
+  const wide=useWindowDimensions().width>=1000;
+  const [search,setSearch]=useState('');
+  const [category,setCategory]=useState('');
+  const [sort,setSort]=useState<'name'|'value'>('name');
+  const [metadata,setMetadata]=useState<ObservationMetadata|null>(null);
+  const [loadedMonth,setLoadedMonth]=useState('');
   const [groups, setGroups] = useState<AccountGroup[]>([]);
 
   // Entry-mode state
   const [entryMode, setEntryMode] = useState(false);
   const activeEntry=entryMode&&entryLedger===mode&&entryEpoch.current===epoch;
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [snapshotsMonth,setSnapshotsMonth]=useState('');
   const [monthSnapshots, setMonthSnapshots] = useState<Map<number, SnapshotWithAsset>>(new Map());
   const [drafts, setDrafts] = useState<Map<number, SnapshotDraft>>(new Map());
   const [baselines, setBaselines] = useState<Map<number, SnapshotDraft>>(new Map());
@@ -81,14 +96,14 @@ export default function AssetsScreen() {
     void mode;
     const generation = ++overviewRequest.current;
     const ledger=getLedgerMode();const capturedEpoch=getLedgerEpoch();
-    const [accounts, enriched] = await Promise.all([listAccounts(), listAssetOverview(currentYearMonth(), forwardFill)]);
+    const [accounts, enriched,meta] = await Promise.all([listAccounts(), listAssetOverview(observationMonth, forwardFill),getObservationMetadata(observationMonth)]);
 
     const byAccount = accounts.map((acc) => ({
       account: acc,
       assets: enriched.filter((a) => a.accountId === acc.id),
     }));
-    if (generation === overviewRequest.current&&ledger===getLedgerMode()&&capturedEpoch===getLedgerEpoch()) {setGroups(byAccount);setGroupLedger(ledger);setGroupEpoch(capturedEpoch);}
-  }, [forwardFill,mode]);
+    if (generation === overviewRequest.current&&ledger===getLedgerMode()&&capturedEpoch===getLedgerEpoch()) {setGroups(byAccount);setGroupLedger(ledger);setGroupEpoch(capturedEpoch);setMetadata(meta);setLoadedMonth(observationMonth);}
+  }, [forwardFill,mode,observationMonth]);
 
   const loadMonthSnapshots = useCallback(async () => {
     const generation = ++snapshotRequest.current;
@@ -96,7 +111,7 @@ export default function AssetsScreen() {
     const snaps = await listSnapshotsByDate(selectedMonth);
     const m = new Map<number, SnapshotWithAsset>();
     snaps.forEach((s) => m.set(s.assetId, s));
-    if (generation === snapshotRequest.current && session === entrySession.current) setMonthSnapshots(m);
+    if (generation === snapshotRequest.current && session === entrySession.current) {setMonthSnapshots(m);setSnapshotsMonth(selectedMonth);}
   }, [selectedMonth]);
 
   useFocusEffect(
@@ -126,10 +141,30 @@ export default function AssetsScreen() {
     });
 
   const dirtyCount = dirtyEntries().length;
+  type BatchDraft={uuid:string;draft:SnapshotDraft;base:SnapshotDraft};
+  const batchValue=dirtyEntries().map(([id,draft])=>({uuid:groups.flatMap(group=>group.assets).find(asset=>asset.id===id)?.uuid,name:assetNameById(id),draft,base:baselines.get(id)}));
+  const validBatch=(value:unknown):value is BatchDraft[]=>Array.isArray(value)&&value.every(item=>item&&typeof item.uuid==='string'&&[item.draft,item.base].every(d=>d&&['netWorth','inflow','profit'].every(key=>typeof d[key]==='string')&&typeof d.autoFill==='boolean'));
+  const recovery=useRecoverableDraft({key:`batch:${selectedMonth}`,ready:activeEntry&&snapshotsMonth===selectedMonth,dirty:dirtyCount>0,baseline:`batch:${selectedMonth}`,value:batchValue,valid:value=>validBatch(value)&&value.every(item=>{
+    const asset=groups.flatMap(group=>group.assets).find(a=>a.uuid===item.uuid);if(!asset)return false;
+    const snapshot=monthSnapshots.get(asset.id);return snapshot?item.base.netWorth===String(snapshot.netWorth)&&item.base.inflow===String(snapshot.inflow)&&item.base.profit===String(snapshot.profit):item.base.inflow===''&&item.base.profit==='';
+  }),restore:async value=>{
+    if(!validBatch(value))throw new Error('Invalid batch draft');
+    const captured=getLedgerEpoch(),restored=new Map<number,SnapshotDraft>(),bases=new Map<number,SnapshotDraft>(),prior=new Map<number,number>();
+    for(const item of value){
+      const asset=groups.flatMap(group=>group.assets).find(a=>a.uuid===item.uuid);if(!asset)throw new Error('Draft asset changed');
+      const [existing,last]=await Promise.all([getSnapshot(asset.id,selectedMonth),getLastSnapshotBefore(asset.id,selectedMonth)]);
+      const base=existing?{netWorth:String(existing.netWorth),inflow:String(existing.inflow),profit:String(existing.profit),autoFill:true}:{netWorth:String(last?.netWorth??0),inflow:'',profit:'',autoFill:true};
+      if(isDirty(item.base,base))throw new Error('Draft baseline changed');
+      restored.set(asset.id,item.draft);bases.set(asset.id,base);prior.set(asset.id,last?.netWorth??0);
+    }
+    if(captured!==getLedgerEpoch())throw new Error('Ledger changed');
+    setDrafts(restored);setBaselines(bases);setLastNetWorthByAsset(prior);setExpandedAssetId(restored.keys().next().value??null);
+  }});
+
 
   const clearDrafts = () => {
     entrySession.current++; snapshotRequest.current++;
-    setMonthSnapshots(new Map());
+    setMonthSnapshots(new Map());setSnapshotsMonth('');
     setDrafts(new Map());
     setBaselines(new Map());
     setLastNetWorthByAsset(new Map());
@@ -141,25 +176,25 @@ export default function AssetsScreen() {
     setEntryMode(false);
   };
 
-  useUnsavedChanges(activeEntry&&dirtyCount>0,saving,exitEntryMode);
+  useUnsavedChanges(activeEntry&&dirtyCount>0,saving,async()=>{if(!await recovery.clear())throw new Error('Draft cleanup failed');exitEntryMode();});
   useEffect(()=>{
     entrySession.current++;snapshotRequest.current++;
-    setDrafts(new Map());setBaselines(new Map());setLastNetWorthByAsset(new Map());setExpandedAssetId(null);setMonthSnapshots(new Map());setEntryMode(false);
+    setDrafts(new Map());setBaselines(new Map());setLastNetWorthByAsset(new Map());setExpandedAssetId(null);setMonthSnapshots(new Map());setEntryMode(false);setSearch('');setCategory('');
   },[mode,epoch]);
 
   const enterEntryMode = () => {
     entryEpoch.current=getLedgerEpoch();setEntryLedger(getLedgerMode());
-    setSelectedMonth(currentYearMonth());
+    setSelectedMonth(observationMonth);
     clearDrafts();
     setEntryMode(true);
   };
 
   const onCancel = async () => {
-    if (dirtyCount > 0) {
+    if (dirtyCount > 0||recovery.draft) {
       const ok = await confirmAsync(t('batchEntry.cancelTitle'), t('batchEntry.cancelBody'));
       if (!ok) return;
     }
-    exitEntryMode();
+    if(await recovery.clear())exitEntryMode();
   };
 
   const onChangeMonth = async (ym: string) => {
@@ -168,12 +203,12 @@ export default function AssetsScreen() {
       const ok = await confirmAsync(t('batchEntry.switchTitle'), t('batchEntry.switchBody'));
       if (!ok) return;
     }
-    clearDrafts();
-    setSelectedMonth(ym);
+    if(!await recovery.clear())return;clearDrafts();
+    setSelectedMonth(ym);setObservationMonth(ym);
   };
 
   const expand = async (assetId: number) => {
-    if(!activeEntry||entryLedger!==getLedgerMode())return;
+    if(!activeEntry||entryLedger!==getLedgerMode()||recovery.blocked)return;
     const session = entrySession.current;
     if (!baselines.has(assetId)) {
       const last = await getLastSnapshotBefore(assetId, selectedMonth);
@@ -210,7 +245,8 @@ export default function AssetsScreen() {
   };
 
   const submit = () => save(async () => {
-    if(!activeEntry||entryLedger!==getLedgerMode())return;
+    if(!activeEntry||entryLedger!==getLedgerMode()||recovery.blocked)return;
+    recovery.pause();
     const dirty = dirtyEntries();
     const failed: string[] = [];
     const succeeded: number[] = [];
@@ -219,7 +255,9 @@ export default function AssetsScreen() {
         const n = parseAmount(d.netWorth);
         const i = parseAmount(d.inflow, true);
         const p = parseAmount(d.profit, true);
-        await upsertSnapshot(id, selectedMonth, n, i, p);
+        const uuid=groups.flatMap(group=>group.assets).find(a=>a.id===id)?.uuid;
+        if(!uuid)throw new Error('Asset identity missing');
+        await upsertSnapshot(id, selectedMonth, n, i, p,{key:`batch:${selectedMonth}`,assetUuid:uuid});
         succeeded.push(id);
       } catch {
         failed.push(assetNameById(id));
@@ -239,38 +277,53 @@ export default function AssetsScreen() {
     }
     await loadData();
     if (failed.length > 0) {
+      recovery.resume();
       await loadMonthSnapshots();
       notify(t('batchEntry.skippedTitle'), t('batchEntry.skippedBody', { names: failed.join(', ') }));
     } else {
-      exitEntryMode();
+      recovery.consumed();exitEntryMode();
     }
   });
 
+  const categories=[...new Set(groups.flatMap(group=>group.assets.flatMap(asset=>Object.values(asset.categories))))].sort();
+  const visibleGroups=activeEntry?groups:groups.map(group=>({...group,assets:group.assets.filter(asset=>(!category||Object.values(asset.categories).includes(category))&&(!search.trim()||(asset.name+' '+group.account.name).toLowerCase().includes(search.trim().toLowerCase()))).sort((a,b)=>sort==='value'?(b.netWorth??-Infinity)-(a.netWorth??-Infinity):a.name.localeCompare(b.name))})).filter(group=>!search&&!category||group.assets.length>0);
   const renderHeader = () => {
     if (!activeEntry) {
       return (
-        <View style={styles.topBar}>
+        <View>
+          <MonthSelector value={observationMonth} onChange={setObservationMonth}/>
+          <ObservationNotice meta={metadata} month={observationMonth} onLatest={setObservationMonth}/>
+          <TextInput accessibilityLabel={t('assets.search')} placeholder={t('assets.search')} value={search} onChangeText={setSearch} style={{borderWidth:1,borderColor:c.border,color:c.ink,padding:10,borderRadius:8,marginBottom:10}}/>
+          <View style={{flexDirection:'row',flexWrap:'wrap',gap:8,marginBottom:12}}>
+            {['',...categories].map(value=><TouchableOpacity accessibilityRole="button" key={value} onPress={()=>setCategory(value)} style={{padding:8,borderRadius:8,backgroundColor:category===value?c.accentSoft:c.card}}><Text style={{color:c.ink}}>{value||t('assets.allCategories')}</Text></TouchableOpacity>)}
+            <TouchableOpacity accessibilityRole="button" onPress={()=>setSort(sort==='name'?'value':'name')}><Text style={{color:c.primary,padding:8}}>{t(sort==='name'?'assets.sortName':'assets.sortValue')}</Text></TouchableOpacity>
+          </View>
+          <View style={styles.topBar}>
           <TouchableOpacity accessibilityRole="button" style={styles.enterBtn} onPress={() => router.push('/modals/manage-accounts')}><Text style={styles.enterText}>{t('settings.accountsAssets')}</Text></TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('batchEntry.enter')} style={styles.enterBtn} onPress={enterEntryMode}>
             <Text style={styles.enterText}>{t('batchEntry.enter')}</Text>
           </TouchableOpacity>
+          </View>
         </View>
       );
     }
     return (
+      <View>
+      <DraftRecoveryNotice recovery={recovery}/>
       <View style={styles.toolbar}>
         <TouchableOpacity onPress={onCancel} disabled={saving} style={styles.toolBtn}>
           <Text style={styles.toolText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
-        <MonthSelector disabled={saving} value={selectedMonth} onChange={onChangeMonth} />
+        <MonthSelector disabled={saving||recovery.blocked} value={selectedMonth} onChange={onChangeMonth} />
         <TouchableOpacity
           onPress={submit}
-          disabled={saving || dirtyCount === 0}
+          disabled={saving || recovery.blocked || dirtyCount === 0}
           style={styles.toolBtn}>
           <Text style={[styles.toolText, styles.submitText, dirtyCount === 0 && styles.disabled]}>
             {t('batchEntry.submit', { count: dirtyCount })}
           </Text>
         </TouchableOpacity>
+      </View>
       </View>
     );
   };
@@ -307,7 +360,7 @@ export default function AssetsScreen() {
     );
   };
 
-  if(groupLedger!==mode||groupEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
+  if(groupLedger!==mode||groupEpoch!==epoch||loadedMonth!==observationMonth)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   if (groups.length === 0) {
     return (
       <View style={[shared.screen, styles.empty]}>
@@ -322,12 +375,14 @@ export default function AssetsScreen() {
     <FlatList
       style={shared.screen}
       contentContainerStyle={shared.scrollContent}
-      data={groups}
+      data={visibleGroups}
+      ListEmptyComponent={<Text style={shared.muted}>{t('assets.noMatches')}</Text>}
       keyExtractor={(g) => String(g.account.id)}
       ListHeaderComponent={renderHeader()}
       renderItem={({ item }) => (
         <View style={shared.card}>
           <Text style={styles.accountName}>{item.account.name}</Text>
+          {wide&&!activeEntry&&<View style={{flexDirection:'row',gap:8,paddingVertical:8}}><Text style={{flex:1,color:c.muted}}>{t('assets.assetColumn')}</Text><Text style={{width:70,color:c.muted}}>{t('analysis.trendTitle')}</Text><Text style={{width:140,textAlign:'right',color:c.muted}}>{t('addRecord.netWorth')}</Text><Text style={{width:100,textAlign:'right',color:c.muted}}>{t('assets.latestRecord')}</Text></View>}
           {item.assets.length === 0 ? (
             <Text style={shared.muted}>{t('assets.noAssets')}</Text>
           ) : activeEntry ? (
@@ -351,9 +406,11 @@ export default function AssetsScreen() {
                         {Object.entries(asset.categories).map(([k, v]) => `${k}: ${v}`).join(' · ')}
                       </Text>
                     )}
+                    <Text style={styles.assetMeta}>{asset.sourceDate&&asset.sourceDate!==observationMonth?t('assets.carriedFrom',{date:asset.sourceDate}):asset.netWorth===null?t('observation.notRecorded'):''}</Text>
                   </View>
                   <Sparkline values={asset.history} width={70} height={28} color={trendColor} />
-                  <Text style={styles.assetValue}>{asset.netWorth === null ? '—' : fmt(asset.netWorth)}</Text>
+                  <Text style={[styles.assetValue,wide&&{width:140}]}>{asset.netWorth === null ? '—' : fmt(asset.netWorth)}</Text>
+                  {wide&&<Text style={{width:100,textAlign:'right',color:c.muted,fontSize:12}}>{asset.lastRecorded??'—'}</Text>}
                 </TouchableOpacity>
               );
             })

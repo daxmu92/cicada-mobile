@@ -1,3 +1,5 @@
+import { useRecoverableDraft } from '../../src/hooks/use-recoverable-draft';
+import { DraftRecoveryNotice } from '../../src/components/DraftRecoveryNotice';
 import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
 import { getReconciliationPreview } from '../../src/services/reconciliation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -56,10 +58,12 @@ export default function AddRecordModal() {
 
   const recordKey = `${assetId}|${date}`;
   const ready = loadedKey === recordKey;
-  const busy = saving || !ready;
+  const [assetUuid,setAssetUuid]=useState<string|null>(null);
   const [baseline,setBaseline]=useState('');
   const dirty=ready&&JSON.stringify([netWorth,inflow,profit])!==baseline;
-  const markSaved=useUnsavedChanges(dirty,saving);
+  const recovery=useRecoverableDraft({key:assetUuid?`snapshot:${assetUuid}:${date}`:null,ready,dirty,baseline:JSON.stringify([baseline,lastNetWorth]),value:[netWorth,inflow,profit,autoFill],valid:value=>Array.isArray(value)&&value.length===4&&value.slice(0,3).every(v=>typeof v==='string')&&typeof value[3]==='boolean',restore:value=>{const values=value as [string,string,string,boolean];setNetWorth(values[0]);setInflow(values[1]);setProfit(values[2]);setAutoFill(values[3]);}});
+  const busy = saving || !ready || recovery.blocked;
+  const markSaved=useUnsavedChanges(dirty,saving,async()=>{if(!await recovery.clear())throw new Error('Draft cleanup failed');});
   const request = useRef(0);
   const loadData = useCallback(async (isCancelled: () => boolean) => {
     const generation = ++request.current;
@@ -69,6 +73,7 @@ export default function AddRecordModal() {
     if (!asset) throw new Error('Asset not found');
     const [account, existing, last] = await Promise.all([getAccount(asset.accountId), getSnapshot(assetId, date), getLastSnapshotBefore(assetId, date)]);
     if (generation !== request.current || isCancelled()) return;
+    setAssetUuid(asset.uuid??null);
     setAssetName(asset.name); setAccountName(account?.name ?? '');
     setHasExisting(existing !== null);
     setNetWorth(existing ? String(existing.netWorth) : '');
@@ -113,9 +118,10 @@ export default function AddRecordModal() {
   };
 
   const changeDate=async(next:string)=>{
-    if(!dirty||await confirmAsync(t('drafts.title'),t('drafts.body')))setDate(next);
+    if(!dirty||await confirmAsync(t('drafts.title'),t('drafts.body'))){if(dirty&&!await recovery.clear())return;setDate(next);}
   };
   const afterWrite=async()=>{
+    recovery.consumed();
     const preview=await getReconciliationPreview(assetId).catch(()=>null);
     if(preview?.changes.some(change=>change.date>date)&&await confirmAsync(t('reconcile.title'),t('reconcile.offer'))){markSaved();router.replace(`/modals/reconcile-asset?assetId=${assetId}`);}
     else {markSaved();router.back();}
@@ -126,7 +132,9 @@ export default function AddRecordModal() {
       const n = parseAmount(netWorth);
       const i = parseAmount(inflow, true);
       const p = parseAmount(profit, true);
-      await upsertSnapshot(assetId, date, n, i, p);
+      recovery.pause();
+      try{await upsertSnapshot(assetId, date, n, i, p,{key:`snapshot:${assetUuid}:${date}`});}
+      catch(error){recovery.resume();throw error;}
       await afterWrite();
     });
   };
@@ -141,7 +149,9 @@ export default function AddRecordModal() {
         true
       );
       if (!ok) return;
-      await deleteSnapshot(assetId, date);
+      recovery.pause();
+      try{await deleteSnapshot(assetId, date,{key:`snapshot:${assetUuid}:${date}`});}
+      catch(error){recovery.resume();throw error;}
       await afterWrite();
     });
   };
@@ -151,6 +161,7 @@ export default function AddRecordModal() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
+        <DraftRecoveryNotice recovery={recovery}/>
         <View style={shared.card}>
           <Text style={shared.sectionTitle}>
             {accountName} · {assetName}

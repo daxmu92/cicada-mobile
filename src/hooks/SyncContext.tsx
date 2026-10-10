@@ -1,3 +1,4 @@
+import type { SyncPhase } from '../sync/diagnostics';
 import {
   createContext,
   ReactNode,
@@ -35,6 +36,9 @@ type SyncContextValue = {
   status: SyncStatus;
   lastSyncedAt: number | null;
   lastError: string | null;
+  phase:SyncPhase|null;
+  lastAttemptAt:number|null;
+  lastDurationMs:number|null;
   testConnection: (config: WebDavConfig) => Promise<void>;
   connect: (config: WebDavConfig) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -48,7 +52,7 @@ const SyncContext = createContext<SyncContextValue>({
   connected: false,
   status: 'idle',
   lastSyncedAt: null,
-  lastError: null,
+  lastError: null,phase:null,lastAttemptAt:null,lastDurationMs:null,
   testConnection: noop,
   connect: noop,
   disconnect: noop,
@@ -69,6 +73,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState<SyncStatus>('idle');
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [phase,setPhase]=useState<SyncPhase|null>(null);
+  const [lastAttemptAt,setLastAttemptAt]=useState<number|null>(null);
+  const [lastDurationMs,setLastDurationMs]=useState<number|null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
   const refreshMeta = useCallback(async () => {
@@ -82,7 +89,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsub = syncScheduler.subscribe((s) => {
       setStatus(s.status);
-      setLastError(s.lastError);
+      setLastError(s.lastError);setPhase(s.phase??null);setLastAttemptAt(s.lastAttemptAt??null);setLastDurationMs(s.lastDurationMs??null);
       if (s.status === 'ok') void refreshMeta();
     });
     return unsub;
@@ -151,7 +158,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     await syncScheduler.runExclusive(async () => { await clearCredentials(); });
     setConnected(false);
     setStatus('idle');
-    setLastError(null);
+    setLastError(null);setPhase(null);
   }, []);
 
   const overwriteCloud = useCallback(async () => {
@@ -177,7 +184,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         connected,
         status,
         lastSyncedAt,
-        lastError,
+        lastError,phase,lastAttemptAt,lastDurationMs,
         testConnection,
         connect,
         disconnect,

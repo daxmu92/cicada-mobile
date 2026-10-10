@@ -87,6 +87,8 @@ export async function migrate(db: CicadaDB): Promise<void> {
     );
 
     -- Local recovery copies do not travel in the cloud sync document.
+    CREATE TABLE IF NOT EXISTS local_draft (key TEXT PRIMARY KEY, content TEXT NOT NULL);
+
     CREATE TABLE IF NOT EXISTS local_backup (
       id INTEGER PRIMARY KEY,
       created_at TEXT NOT NULL,
@@ -172,6 +174,7 @@ export async function migrate(db: CicadaDB): Promise<void> {
 
 export async function resetSchema(db: CicadaDB): Promise<void> {
   await db.execAsync(`
+    DROP TABLE IF EXISTS local_draft;
     DROP TABLE IF EXISTS tran;
     DROP TABLE IF EXISTS asset_snapshot;
     DROP TABLE IF EXISTS asset;

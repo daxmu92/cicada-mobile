@@ -4,7 +4,16 @@ mod credentials;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  tauri::Builder::default()
+  let builder = tauri::Builder::default();
+  #[cfg(desktop)]
+  let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
+    if let Some(window) = app.get_webview_window("main") {
+      let _ = window.unminimize();
+      let _ = window.show();
+      let _ = window.set_focus();
+    }
+  }));
+  builder
         .manage(transactions::Transactions::default())
         .on_page_load(|window, payload| {
             if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
@@ -26,6 +35,13 @@ pub fn run() {
     .plugin(tauri_plugin_http::init())
     .plugin(tauri_plugin_store::Builder::default().build())
     .setup(|app| {
+      let handle = app.handle().clone();
+      tauri::async_runtime::spawn(async move {
+        loop {
+          tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+          handle.state::<transactions::Transactions>().abort_idle(std::time::Duration::from_secs(60)).await;
+        }
+      });
       #[cfg(desktop)]
       if let Some(window) = app.get_webview_window("main") {
         window.set_title(&format!("{} {}", app.package_info().name, app.package_info().version))?;
@@ -44,6 +60,12 @@ pub fn run() {
       }
       Ok(())
     })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|app, event| {
+      #[cfg(desktop)]
+      if let tauri::RunEvent::WindowEvent { label, event: tauri::WindowEvent::Destroyed, .. } = event {
+        if label == "main" { app.exit(0); }
+      }
+    });
 }
