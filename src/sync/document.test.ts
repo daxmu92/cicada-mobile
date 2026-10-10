@@ -52,3 +52,10 @@ test('parseDocument rejects missing tombstones array', () => {
   delete doc.tombstones;
   assert.throws(() => parseDocument(JSON.stringify(doc)), /tombstones/);
 });
+
+test('invalid sync row is rejected before it can modify a ledger', () => {
+  const doc = sampleDoc(); doc.tables.account.push({uuid:'invalid'} as any);
+  assert.throws(()=>parseDocument(JSON.stringify(doc)),/name/);
+  const bad = sampleDoc();bad.tables.snapshot[0].date='2026-99';
+  assert.throws(()=>parseDocument(JSON.stringify(bad)),/month/);
+});

@@ -1,5 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { useObservationMonth } from '../../src/hooks/use-observation-month';
+import { getLedgerEpoch } from '../../src/ledger/mode';
+import { filterTransactions } from '../../src/utils/transaction-filter';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +15,7 @@ import {
 } from '../../src/db/tran-repo';
 import {
   currentYearMonth,
+  currentDate,
   prevYearMonth,
   nextYearMonth,
   formatMonthYear,
@@ -23,36 +30,58 @@ type Tab = 'list' | 'breakdown';
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { desktop } = useDesktopLayout();
+  const [observationMonth,setObservationMonth]=useObservationMonth();
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
+  const epoch=getLedgerEpoch();
+  const [loadedEpoch,setLoadedEpoch]=useState(-1);
+  const [loadedMonth,setLoadedMonth]=useState('');
   const { fmt } = useFormat();
   const locale = useLocale();
   const { gain, loss } = useSemanticColors();
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
-  const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [mobileMonth, setMobileMonth] = useState(currentYearMonth());
+  const selectedMonth=desktop?observationMonth:mobileMonth;
+  const setSelectedMonth=desktop?setObservationMonth:setMobileMonth;
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totals, setTotals] = useState({ income: 0, outlay: 0 });
+  const [search,setSearch]=useState('');
+  const [typeFilter,setTypeFilter]=useState<'ALL'|'INCOME'|'OUTLAY'>('ALL');
+  const [tagFilter,setTagFilter]=useState('');
   const [tab, setTab] = useState<Tab>('list');
 
+  useEffect(()=>{setSearch('');setTypeFilter('ALL');setTagFilter('');},[epoch]);
+  const request = useRef(0);
   const loadData = useCallback(async () => {
+    const generation = ++request.current;
+    const capturedEpoch=getLedgerEpoch();
     const [txs, t] = await Promise.all([
       listTransactionsInMonth(selectedMonth),
       getIncomeOutlayTotalsForMonth(selectedMonth),
     ]);
+    if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
+    setLoadedEpoch(capturedEpoch);setLoadedMonth(selectedMonth);
     setTransactions(txs);
     setTotals(t);
   }, [selectedMonth]);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
+  const filtered=useMemo(()=>filterTransactions(transactions,{search,type:typeFilter,tag:tagFilter}),[transactions,search,typeFilter,tagFilter]);
+  const tags=useMemo(()=>Array.from(new Set(transactions.flatMap(row=>row.cat.split(',').map(tag=>tag.trim()).filter(Boolean)))).sort(),[transactions]);
+  const visibleTotals=filtered.reduce((sum,row)=>({...sum,[row.type==='INCOME'?'income':'outlay']:sum[row.type==='INCOME'?'income':'outlay']+row.value}),{income:0,outlay:0});
+  const shownTotals=(search.trim()||typeFilter!=='ALL'||tagFilter)?visibleTotals:totals;
   const breakdowns = useMemo(() => {
     const groupBy = (type: 'INCOME' | 'OUTLAY') => {
       const agg = new Map<string, number>();
-      transactions
+      filtered
         .filter((tx) => tx.type === type)
         .forEach((tx) => {
           const tags = tx.cat.split(',').map((t) => t.trim()).filter(Boolean);
@@ -67,11 +96,11 @@ export default function TransactionsScreen() {
       return Array.from(agg.entries()).map(([label, value]) => ({ label, value }));
     };
     return { income: groupBy('INCOME'), outlay: groupBy('OUTLAY') };
-  }, [transactions]);
+  }, [filtered]);
 
   const sections = useMemo(() => {
     const byDate = new Map<string, Transaction[]>();
-    for (const tx of transactions) {
+    for (const tx of filtered) {
       const list = byDate.get(tx.date);
       if (list) {
         list.push(tx);
@@ -86,15 +115,17 @@ export default function TransactionsScreen() {
         title: formatDate(date),
         data: [...items].sort((a, b) => b.id - a.id),
       }));
-  }, [transactions, locale]);
+  }, [filtered, locale]);
 
-  const net = totals.income - totals.outlay;
+  const net = shownTotals.income - shownTotals.outlay;
 
+  if(loadedEpoch!==epoch||loadedMonth!==selectedMonth)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
-    <View style={shared.screen}>
+    <View style={[shared.screen,desktop&&{paddingHorizontal:24}]}>
       <View style={{ padding: spacing.lg, paddingBottom: 0 }}>
-        <View style={[shared.card, styles.selectorCard]}>
+        {!desktop&&<View style={[shared.card, styles.selectorCard]}>
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel={t('common.previousMonth')}
             onPress={() => setSelectedMonth(prevYearMonth(selectedMonth))}
             style={styles.arrowBtn}>
             <Text style={styles.arrow}>‹</Text>
@@ -103,23 +134,30 @@ export default function TransactionsScreen() {
             {formatMonthYear(selectedMonth, locale)}
           </Text>
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel={t('common.nextMonth')}
             onPress={() => setSelectedMonth(nextYearMonth(selectedMonth))}
             style={styles.arrowBtn}>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
-        </View>
+        </View>}
 
+        <View style={shared.card}>
+          <TextInput accessibilityLabel={t('transactions.search')} placeholder={t('transactions.search')} value={search} onChangeText={setSearch} style={{color:shared.heading.color,padding:10}} />
+          <View style={{flexDirection:'row',gap:16,flexWrap:'wrap'}}>{(['ALL','INCOME','OUTLAY'] as const).map(type=><TouchableOpacity accessibilityRole="button" key={type} onPress={()=>setTypeFilter(type)}><Text style={typeFilter===type?shared.heading:shared.muted}>{t(type==='ALL'?'transactions.all':type==='INCOME'?'transactions.income':'transactions.outlay')}</Text></TouchableOpacity>)}</View>
+          <View style={{flexDirection:'row',gap:12,flexWrap:'wrap',marginTop:12}}><TouchableOpacity onPress={()=>setTagFilter('')}><Text style={shared.muted}>{t('transactions.allTags')}</Text></TouchableOpacity>{tags.map(tag=><TouchableOpacity accessibilityRole="button" accessibilityLabel={tag} key={tag} onPress={()=>setTagFilter(tag)}><Text style={tagFilter===tag?shared.heading:shared.muted}>{tag}</Text></TouchableOpacity>)}</View>
+          <Text style={shared.muted}>{t('transactions.filteredCount',{count:filtered.length})}</Text>
+        </View>
         <View style={styles.totalsRow}>
           <View style={[shared.card, styles.totalCard]}>
             <Text style={shared.sectionTitle}>{t('transactions.income')}</Text>
             <Text style={[styles.totalValue, { color: gain }]}>
-              {fmt(totals.income)}
+              {fmt(shownTotals.income)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>
             <Text style={shared.sectionTitle}>{t('transactions.outlay')}</Text>
             <Text style={[styles.totalValue, { color: loss }]}>
-              {fmt(totals.outlay)}
+              {fmt(shownTotals.outlay)}
             </Text>
           </View>
           <View style={[shared.card, styles.totalCard]}>
@@ -148,13 +186,14 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
+      {desktop&&tab==='list'&&<View testID="desktop-transaction-columns" style={{flexDirection:'row',gap:16,paddingHorizontal:16,paddingVertical:12,borderBottomWidth:1,borderColor:shared.card.backgroundColor}}>{([['desktop.transactionDate',110],['addTransaction.type',80],['desktop.transactionCategory',130],['desktop.transactionNote',0],['desktop.transactionValue',150]] as const).map(([key,width])=><Text key={key} style={[shared.muted,{width:width||undefined,flex:width?undefined:1,textAlign:key==='desktop.transactionValue'?'right':'left'}]}>{t(String(key))}</Text>)}</View>}
       {tab === 'list' ? (
         <SectionList
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: desktop?0:spacing.lg, paddingBottom: 100 }}
           sections={sections}
           keyExtractor={(t) => String(t.id)}
-          stickySectionHeadersEnabled={false}
+          stickySectionHeadersEnabled={desktop}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={shared.muted}>{t('transactions.noTransactions')}</Text>
@@ -165,9 +204,9 @@ export default function TransactionsScreen() {
           )}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[shared.card, styles.txRow]}
+              style={desktop?[styles.txRow,{backgroundColor:shared.card.backgroundColor,paddingHorizontal:16,paddingVertical:12,borderBottomWidth:1,borderColor:shared.screen.backgroundColor}]:[shared.card, styles.txRow]}
               onPress={() => router.push(`/modals/add-transaction?id=${item.id}`)}>
-              <View style={{ flex: 1 }}>
+              {desktop?<View style={{flex:1,flexDirection:'row',gap:16,alignItems:'center'}}><Text style={[styles.txDate,{width:110}]}>{item.date}</Text><Text style={{width:80,color:item.type==='INCOME'?gain:loss,fontSize:12}}>{t(item.type==='INCOME'?'transactions.income':'transactions.outlay')}</Text><Text style={[styles.txCat,{width:130}]} numberOfLines={1}>{item.cat||'—'}</Text><Text style={[styles.txNote,{flex:1}]} numberOfLines={2}>{item.note||'—'}</Text></View>:<View style={{ flex: 1 }}>
                 <View style={styles.txHeader}>
                   <Text style={styles.txType}>
                     {item.type === 'INCOME' ? '+' : '−'}
@@ -176,10 +215,10 @@ export default function TransactionsScreen() {
                 </View>
                 {item.cat ? <Text style={styles.txCat}>{item.cat}</Text> : null}
                 {item.note ? <Text style={styles.txNote}>{item.note}</Text> : null}
-              </View>
+              </View>}
               <Text
                 style={[
-                  styles.txValue,
+                  styles.txValue,desktop&&{width:150,textAlign:'right',fontVariant:['tabular-nums']},
                   { color: item.type === 'INCOME' ? gain : loss },
                 ]}>
                 {fmt(item.value)}
@@ -222,7 +261,8 @@ export default function TransactionsScreen() {
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push(`/modals/add-transaction?date=${selectedMonth}-01`)}>
+        accessibilityRole="button" accessibilityLabel={t('nav.addTransaction')}
+        onPress={() => router.push(`/modals/add-transaction?date=${selectedMonth === currentYearMonth() ? currentDate() : selectedMonth + '-01'}`)}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </View>
@@ -247,6 +287,7 @@ const makeStyles = (c: ThemeColors) =>
       fontWeight: '600',
     },
     monthLabel: {
+      color: c.ink,
       fontSize: 16,
       fontWeight: '600',
     },

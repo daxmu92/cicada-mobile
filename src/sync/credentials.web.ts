@@ -1,36 +1,40 @@
+import { invoke } from '@tauri-apps/api/core';
 import type { WebDavConfig } from './providers/webdav';
+import { createAsyncLock } from '../utils/async-lock';
 
-const STORE_FILE = 'cicada-credentials.json';
-const KEY = 'webdav';
-
+const lock = createAsyncLock();
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
-
-async function openStore() {
+async function legacyStore() {
   const { load } = await import('@tauri-apps/plugin-store');
-  // `defaults` is required by StoreOptions (plugin-store v2.4); we persist
-  // explicitly via store.save() after every mutation regardless of autoSave.
-  return load(STORE_FILE, { defaults: {}, autoSave: true });
+  return load('cicada-credentials.json', { defaults: {}, autoSave: false });
 }
-
-export async function loadCredentials(): Promise<WebDavConfig | null> {
-  if (!isTauri()) return null; // plain browser: sync disabled, no credentials
-  const store = await openStore();
-  const val = await store.get<WebDavConfig>(KEY);
-  return val ?? null;
+export function loadCredentials(): Promise<WebDavConfig | null> {
+  return lock.run(async () => {
+    if (!isTauri()) return null;
+    const secret = await invoke<string | null>('cicada_load_credentials');
+    if (secret) return JSON.parse(secret) as WebDavConfig;
+    const store = await legacyStore();
+    const config = await store.get<WebDavConfig>('webdav');
+    if (!config) return null;
+    // Remove the plaintext only after the OS credential store accepted it.
+    await invoke('cicada_save_credentials', { secret: JSON.stringify(config) });
+    await store.delete('webdav'); await store.save();
+    return config;
+  });
 }
-
-export async function saveCredentials(config: WebDavConfig): Promise<void> {
-  if (!isTauri()) return;
-  const store = await openStore();
-  await store.set(KEY, config);
-  await store.save();
+export function saveCredentials(config: WebDavConfig): Promise<void> {
+  return lock.run(async () => {
+    if (!isTauri()) return;
+    await invoke('cicada_save_credentials', { secret: JSON.stringify(config) });
+    const store = await legacyStore(); await store.delete('webdav'); await store.save();
+  });
 }
-
-export async function clearCredentials(): Promise<void> {
-  if (!isTauri()) return;
-  const store = await openStore();
-  await store.delete(KEY);
-  await store.save();
+export function clearCredentials(): Promise<void> {
+  return lock.run(async () => {
+    if (!isTauri()) return;
+    await invoke('cicada_clear_credentials');
+    const store = await legacyStore(); await store.delete('webdav'); await store.save();
+  });
 }

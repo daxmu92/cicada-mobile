@@ -102,7 +102,7 @@ export function AssetBarChart({ data, color, diverging = false, height = 220 }: 
           xAxisColor={c.border}
           rulesColor={c.border}
           rulesType="solid"
-          yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
+          yAxisTextStyle={{ color: c.muted, fontSize: 12 }}
           formatYLabel={(label: string) => abbrev(Number(label))}
           yAxisLabelWidth={Y_AXIS_WIDTH}
           rotateLabel

@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { checkDesktopUpdates, desktopUpdatesAvailable } from '../../src/components/DesktopUpdates';
+import { useLedgerMode } from '../../src/ledger/mode';
+import { switchLedger } from '../../src/services/demo-ledger';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -11,7 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { exportBackup, importBackup } from '../../src/services/backup';
+import { exportBackup, importBackup, exportRecoveryBackup } from '../../src/services/backup';
 import { loadSampleData } from '../../src/services/sample-data';
 import { useSettings, useShared, useTheme, useThemedStyles } from '../../src/hooks/SettingsContext';
 import type { GainColor } from '../../src/hooks/SettingsContext';
@@ -43,6 +47,11 @@ const THEME_LABEL_KEYS: Record<ThemeName, string> = {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { desktop } = useDesktopLayout();
+  const scroll=useRef<ScrollView>(null);
+  const anchors=useRef<Record<string,number>>({});
+  const [section,setSection]=useState('settings.preferences');
+  const mode=useLedgerMode();
   const { t } = useTranslation();
   const {
     currency,
@@ -60,6 +69,25 @@ export default function SettingsScreen() {
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
   const [loading, setLoading] = useState(false);
+  const [preferenceStatus,setPreferenceStatus]=useState<'idle'|'saving'|'saved'|'error'>('idle');
+  const [preferenceError,setPreferenceError]=useState('');
+  const preferenceGeneration=useRef(0);
+
+  useEffect(()=>{preferenceGeneration.current++;setPreferenceStatus('idle');},[mode]);
+
+  const reportSaveError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    const key = /SQLITE_BUSY|SQLITE_LOCKED|database (?:is )?locked/i.test(message)
+      ? 'common.databaseBusy' : 'common.saveFailed';
+    if(desktop){setPreferenceError(t(key));setPreferenceStatus('error');}
+    else notify(t('common.error'), t(key));
+  };
+
+  const savePreference=async(action:()=>Promise<void>)=>{
+    const generation=++preferenceGeneration.current;setPreferenceStatus('saving');
+    try{await action();if(generation===preferenceGeneration.current)setPreferenceStatus('saved');}
+    catch(error){if(generation===preferenceGeneration.current)reportSaveError(error);}
+  };
 
   const confirmReset = () => {
     router.push('/modals/erase-data');
@@ -68,25 +96,32 @@ export default function SettingsScreen() {
   const confirmLoadSample = async () => {
     const ok = await confirmAsync(
       t('settings.loadSampleTitle'),
-      t('settings.loadSampleBody'),
+      mode==='demo' ? t('demo.resetBody') : t('demo.enterBody'),
       t('settings.loadConfirm'),
       true
     );
     if (!ok) return;
     setLoading(true);
     try {
-      await loadSampleData();
+      if(mode==='live') await switchLedger('demo');
+      else await loadSampleData();
       notify(t('settings.doneTitle'), t('settings.sampleLoaded'));
     } catch (e: any) {
-      notify(t('common.error'), e?.message ?? t('settings.loadSampleFailed'));
+      notify(t('common.error'), e?.message==='LEDGER_CHANGED'?t('demo.changed'):e?.message ?? t('settings.loadSampleFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
-      <Text style={shared.sectionTitle}>{t('settings.preferences')}</Text>
+    <View style={[shared.screen,{flexDirection:'row'}]}>
+    {desktop&&<View testID="desktop-settings-sections" style={{width:180,padding:20,gap:8,borderRightWidth:1,borderColor:c.border}}>{['settings.preferences','desktop.appearance','settings.cloudSync','settings.manage','settings.backup','settings.data'].map(key=><TouchableOpacity accessibilityRole="button" key={key} onPress={()=>{setSection(key);scroll.current?.scrollTo({y:anchors.current[key]??0,animated:false});}} style={{padding:12,borderRadius:8,backgroundColor:section===key?c.accentSoft:undefined}}><Text style={{color:section===key?c.accent:c.inkSoft}}>{t(key)}</Text></TouchableOpacity>)}</View>}
+    <View style={{flex:1}}>
+      {desktop&&preferenceStatus!=='idle'&&<View testID="desktop-settings-feedback" accessibilityRole={preferenceStatus==='error'?'alert':undefined} style={{padding:12,borderRadius:8,backgroundColor:c.accentSoft,marginHorizontal:24,marginTop:16}}><Text style={{color:c.ink}}>{preferenceStatus==='error'?preferenceError:t(preferenceStatus==='saving'?'common.working':'desktop.saved')}</Text></View>}
+    <ScrollView ref={scroll} style={shared.screen} contentContainerStyle={[shared.scrollContent,desktop&&{maxWidth:1000,padding:32}]}>
+
+      {mode==='demo' && <TouchableOpacity accessibilityRole="button" disabled={loading} style={shared.card} onPress={() => { void switchLedger('live').catch(()=>notify(t('common.error'),t('common.loadFailed'))); }}><Text style={{color:c.primary}}>{t('demo.return')}</Text></TouchableOpacity>}
+      <View onLayout={e=>{anchors.current['settings.preferences']=e.nativeEvent.layout.y;}}><Text style={shared.sectionTitle}>{t('settings.preferences')}</Text></View>
       <View style={shared.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleText}>
@@ -95,7 +130,7 @@ export default function SettingsScreen() {
               {t('settings.forwardFillHelp')}
             </Text>
           </View>
-          <Switch value={forwardFill} onValueChange={setForwardFill} />
+          <Switch value={forwardFill} disabled={loading} onValueChange={(v)=>{void savePreference(()=>setForwardFill(v));}} />
         </View>
       </View>
       <View style={shared.card}>
@@ -105,7 +140,7 @@ export default function SettingsScreen() {
           {CURRENCY_OPTIONS.map((symbol) => (
             <TouchableOpacity
               key={symbol}
-              onPress={() => setCurrency(symbol)}
+              disabled={loading} onPress={() => { void savePreference(()=>setCurrency(symbol)); }}
               style={[
                 styles.currencyChip,
                 currency === symbol && styles.currencyChipActive,
@@ -121,6 +156,7 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
+      {desktop&&<View onLayout={e=>{anchors.current['desktop.appearance']=e.nativeEvent.layout.y;}}><Text style={shared.sectionTitle}>{t('desktop.appearance')}</Text></View>}
       <View style={shared.card}>
         <Text style={styles.rowTitle}>{t('settings.colorForGains')}</Text>
         <Text style={shared.muted}>
@@ -132,7 +168,7 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={opt.value}
-                onPress={() => setGainColor(opt.value)}
+                disabled={loading} onPress={() => { void savePreference(()=>setGainColor(opt.value)); }}
                 style={[
                   styles.currencyChip,
                   styles.gainChip,
@@ -158,7 +194,7 @@ export default function SettingsScreen() {
           {LANGUAGES.map((lang) => (
             <TouchableOpacity
               key={lang}
-              onPress={() => setLanguage(lang)}
+              disabled={loading} onPress={() => { void savePreference(()=>setLanguage(lang)); }}
               style={[
                 styles.currencyChip,
                 styles.gainChip,
@@ -186,7 +222,7 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={name}
-                onPress={() => setTheme(name)}
+                disabled={loading} onPress={() => { void savePreference(()=>setTheme(name)); }}
                 style={[
                   styles.themeSwatch,
                   { backgroundColor: p.bg, borderColor: active ? p.accent : c.border },
@@ -202,16 +238,17 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <CloudSyncSection />
+      <View onLayout={e=>{anchors.current['settings.cloudSync']=e.nativeEvent.layout.y;}}><CloudSyncSection /></View>
+      {desktopUpdatesAvailable() && <TouchableOpacity accessibilityRole="button" style={shared.card} onPress={checkDesktopUpdates}><Text style={{color:c.primary}}>{t('updates.check')}</Text></TouchableOpacity>}
 
-      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.manage')}</Text>
+      <View onLayout={e=>{anchors.current['settings.manage']=e.nativeEvent.layout.y;}}><Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.manage')}</Text></View>
       <Row
         title={t('settings.accountsAssets')}
         subtitle={t('settings.accountsAssetsSub')}
         onPress={() => router.push('/modals/manage-accounts')}
       />
 
-      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.backup')}</Text>
+      <View onLayout={e=>{anchors.current['settings.backup']=e.nativeEvent.layout.y;}}><Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.backup')}</Text></View>
       <Row
         title={t('settings.exportData')}
         subtitle={t('settings.exportDataSub')}
@@ -235,7 +272,7 @@ export default function SettingsScreen() {
           // user gesture that importBackup() needs.
           const proceed = await confirmAsync(
             t('settings.importTitle'),
-            t('settings.importBody'),
+            mode==='demo'?t('demo.importBody'):t('settings.importBody'),
             t('settings.importConfirm'),
             true
           );
@@ -249,7 +286,7 @@ export default function SettingsScreen() {
             );
           } catch (e: any) {
             if (e?.message !== 'CANCELLED') {
-              notify(t('settings.importFailedTitle'), e?.message ?? t('settings.importFailedBody'));
+              notify(t('settings.importFailedTitle'), e?.message==='LEDGER_CHANGED'?t('demo.changed'):e?.message ?? t('settings.importFailedBody'));
             }
           } finally {
             setLoading(false);
@@ -258,9 +295,16 @@ export default function SettingsScreen() {
         disabled={loading}
       />
 
-      <Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.data')}</Text>
+      <Row title={t('settings.exportRecovery')} subtitle={t('settings.exportRecoverySub')} disabled={loading} onPress={async () => {
+        setLoading(true);
+        try { await exportRecoveryBackup(); }
+        catch (e) { notify(t('common.error'), e instanceof Error && e.message === 'NO_RECOVERY_BACKUP' ? t('settings.noRecovery') : t('settings.exportFailedBody')); }
+        finally { setLoading(false); }
+      }} />
+
+      <View onLayout={e=>{anchors.current['settings.data']=e.nativeEvent.layout.y;}}><Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.data')}</Text></View>
       <Row
-        title={t('settings.loadSample')}
+        title={t(mode==='demo'?'demo.reset':'demo.enter')}
         subtitle={t('settings.loadSampleSub')}
         onPress={confirmLoadSample}
         disabled={loading}
@@ -280,6 +324,8 @@ export default function SettingsScreen() {
         </View>
       )}
     </ScrollView>
+    </View>
+    </View>
   );
 }
 
@@ -300,6 +346,7 @@ function Row({
   const styles = useThemedStyles(makeStyles);
   return (
     <TouchableOpacity
+      accessibilityRole="button" accessibilityLabel={title}
       onPress={onPress}
       disabled={disabled}
       style={[shared.card, styles.row, disabled && { opacity: 0.5 }]}>

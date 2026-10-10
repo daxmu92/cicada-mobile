@@ -1,0 +1,67 @@
+name: Checks
+on:
+  push:
+  pull_request:
+concurrency:
+  group: checks-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Real HTTPS WebDAV acceptance
+        run: |
+          python3 -m venv .venv-webdav
+          .venv-webdav/bin/pip install -r scripts/fixtures/requirements-webdav.txt
+          CICADA_DAV_PYTHON=.venv-webdav/bin/python npm run test:webdav:local
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run export:web
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - run: |
+          node scripts/serve-web.js 8085 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:8085/ && break || sleep 1; done
+          npm run test:web
+          npm run test:observation
+          npm run test:desktop-layout
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm test
+      - run: cargo test --release --locked --manifest-path src-tauri/Cargo.toml
+      - name: Build installers (sign updates when repository secret is available)
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ($env:TAURI_SIGNING_PRIVATE_KEY) {
+            npm run tauri:build -- --ci
+          } else {
+            '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content -Encoding utf8NoBOM unsigned-build.json
+            npm run tauri:build -- --ci --config unsigned-build.json
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Actual isolated Windows WebView2 acceptance
+        run: npm run test:desktop
+      - run: node scripts/release-artifacts.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-installers
+          path: src-tauri/target/release/bundle/

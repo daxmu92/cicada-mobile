@@ -12,7 +12,16 @@
     "archived": "已归档",
     "error": "错误",
     "working": "处理中…",
-    "today": "今天"
+    "today": "今天",
+    "saving": "保存中…",
+    "databaseBusy": "账本正被占用，此设置未保存。请关闭其他 Cicada 窗口（包括旧版本）后重试。",
+    "saveFailed": "保存失败，请重试。",
+    "invalidAmount": "请输入完整金额，最多两位小数；千位分隔符须正确。",
+    "retry": "重试",
+    "loading": "正在加载账本…",
+    "loadFailed": "无法加载账本，请重试。",
+    "previousMonth": "上个月",
+    "nextMonth": "下个月"
   },
   "nav": {
     "home": "首页",
@@ -34,12 +43,23 @@
     "greetingMorning": "早上好",
     "greetingAfternoon": "下午好",
     "greetingEvening": "晚上好",
-    "thisMonth": "本月"
+    "thisMonth": "本月",
+    "noSnapshot": "该月没有净值记录",
+    "noComparison": "缺少本月或上月数据，无法比较增长",
+    "estimated": "包含沿用上次记录的估值；归档资产仅计入实际记录。"
   },
   "assets": {
     "noAccountsTitle": "还没有账户",
     "noAccountsBody": "前往设置创建账户并添加资产。",
-    "noAssets": "暂无资产"
+    "noAssets": "暂无资产",
+    "search": "搜索资产或账户",
+    "allCategories": "全部分类",
+    "sortName": "排序：名称",
+    "sortValue": "排序：净值从高到低",
+    "noMatches": "没有符合条件的资产",
+    "assetColumn": "资产 / 分类",
+    "latestRecord": "最近记录",
+    "carriedFrom": "沿用 {{date}} 的记录"
   },
   "batchEntry": {
     "enter": "录入",
@@ -66,7 +86,11 @@
     "incomeByCategory": "收入分类",
     "outlayByCategory": "支出分类",
     "noIncome": "本月暂无收入",
-    "noOutlay": "本月暂无支出"
+    "noOutlay": "本月暂无支出",
+    "search": "搜索备注、标签、日期或金额",
+    "all": "全部",
+    "allTags": "全部标签",
+    "filteredCount": "当前筛选：{{count}} 笔"
   },
   "assetDetail": {
     "netWorth": "净值",
@@ -176,7 +200,7 @@
     "resetConfirm": "重置",
     "resetDone": "数据库已重置。",
     "loadSampleTitle": "加载示例数据",
-    "loadSampleBody": "这将用生成的示例账户、资产、快照和交易替换所有当前数据。",
+    "loadSampleBody": "这将替换当前账本，并同步到云端及其他已连接设备。替换前会保存本机自动备份。",
     "loadConfirm": "加载",
     "doneTitle": "完成",
     "sampleLoaded": "示例数据已加载。请查看首页和资产标签页。",
@@ -184,7 +208,7 @@
     "exportFailedTitle": "导出失败",
     "exportFailedBody": "无法导出",
     "importTitle": "导入备份",
-    "importBody": "这将替换所有现有数据。是否继续？",
+    "importBody": "这将替换当前账本，并同步到其他已连接设备。导入前会保存自动备份；失败时保留原账本。是否继续？",
     "importConfirm": "导入",
     "importedTitle": "导入成功",
     "importedBody": "账户：{{accounts}}\n资产：{{assets}}\n快照：{{snapshots}}\n交易：{{transactions}}",
@@ -221,7 +245,10 @@
     "themeSeaGlass": "海玻璃",
     "themeDuskBlue": "暮蓝",
     "themeSky": "天青白",
-    "themeLilac": "藕荷白"
+    "themeLilac": "藕荷白",
+    "exportRecovery": "导出最近的自动备份",
+    "exportRecoverySub": "导入或加载示例前自动保留，最多五份；清空数据会删除这些备份。",
+    "noRecovery": "暂无自动备份。"
   },
   "eraseData": {
     "title": "清除所有数据",
@@ -235,7 +262,8 @@
   "charts": {
     "noData": "暂无数据",
     "noDataToDisplay": "暂无数据显示",
-    "noDataYet": "暂无数据"
+    "noDataYet": "暂无数据",
+    "liabilities": "负债：{{value}}（资产比例按正资产计算）"
   },
   "analysis": {
     "composition": "构成",
@@ -248,5 +276,104 @@
     "noPositiveHoldings": "暂无正值持仓可展示",
     "calendarTitle": "年历",
     "calendarIntro": "点击月份查看。"
+  },
+  "demo": {
+    "banner": "示例账本 · 数据独立 · 云同步已关闭",
+    "enter": "打开示例账本",
+    "enterBody": "示例使用独立账本，不会替换你的数据，也不会同步到云端。可以随时返回个人账本。",
+    "reset": "重置示例数据",
+    "resetBody": "仅重置示例账本中的数据。",
+    "return": "返回我的账本",
+    "changed": "账本已切换，请重新操作。",
+    "importBody": "只替换示例账本，不影响个人账本或云端。继续？"
+  },
+  "drafts": {
+    "title": "未保存的修改",
+    "body": "放弃未保存的修改并离开？"
+  },
+  "reconcile": {
+    "title": "检查收益差额",
+    "help": "按“本次净值 − 前次记录净值 − 本次流入”检查收益，首条记录不重算。跨缺失月份使用上次记录。手工收益可能有不同口径，请核对预览后再确认。确认时会保存自动备份。",
+    "clean": "没有发现收益差额。",
+    "previous": "前次记录：{{date}}",
+    "apply": "确认重算收益",
+    "confirm": "按预览更新 {{count}} 条收益记录？净值和流入不会被改写。",
+    "stale": "记录已经变化，请重新核对预览。",
+    "offer": "后续记录存在收益差额，是否查看预览？"
+  },
+  "updates": {
+    "check": "检查更新",
+    "available": "新版本 {{version}} 可用",
+    "install": "下载并安装",
+    "confirm": "应用将关闭以安装更新，是否继续？",
+    "latest": "当前已是最新发布版本。",
+    "failed": "无法检查或安装更新，请稍后重试。",
+    "draft": "请先保存或放弃正在编辑的内容。",
+    "busy": "正在准备更新…"
+  },
+  "observation": {
+    "coverage": "{{month}} · 当前未归档资产 {{count}} / {{total}} 项有记录",
+    "latest": "最新资产记录：{{date}}",
+    "transactionLatest": "最新交易录入：{{date}}",
+    "goLatest": "查看最新记录月份 · {{month}}",
+    "coverageHelp": "覆盖数按当前未归档资产计算，不推测历史持有状态。未录入不等于零，沿用旧值不算本月新记录。",
+    "comparableChange": "可比资产净值变化",
+    "comparableCount": "两个月均有记录的 {{count}} 项资产",
+    "explainChange": "净值变化从哪里来",
+    "comparableInflow": "记录净流入",
+    "comparableProfit": "记录收益",
+    "residual": "未解释差额",
+    "comparisonHelp": "只比较相邻两个月均有实际记录的 {{count}} 项资产：变化 = 净流入 + 收益 + 未解释差额。沿用旧值不参与比较，资产覆盖变化不视作投资收益。",
+    "notRecorded": "未录入",
+    "trendHelp": "点击数据点查看金额。缺失月份断线；金色点表示按当前未归档资产计算，记录有缺项。",
+    "partial": "按当前未归档资产计算，记录有缺项",
+    "calendarHelp": "日历只比较相邻月份均有实际记录的资产，沿用值不参与变化计算。"
+  },
+  "draftRecovery": {
+    "found": "发现未保存的本地草稿 · {{date}}",
+    "changed": "原记录已经变化或资产不再匹配，不能自动恢复。可以先查看草稿内容，再决定是否丢弃。",
+    "restore": "恢复草稿",
+    "discard": "丢弃已存草稿",
+    "preview": "查看草稿内容",
+    "saving": "正在保存本地恢复草稿…",
+    "saved": "本地恢复草稿已保存",
+    "error": "草稿恢复未能完成，请保留当前输入，检查账本状态后重试。"
+  },
+  "syncDiagnostics": {
+    "attempt": "最近尝试：{{date}}",
+    "duration": "耗时 {{seconds}} 秒",
+    "locked": "账本被占用，请关闭其他 Cicada 窗口后重试。",
+    "auth": "请检查 WebDAV 账号与应用密码，然后重新连接。",
+    "network": "请检查网络和服务器是否可用，本地修改仍待同步。",
+    "conflict": "其他设备修改了云端数据，请重试同步以重新合并。",
+    "version": "云端格式不受当前版本支持，请更新应用后重试。",
+    "document": "无法读取云端账本，请保留本地备份并检查云端文件。",
+    "generic": "同步失败，请检查服务器配置后重试；本地待同步修改仍保留。",
+    "phase": {
+      "readingRemote": "正在读取云端账本…",
+      "readingLocal": "正在读取本地记录…",
+      "merging": "正在比较并合并记录…",
+      "writingLocal": "正在应用云端修改…",
+      "uploading": "正在上传修改…",
+      "retrying": "云端数据已变化，正在重试…"
+    }
+  },
+  "desktop": {
+    "workspace": "财务总览与记录",
+    "mainLedger": "主账本",
+    "demoLedger": "演示账本",
+    "localLedger": "本地账本",
+    "syncReady": "同步已连接",
+    "assetDetails": "资产详情",
+    "openDetails": "打开完整详情",
+    "closeDetails": "关闭详情",
+    "recordMonth": "录入本月数据",
+    "transactionDate": "日期",
+    "transactionCategory": "分类",
+    "transactionNote": "备注",
+    "transactionValue": "金额",
+    "appearance": "外观",
+    "dataManagement": "数据管理",
+    "saved": "已保存"
   }
 }

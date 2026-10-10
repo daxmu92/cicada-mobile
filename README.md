@@ -1,14 +1,18 @@
 # 🐝 CicadaFinScape Mobile
 
-> A local-first, cross-platform personal finance tracker — track your net worth across accounts and assets, log income and expenses, and visualize trends over time. All data stays on your device.
+> A local-first, cross-platform personal finance tracker — track your net worth across accounts and assets, log income and expenses, and visualize trends over time. Data is stored on your device, with optional WebDAV sync on mobile and desktop.
 
-![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-blue)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web%20%7C%20Desktop-blue)
 ![Expo SDK](https://img.shields.io/badge/Expo-SDK%2054-000020?logo=expo)
 ![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)
 ![Storage](https://img.shields.io/badge/storage-SQLite%20(local--first)-003B57?logo=sqlite)
 
 Ported from the original [Streamlit app](https://github.com/daxmu92/CicadaFinScape).
+
+Desktop 0.2.7 uses a dedicated sidebar and toolbar, an asset inspector, transaction
+columns and inline settings feedback. Mobile retains bottom navigation. See
+[desktop workflows](docs/product-workflows.md#desktop-027-layout).
 
 ## Features
 
@@ -69,7 +73,7 @@ On WSL2, Expo may advertise the WSL virtual IP, which phones can't reach. Two op
 
 ```
 app/                      Expo Router screens
-  (tabs)/                 Home, Assets, Transactions, Settings
+  (tabs)/                 Home, Assets, Analysis, Transactions, Settings
   asset/[id].tsx          Asset detail (history + chart)
   modals/                 add-record, add-transaction, manage-accounts, edit-asset
 src/
@@ -82,11 +86,25 @@ src/
 scripts/migrate-streamlit.js   one-off converter (see below)
 ```
 
-## Type-checking
+## Checks
 
 ```bash
+npm test
 npx tsc --noEmit
+npm run lint
+npm run export:web
 ```
+
+Optional WebDAV synchronization, desktop build instructions, automatic recovery
+backups and repair semantics are documented in [Reliability changes](docs/reliability-changes.md)
+and [Windows builds](docs/windows-build.md). Real HTTPS WebDAV and isolated installer
+validation are documented in [Acceptance checks](docs/acceptance-checks.md).
+Desktop 0.2.2 adds [Demo, reconciliation, search and draft protection](docs/product-workflows.md),
+with [dependency review](docs/dependency-security.md) and
+[update/release preparation](docs/release-preparation.md).
+Desktop 0.2.6 adds shared observation months, data coverage, comparable changes,
+calendar gaps in trends, asset filters, local draft recovery and single-instance
+Windows startup. See [Product workflows](docs/product-workflows.md) for behavior.
 
 ## Building a standalone app (EAS)
 

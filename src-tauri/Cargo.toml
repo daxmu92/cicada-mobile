@@ -1,12 +1,12 @@
 [package]
 name = "app"
-version = "0.2.0"
+version = "0.2.7"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
 repository = ""
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -26,3 +26,12 @@ tauri-plugin-log = "2"
 tauri-plugin-sql = { version = "2.4.0", features = ["sqlite"] }
 tauri-plugin-http = "2"
 tauri-plugin-store = "2"
+
+sqlx = { version = "0.8.6", default-features = false, features = ["sqlite", "runtime-tokio"] }
+tokio = { version = "1", features = ["sync", "time"] }
+keyring = { version = "3.6.3", features = ["windows-native", "apple-native", "sync-secret-service"] }
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "~2.4.5"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"

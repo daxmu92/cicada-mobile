@@ -1,3 +1,5 @@
+import {settingsVersion,subscribeSettings,serverDataVersion} from '../db/changes';
+import { getLedgerMode } from '../ledger/mode';
 import {
   createContext,
   ReactNode,
@@ -5,7 +7,9 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 
 import i18n, {
@@ -14,7 +18,8 @@ import i18n, {
   LOCALE_TAGS,
   type Language,
 } from '../i18n';
-import { getSetting, setSetting } from '../db/setting-repo';
+import { useDataVersion } from './use-data-version';
+import { getAllSettings, setSetting } from '../db/setting-repo';
 import {
   formatCurrency,
   formatCurrencyCompact,
@@ -44,6 +49,8 @@ type SettingsContextValue = {
   theme: ThemeName;
   setTheme: (name: ThemeName) => Promise<void>;
   ready: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
 };
 
 const DEFAULT_CURRENCY = '$';
@@ -64,6 +71,8 @@ const SettingsContext = createContext<SettingsContextValue>({
   theme: DEFAULT_THEME,
   setTheme: async () => {},
   ready: false,
+  error: null,
+  reload: async () => {},
 });
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -73,57 +82,68 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
   const [theme, setThemeState] = useState<ThemeName>(DEFAULT_THEME);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const version = useDataVersion();
+  const preferencesVersion=useSyncExternalStore(subscribeSettings,settingsVersion,serverDataVersion);
 
-  useEffect(() => {
-    (async () => {
-      const storedCurrency = await getSetting('currency');
-      if (storedCurrency) setCurrencyState(storedCurrency);
-      const storedForwardFill = await getSetting('forwardFill');
-      if (storedForwardFill != null) {
-        setForwardFillState(storedForwardFill === 'true');
-      }
-      const storedGainColor = await getSetting('gainColor');
-      if (storedGainColor === 'red' || storedGainColor === 'green') {
-        setGainColorState(storedGainColor);
-      }
-      const storedLanguage = await getSetting('language');
-      if (isLanguage(storedLanguage)) {
-        setLanguageState(storedLanguage);
-        if (i18n.language !== storedLanguage) {
-          await i18n.changeLanguage(storedLanguage);
-        }
-      }
-      const storedTheme = await getSetting('theme');
-      if (storedTheme && storedTheme in themes) {
-        setThemeState(storedTheme as ThemeName);
-      }
-      setReady(true);
-    })();
+  const request=useRef(0);
+  const reload = useCallback(async () => {
+    const generation=++request.current;const mode=getLedgerMode();
+    try {
+      const stored = await getAllSettings();
+      if(generation!==request.current||mode!==getLedgerMode())return;
+      setCurrencyState(stored.currency || DEFAULT_CURRENCY);
+      setForwardFillState(stored.forwardFill === 'true');
+      setGainColorState(stored.gainColor === 'red' ? 'red' : 'green');
+      const lang = isLanguage(stored.language) ? stored.language : DEFAULT_LANGUAGE;
+      setLanguageState(lang);
+      if(i18n.language!==lang)await i18n.changeLanguage(lang);
+      if(generation!==request.current||mode!==getLedgerMode())return;
+      if (typeof document !== 'undefined') document.documentElement.lang = lang;
+      setThemeState(stored.theme && Object.hasOwn(themes, stored.theme) ? stored.theme as ThemeName : DEFAULT_THEME);
+      setError(null); setReady(true);
+    } catch (e) {
+      if(generation!==request.current||mode!==getLedgerMode())return;
+      setError(e instanceof Error ? e.message : String(e));
+      throw e;
+    }
   }, []);
+  useEffect(() => { void reload().catch(() => {}); }, [reload, version, preferencesVersion]);
 
   const updateCurrency = useCallback(async (symbol: string) => {
+    const mode=getLedgerMode();
     await setSetting('currency', symbol);
+    if(mode!==getLedgerMode())return;
     setCurrencyState(symbol);
   }, []);
 
   const updateForwardFill = useCallback(async (v: boolean) => {
+    const mode=getLedgerMode();
     await setSetting('forwardFill', v ? 'true' : 'false');
+    if(mode!==getLedgerMode())return;
     setForwardFillState(v);
   }, []);
 
   const updateGainColor = useCallback(async (v: GainColor) => {
+    const mode=getLedgerMode();
     await setSetting('gainColor', v);
+    if(mode!==getLedgerMode())return;
     setGainColorState(v);
   }, []);
 
   const updateLanguage = useCallback(async (lang: Language) => {
+    const mode=getLedgerMode();
     await setSetting('language', lang);
-    await i18n.changeLanguage(lang);
+    if(mode!==getLedgerMode())return;
+    if(i18n.language!==lang)await i18n.changeLanguage(lang);
+    if (typeof document !== 'undefined') document.documentElement.lang = lang;
     setLanguageState(lang);
   }, []);
 
   const updateTheme = useCallback(async (name: ThemeName) => {
+    const mode=getLedgerMode();
     await setSetting('theme', name);
+    if(mode!==getLedgerMode())return;
     setThemeState(name);
   }, []);
 
@@ -140,7 +160,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setLanguage: updateLanguage,
         theme,
         setTheme: updateTheme,
-        ready,
+        ready, error, reload,
       }}>
       {children}
     </SettingsContext.Provider>

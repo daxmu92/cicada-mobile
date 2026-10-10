@@ -1,8 +1,11 @@
+import type { SyncPhase } from './diagnostics';
+import { getLedgerMode, type LedgerMode } from '../ledger/mode';
 import { createDebouncer } from './debounce';
+import { createAsyncLock } from '../utils/async-lock';
 
 export type SyncReason = 'launch' | 'write' | 'periodic' | 'lifecycle' | 'manual';
 export type SchedulerDeps = {
-  execute: (mode: 'full' | 'conditional') => Promise<void>;
+  execute: (mode: 'full' | 'conditional') => Promise<void | boolean>;
   now: () => number;
   schedule: (ms: number, fn: () => void) => unknown;
   cancel: (t: unknown) => void;
@@ -11,41 +14,63 @@ export type SchedulerDeps = {
   periodicMs: number;
 };
 export type Scheduler = {
-  markDirty(): void;
+  markDirty(mode?:LedgerMode): void;
   requestSync(reason: SyncReason): Promise<void>;
   start(): void;
   stop(): void;
   isDirty(): boolean;
+  runExclusive<T>(task: (sync: () => Promise<void>) => Promise<T>): Promise<T>;
 };
 
 export function createScheduler(deps: SchedulerDeps): Scheduler {
-  let dirty = false;
-  let inFlight = false;
+  let revision = 0;
+  let uploadedRevision = 0;
+  let inFlight: Promise<void> | null = null;
   let pending: SyncReason | null = null;
+  let waiters: (() => void)[] = [];
   let periodicTimer: unknown = null;
-
+  const lock = createAsyncLock();
+  const isDirty = () => revision !== uploadedRevision;
   const debouncer = createDebouncer(
     { delayMs: deps.debounceMs, maxWaitMs: deps.ceilingMs, now: deps.now, schedule: deps.schedule, cancel: deps.cancel },
     () => { void requestSync('write'); }
   );
 
-  async function run(reason: SyncReason): Promise<void> {
-    if (inFlight) { pending = reason; return; }
-    inFlight = true;
-    const mode: 'full' | 'conditional' =
-      reason === 'launch' || reason === 'manual' || dirty ? 'full' : 'conditional';
-    try {
-      await deps.execute(mode);
-      if (mode === 'full') dirty = false;
-    } catch {
-      // errors are surfaced by `execute` itself (status/lastError); never throw
-    } finally {
-      inFlight = false;
-      if (pending !== null) { const r = pending; pending = null; await run(r); }
-    }
+  async function execute(mode: 'full' | 'conditional') {
+    const capturedRevision = revision;
+    const completed = await deps.execute(mode);
+    if (completed !== false && mode === 'full') uploadedRevision = capturedRevision;
   }
 
-  function requestSync(reason: SyncReason): Promise<void> { return run(reason); }
+  function requestSync(reason: SyncReason): Promise<void> {
+    if (inFlight) {
+      // Preserve a full-sync reason when a later clean periodic trigger arrives.
+      if (pending === null || reason === 'manual' || reason === 'launch' || reason === 'write') pending = reason;
+      return new Promise<void>((resolve) => waiters.push(resolve));
+    }
+    inFlight = (async () => {
+      try {
+        let current = reason;
+        let completing: (() => void)[] = [];
+        for (;;) {
+          try {
+            await lock.run(() => execute(
+              current === 'launch' || current === 'manual' || current === 'write' || isDirty() ? 'full' : 'conditional'
+            ));
+          } catch {
+            // Production execute reports the error. Failed writes remain dirty.
+          }
+          completing.forEach((resolve) => resolve());
+          if (pending === null) break;
+          current = pending;
+          pending = null;
+          completing = waiters;
+          waiters = [];
+        }
+      } finally { inFlight = null; }
+    })();
+    return inFlight;
+  }
 
   function startPeriodic(): void {
     const tick = () => { periodicTimer = deps.schedule(deps.periodicMs, tick); void requestSync('periodic'); };
@@ -53,11 +78,12 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
   }
 
   return {
-    markDirty() { dirty = true; debouncer.bump(); },
+    markDirty() { revision++; debouncer.bump(); },
     requestSync,
     start() { if (periodicTimer === null) startPeriodic(); },
     stop() { debouncer.cancel(); if (periodicTimer !== null) { deps.cancel(periodicTimer); periodicTimer = null; } },
-    isDirty() { return dirty; },
+    isDirty,
+    runExclusive: (task) => lock.run(() => task(() => execute('full'))),
   };
 }
 
@@ -68,11 +94,14 @@ export function createScheduler(deps: SchedulerDeps): Scheduler {
 export type SyncSnapshot = {
   status: 'idle' | 'syncing' | 'ok' | 'offline' | 'authError' | 'error';
   lastError: string | null;
+  phase?:SyncPhase|null;
+  lastAttemptAt?:number|null;
+  lastDurationMs?:number|null;
 };
 
 let snapshot: SyncSnapshot = { status: 'idle', lastError: null };
 const subscribers = new Set<(s: SyncSnapshot) => void>();
-function setSnapshot(s: SyncSnapshot) { snapshot = s; subscribers.forEach((cb) => cb(s)); }
+function setSnapshot(s: SyncSnapshot) { snapshot = {...snapshot,...s}; subscribers.forEach((cb) => cb(snapshot)); }
 
 function classify(e: unknown): SyncSnapshot {
   // AuthError/offline classification mirrors the old SyncContext.classify.
@@ -89,14 +118,17 @@ export const syncScheduler: Scheduler & {
 } = (() => {
   const base = createScheduler({
     execute: async (mode) => {
-      setSnapshot({ status: 'syncing', lastError: null });
+      const started=Date.now();
+      setSnapshot({ status: 'syncing', lastError: null,phase:'readingRemote',lastAttemptAt:started,lastDurationMs:null });
       try {
         const { syncOnce } = await import('./sync');
-        await syncOnce(mode);
-        setSnapshot({ status: 'ok', lastError: null });
+        const result = await syncOnce(mode,phase=>setSnapshot({status:'syncing',lastError:null,phase}));
+        if (result === null) { setSnapshot({ status: 'idle', lastError: null,phase:null,lastDurationMs:Date.now()-started }); return false; }
+        setSnapshot({ status: 'ok', lastError: null,phase:null,lastDurationMs:Date.now()-started });
+        return true;
       } catch (e) {
-        setSnapshot(classify(e));
-        // swallow: scheduler must not throw (best-effort flushes call this)
+        setSnapshot({...classify(e),lastDurationMs:Date.now()-started});
+        throw e; // The scheduler must know this write was not acknowledged.
       }
     },
     now: () => Date.now(),
@@ -108,6 +140,7 @@ export const syncScheduler: Scheduler & {
   });
   return {
     ...base,
+    markDirty(mode=getLedgerMode()) { if (mode==='live') base.markDirty(); },
     subscribe(cb) { subscribers.add(cb); return () => subscribers.delete(cb); },
     getSnapshot() { return snapshot; },
   };

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { getMonthlyTotals } from '../db/snapshot-repo';
-import { useFormat, useLocale, useSemanticColors, useSettings, useTheme, useThemedStyles } from '../hooks/SettingsContext';
+import { useDataVersion } from '../hooks/use-data-version';
+import { getCalendarChanges } from '../db/observation-repo';
+import { useFormat, useLocale, useSemanticColors, useTheme, useThemedStyles } from '../hooks/SettingsContext';
 import { useTranslation } from 'react-i18next';
 import { currentYear, currentYearMonth, monthShort, yearMonth } from '../utils/date';
 import { radius, spacing, type ThemeColors } from '../utils/theme';
@@ -20,8 +21,8 @@ type MonthCell = {
 export function YearCalendar({ selected, onChange }: Props) {
   const { t } = useTranslation();
   const locale = useLocale();
+  const dataVersion = useDataVersion();
   const { fmtSignedCompact } = useFormat();
-  const { forwardFill } = useSettings();
   const { gain, loss } = useSemanticColors();
   const c = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -33,38 +34,29 @@ export function YearCalendar({ selected, onChange }: Props) {
     setDisplayYear(selectedYear);
   }, [selectedYear]);
 
-  // NOTE: year-view net growth uses raw SQL sums from getMonthlyTotals and
-  // does NOT apply forward-fill. The dependency on `forwardFill` is kept so
-  // this effect re-runs if the setting changes in case that ever gets wired up.
+  // Use the same valuation and missing-data policy as the overview.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const start = yearMonth(displayYear - 1, 12);
       const end = yearMonth(displayYear, 12);
-      const rows = await getMonthlyTotals(start, end);
+      const rows = await getCalendarChanges(start,end);
       if (cancelled) return;
 
       const byDate = new Map<string, number>();
-      for (const r of rows) byDate.set(r.date, r.netWorth);
+      for (const r of rows) if(r.change!==null)byDate.set(r.date,r.change);
 
       const next: MonthCell[] = [];
       for (let m = 1; m <= 12; m++) {
         const curKey = yearMonth(displayYear, m);
-        const prevKey = m === 1 ? yearMonth(displayYear - 1, 12) : yearMonth(displayYear, m - 1);
-        const cur = byDate.get(curKey);
-        const prev = byDate.get(prevKey);
-        if (cur == null) {
-          next.push({ month: m, netGrowth: null });
-        } else {
-          next.push({ month: m, netGrowth: cur - (prev ?? 0) });
-        }
+        next.push({month:m,netGrowth:byDate.get(curKey)??null});
       }
       setCells(next);
-    })();
+    })().catch(() => { if (!cancelled) setCells(emptyCells()); });
     return () => {
       cancelled = true;
     };
-  }, [displayYear, forwardFill, selected]);
+  }, [displayYear, selected, dataVersion]);
 
   const goToday = () => {
     onChange(currentYearMonth());
@@ -92,6 +84,7 @@ export function YearCalendar({ selected, onChange }: Props) {
         </TouchableOpacity>
       </View>
 
+      <Text style={{fontSize:11,color:c.muted,marginBottom:10}}>{t('observation.calendarHelp')}</Text>
       <View style={styles.grid}>
         {cells.map((cell) => {
           const isSelected = displayYear === selectedYear && cell.month === selectedMonth;

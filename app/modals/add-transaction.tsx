@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useRecoverableDraft } from '../../src/hooks/use-recoverable-draft';
+import { DraftRecoveryNotice } from '../../src/components/DraftRecoveryNotice';
+import { useUnsavedChanges } from '../../src/hooks/use-unsaved-changes';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,7 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { DateField } from '../../src/components/DateField';
+import { parseAmount } from '../../src/utils/money';
+import { useSaveAction } from '../../src/hooks/use-save-action';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -26,15 +31,6 @@ import { useSemanticColors, useShared, useTheme, useThemedStyles } from '../../s
 import type { TranType } from '../../src/utils/types';
 import { semantic, spacing, type ThemeColors } from '../../src/utils/theme';
 
-function formatYMD(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function parseYMD(s: string): Date {
-  const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
-}
-
 export default function AddTransactionModal() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -47,30 +43,33 @@ export default function AddTransactionModal() {
 
   const [type, setType] = useState<TranType>('OUTLAY');
   const [date, setDate] = useState(params.date ?? currentDate());
-  const [showPicker, setShowPicker] = useState(false);
+  const { saving, save } = useSaveAction();
   const [value, setValue] = useState('');
   const [cat, setCat] = useState('');
   const [note, setNote] = useState('');
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
-  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowPicker(false);
-      if (event.type === 'set' && selected) {
-        setDate(formatYMD(selected));
-      }
-    } else if (selected) {
-      setDate(formatYMD(selected));
-    }
-  };
-
-  const loadData = useCallback(async () => {
+  const [loadedId,setLoadedId]=useState<number|null>(null);
+  const ready=editingId===null||editingId===loadedId;
+  const [recordUuid,setRecordUuid]=useState<string|null>(null);
+  const baseline=useRef(JSON.stringify(['OUTLAY',params.date??currentDate(),'','','']));
+  const dirty=ready&&JSON.stringify([type,date,value,cat,note])!==baseline.current;
+  const recovery=useRecoverableDraft({key:editingId===null?'transaction:new':recordUuid?`transaction:${recordUuid}`:null,ready,dirty,baseline:editingId===null?'new-transaction':baseline.current,value:[type,date,value,cat,note],valid:value=>Array.isArray(value)&&value.length===5&&value.every(v=>typeof v==='string')&&['INCOME','OUTLAY'].includes(value[0]),restore:value=>{const values=value as string[];setType(values[0] as TranType);setDate(values[1]);setValue(values[2]);setCat(values[3]);setNote(values[4]);}});
+  const busy=saving||!ready||recovery.blocked;
+  const markSaved=useUnsavedChanges(dirty,saving,async()=>{if(!await recovery.clear())throw new Error('Draft cleanup failed');});
+  const loadData = useCallback(async (cancelled:()=>boolean) => {
     const tags = await getAllTags();
+    if(cancelled())return;
     setExistingTags(tags);
 
-    if (editingId) {
+    if (editingId !== null) {
       const tx = await getTransaction(editingId);
+      if(cancelled())return;
+      if(!tx)throw new Error('Transaction not found');
       if (tx) {
+        baseline.current=JSON.stringify([tx.type,tx.date,String(tx.value),tx.cat,tx.note]);
+        setRecordUuid(tx.uuid??null);
+        setLoadedId(editingId);
         setType(tx.type);
         setDate(tx.date);
         setValue(String(tx.value));
@@ -81,8 +80,10 @@ export default function AddTransactionModal() {
   }, [editingId]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled=false;
+    void loadData(()=>cancelled).catch(()=>{if(!cancelled)notify(t('common.error'),t('common.loadFailed'));});
+    return()=>{cancelled=true;};
+  }, [loadData,t]);
 
   const activeTags = cat
     .split(',')
@@ -90,6 +91,7 @@ export default function AddTransactionModal() {
     .filter(Boolean);
 
   const toggleTag = (tag: string) => {
+    if(busy)return;
     if (activeTags.includes(tag)) {
       setCat(activeTags.filter((s) => s !== tag).join(', '));
     } else {
@@ -97,22 +99,26 @@ export default function AddTransactionModal() {
     }
   };
 
-  const submit = async () => {
-    const v = parseFloat(value);
-    if (isNaN(v) || v <= 0) {
+  const submit = () => save(async () => {
+    if(!ready)return;
+    const v = parseAmount(value);
+    if (v <= 0) {
       notify(t('addTransaction.invalidTitle'), t('addTransaction.invalidValue'));
       return;
     }
-    if (editingId) {
-      await updateTransaction(editingId, date, type, v, cat.trim(), note.trim());
+    recovery.pause();
+    try {
+    if (editingId !== null) {
+      await updateTransaction(editingId, date, type, v, cat.trim(), note.trim(),{key:`transaction:${recordUuid}`});
     } else {
-      await createTransaction(date, type, v, cat.trim(), note.trim());
+      await createTransaction(date, type, v, cat.trim(), note.trim(),{key:'transaction:new'});
     }
-    router.back();
-  };
+    recovery.consumed();markSaved();router.back();
+    }catch(error){recovery.resume();throw error;}
+  });
 
-  const confirmDelete = async () => {
-    if (!editingId) return;
+  const confirmDelete = () => save(async () => {
+    if (editingId===null||!ready) return;
     const ok = await confirmAsync(
       t('addTransaction.deleteTitle'),
       t('addTransaction.deleteBody'),
@@ -120,22 +126,24 @@ export default function AddTransactionModal() {
       true
     );
     if (!ok) return;
-    await deleteTransaction(editingId);
-    router.back();
-  };
+    recovery.pause();
+    try{await deleteTransaction(editingId,{key:`transaction:${recordUuid}`});recovery.consumed();markSaved();router.back();}
+    catch(error){recovery.resume();throw error;}
+  });
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
+        <DraftRecoveryNotice recovery={recovery}/>
         <View style={shared.card}>
           <Text style={styles.label}>{t('addTransaction.type')}</Text>
           <View style={styles.typeRow}>
             {(['INCOME', 'OUTLAY'] as const).map((opt) => (
               <TouchableOpacity
                 key={opt}
-                onPress={() => setType(opt)}
+                disabled={busy} onPress={() => {if(!busy)setType(opt);}}
                 style={[
                   styles.typeBtn,
                   type === opt && {
@@ -155,45 +163,27 @@ export default function AddTransactionModal() {
           </View>
 
           <Text style={styles.label}>{t('addTransaction.date')}</Text>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowPicker((s) => !s)}>
-            <Text style={styles.inputText}>{date}</Text>
-          </TouchableOpacity>
-          {showPicker && (
-            <View style={styles.pickerWrap}>
-              <DateTimePicker
-                value={parseYMD(date)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={onPickerChange}
-              />
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={styles.doneBtn}
-                  onPress={() => setShowPicker(false)}>
-                  <Text style={styles.doneText}>{t('common.done')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          <DateField value={date} onChange={setDate} label={t('addTransaction.date')} disabled={busy} />
 
           <Text style={styles.label}>{t('addTransaction.value')}</Text>
           <TextInput
             style={styles.input}
+            accessibilityLabel={t('addTransaction.value')}
             value={value}
             onChangeText={setValue}
             placeholder={t('addTransaction.valuePlaceholder')}
             keyboardType="decimal-pad"
+            editable={!busy}
           />
 
           <Text style={styles.label}>{t('addTransaction.tags')}</Text>
           <TextInput
             style={styles.input}
+            accessibilityLabel={t('addTransaction.tags')}
             value={cat}
             onChangeText={setCat}
             placeholder={t('addTransaction.tagsPlaceholder')}
-            autoCapitalize="none"
+            autoCapitalize="none" editable={!busy}
           />
 
           {existingTags.length > 0 && (
@@ -202,7 +192,7 @@ export default function AddTransactionModal() {
                 const active = activeTags.includes(tag);
                 return (
                   <TouchableOpacity
-                    key={tag}
+                    key={tag} disabled={busy}
                     onPress={() => toggleTag(tag)}
                     style={[styles.tagChip, active && styles.tagChipActive]}>
                     <Text
@@ -221,19 +211,20 @@ export default function AddTransactionModal() {
           <Text style={styles.label}>{t('addTransaction.note')}</Text>
           <TextInput
             style={[styles.input, { height: 80 }]}
+            accessibilityLabel={t('addTransaction.note')}
             value={note}
             onChangeText={setNote}
             placeholder={t('addTransaction.notePlaceholder')}
-            multiline
+            multiline editable={!busy}
           />
         </View>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={submit}>
-          <Text style={styles.submitText}>{editingId ? t('common.update') : t('common.save')}</Text>
+        <TouchableOpacity accessibilityRole="button" style={styles.submitBtn} onPress={submit} disabled={busy}>
+          <Text style={styles.submitText}>{saving ? t('common.saving') : editingId !== null ? t('common.update') : t('common.save')}</Text>
         </TouchableOpacity>
 
         {editingId && (
-          <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete}>
+          <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete} disabled={busy}>
             <Text style={styles.deleteText}>{t('common.delete')}</Text>
           </TouchableOpacity>
         )}

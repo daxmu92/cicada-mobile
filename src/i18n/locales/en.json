@@ -12,7 +12,16 @@
     "archived": "Archived",
     "error": "Error",
     "working": "Working…",
-    "today": "Today"
+    "today": "Today",
+    "saving": "Saving…",
+    "databaseBusy": "The ledger is busy and this setting was not saved. Close other Cicada windows (including older versions), then try again.",
+    "saveFailed": "Could not save. Please try again.",
+    "invalidAmount": "Enter a complete amount with up to two decimals and valid thousands separators.",
+    "retry": "Retry",
+    "loading": "Loading your ledger…",
+    "loadFailed": "Could not load your ledger. Please retry.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "nav": {
     "home": "Home",
@@ -34,12 +43,23 @@
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
-    "thisMonth": "this month"
+    "thisMonth": "this month",
+    "noSnapshot": "No net-worth records for this month",
+    "noComparison": "Growth needs records for this and the previous month",
+    "estimated": "Includes last-known values. Archived assets contribute only actual records."
   },
   "assets": {
     "noAccountsTitle": "No accounts yet",
     "noAccountsBody": "Go to Settings to create an account and add assets.",
-    "noAssets": "No assets"
+    "noAssets": "No assets",
+    "search": "Search assets or accounts",
+    "allCategories": "All categories",
+    "sortName": "Sort: name",
+    "sortValue": "Sort: net worth ↓",
+    "noMatches": "No matching assets",
+    "assetColumn": "Asset / classification",
+    "latestRecord": "Latest record",
+    "carriedFrom": "Carried from {{date}}"
   },
   "batchEntry": {
     "enter": "Enter data",
@@ -66,7 +86,11 @@
     "incomeByCategory": "Income by Category",
     "outlayByCategory": "Outlay by Category",
     "noIncome": "No income this month",
-    "noOutlay": "No outlay this month"
+    "noOutlay": "No outlay this month",
+    "search": "Search notes, tags, dates or amounts",
+    "all": "All",
+    "allTags": "All tags",
+    "filteredCount": "{{count}} matching transactions"
   },
   "assetDetail": {
     "netWorth": "Net Worth",
@@ -176,7 +200,7 @@
     "resetConfirm": "Reset",
     "resetDone": "Database has been reset.",
     "loadSampleTitle": "Load Sample Data",
-    "loadSampleBody": "This will replace all current data with generated sample accounts, assets, snapshots, and transactions.",
+    "loadSampleBody": "This replaces this ledger and syncs the replacement to the cloud and connected devices. A local automatic backup is saved first.",
     "loadConfirm": "Load",
     "doneTitle": "Done",
     "sampleLoaded": "Sample data loaded. Check the Home and Assets tabs.",
@@ -184,7 +208,7 @@
     "exportFailedTitle": "Export Failed",
     "exportFailedBody": "Unable to export",
     "importTitle": "Import Backup",
-    "importBody": "This will replace all existing data. Continue?",
+    "importBody": "This replaces this ledger and syncs it to connected devices. An automatic backup is saved first; a failed import keeps your ledger. Continue?",
     "importConfirm": "Import",
     "importedTitle": "Imported",
     "importedBody": "Accounts: {{accounts}}\nAssets: {{assets}}\nSnapshots: {{snapshots}}\nTransactions: {{transactions}}",
@@ -221,7 +245,10 @@
     "themeSeaGlass": "Sea Glass",
     "themeDuskBlue": "Dusk Blue",
     "themeSky": "Sky",
-    "themeLilac": "Lilac"
+    "themeLilac": "Lilac",
+    "exportRecovery": "Export latest automatic backup",
+    "exportRecoverySub": "Keeps up to five local copies before importing or loading samples. Erasing data removes these copies.",
+    "noRecovery": "No automatic backup is available yet."
   },
   "eraseData": {
     "title": "Erase All Data",
@@ -235,7 +262,8 @@
   "charts": {
     "noData": "No data",
     "noDataToDisplay": "No data to display",
-    "noDataYet": "No data yet"
+    "noDataYet": "No data yet",
+    "liabilities": "Liabilities: {{value}} (allocation uses positive assets)"
   },
   "analysis": {
     "composition": "Composition",
@@ -248,5 +276,104 @@
     "noPositiveHoldings": "No positive holdings to chart",
     "calendarTitle": "Calendar",
     "calendarIntro": "Tap a month to view it."
+  },
+  "demo": {
+    "banner": "Demo ledger · separate data · cloud sync disabled",
+    "enter": "Open Demo Ledger",
+    "enterBody": "Demo data uses a separate ledger. Your data and cloud are preserved. You can return to your own ledger at any time.",
+    "reset": "Reset Demo Data",
+    "resetBody": "Only the demo ledger will be reset.",
+    "return": "Return to My Ledger",
+    "changed": "The ledger changed. Please try again.",
+    "importBody": "Only the demo ledger will be replaced. Your own ledger and cloud are preserved. Continue?"
+  },
+  "drafts": {
+    "title": "Unsaved changes",
+    "body": "Discard unsaved changes and leave?"
+  },
+  "reconcile": {
+    "title": "Check Profit Differences",
+    "help": "Compare profit with current net worth minus the previous recorded net worth and current inflow. The first record is excluded; gaps use the previous record. Manual profits may use a different basis. Review before applying; an automatic backup is saved.",
+    "clean": "No profit differences found.",
+    "previous": "Previous record: {{date}}",
+    "apply": "Apply Profit Recalculation",
+    "confirm": "Apply the preview to {{count}} profit records? Net worth and inflow are preserved.",
+    "stale": "Records changed. Please review the refreshed preview.",
+    "offer": "Later records have profit differences. Open a preview?"
+  },
+  "updates": {
+    "check": "Check for updates",
+    "available": "Version {{version}} is available",
+    "install": "Download and install",
+    "confirm": "The app will close to install the update. Continue?",
+    "latest": "You are using the latest published version.",
+    "failed": "Could not check or install the update. Try again later.",
+    "draft": "Save or discard your edits before updating.",
+    "busy": "Preparing update…"
+  },
+  "observation": {
+    "coverage": "{{month}} · {{count}} / {{total}} current active assets recorded",
+    "latest": "Latest asset record: {{date}}",
+    "transactionLatest": "Latest transaction: {{date}}",
+    "goLatest": "View latest recorded month · {{month}}",
+    "coverageHelp": "Coverage refers to assets currently active, not historical ownership. Missing entries are not zero; carried values are not new records.",
+    "comparableChange": "Comparable net-worth change",
+    "comparableCount": "{{count}} assets with records in both months",
+    "explainChange": "Explain comparable change",
+    "comparableInflow": "Recorded net inflow",
+    "comparableProfit": "Recorded profit",
+    "residual": "Unexplained difference",
+    "comparisonHelp": "For {{count}} assets recorded in both adjacent months: change = net inflow + profit + unexplained difference. Carried values are excluded; coverage changes are not investment profit.",
+    "notRecorded": "Not recorded",
+    "trendHelp": "Tap a point to inspect. Missing months break the line; amber marks incomplete current active-asset coverage.",
+    "partial": "Current active-asset coverage incomplete",
+    "calendarHelp": "Calendar changes compare actual records in both adjacent months; carried values are excluded."
+  },
+  "draftRecovery": {
+    "found": "Unsaved local draft · {{date}}",
+    "changed": "The source record has changed or the asset no longer matches. Automatic recovery is unavailable; inspect the draft before discarding.",
+    "restore": "Restore draft",
+    "discard": "Discard stored draft",
+    "preview": "Inspect draft",
+    "saving": "Saving a local recovery draft…",
+    "saved": "Local recovery draft saved",
+    "error": "Draft recovery could not complete. Keep your inputs and retry after checking the ledger."
+  },
+  "syncDiagnostics": {
+    "attempt": "Last attempt: {{date}}",
+    "duration": "Duration: {{seconds}}s",
+    "locked": "The ledger is busy. Close other Cicada windows and retry.",
+    "auth": "Check your WebDAV account and app password, then reconnect.",
+    "network": "Check your connection and server availability. Local changes remain pending.",
+    "conflict": "Another device changed the cloud data. Retry synchronization to merge again.",
+    "version": "The cloud format is not supported. Update the app before retrying.",
+    "document": "The cloud document could not be read. Preserve your local backup and inspect the cloud file.",
+    "generic": "Synchronization failed. Check the server configuration and retry; pending local changes are retained.",
+    "phase": {
+      "readingRemote": "Reading cloud data…",
+      "readingLocal": "Reading local records…",
+      "merging": "Comparing and merging records…",
+      "writingLocal": "Applying cloud changes…",
+      "uploading": "Uploading changes…",
+      "retrying": "Cloud changed; retrying…"
+    }
+  },
+  "desktop": {
+    "workspace": "Financial workspace",
+    "mainLedger": "Main ledger",
+    "demoLedger": "Demo ledger",
+    "localLedger": "Local ledger",
+    "syncReady": "Sync connected",
+    "assetDetails": "Asset details",
+    "openDetails": "Open full details",
+    "closeDetails": "Close details",
+    "recordMonth": "Record this month",
+    "transactionDate": "Date",
+    "transactionCategory": "Category",
+    "transactionNote": "Note",
+    "transactionValue": "Amount",
+    "appearance": "Appearance",
+    "dataManagement": "Data management",
+    "saved": "Saved"
   }
 }

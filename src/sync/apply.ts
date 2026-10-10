@@ -1,5 +1,6 @@
 import type { CicadaDB } from '../db/migrations';
-import type { MergeResult } from './merge';
+import { merge, type MergeResult } from './merge';
+import { buildDocument } from './document';
 import type {
   AccountRecord,
   AssetRecord,
@@ -45,7 +46,8 @@ async function uniqueAssetName(
 }
 
 async function upsertAccount(db: CicadaDB, rec: AccountRecord, suffixed: string[]): Promise<number> {
-  const existing = await db.getFirstAsync<{ id: number }>('SELECT id FROM account WHERE uuid = ?', [rec.uuid]);
+  const existing = await db.getFirstAsync<{ id: number; updated_at: string }>('SELECT id, updated_at FROM account WHERE uuid = ?', [rec.uuid]);
+  if (existing && existing.updated_at > rec.updated_at) return existing.id;
   const name = await uniqueAccountName(db, rec.name, rec.uuid);
   if (name !== rec.name) suffixed.push(`account:${rec.name}`);
   if (existing) {
@@ -61,7 +63,8 @@ async function upsertAccount(db: CicadaDB, rec: AccountRecord, suffixed: string[
 }
 
 async function upsertAsset(db: CicadaDB, rec: AssetRecord, accountId: number, suffixed: string[]): Promise<number> {
-  const existing = await db.getFirstAsync<{ id: number }>('SELECT id FROM asset WHERE uuid = ?', [rec.uuid]);
+  const existing = await db.getFirstAsync<{ id: number; updated_at: string }>('SELECT id, updated_at FROM asset WHERE uuid = ?', [rec.uuid]);
+  if (existing && existing.updated_at > rec.updated_at) return existing.id;
   const name = await uniqueAssetName(db, accountId, rec.name, rec.uuid);
   if (name !== rec.name) suffixed.push(`asset:${rec.name}`);
   if (existing) {
@@ -84,7 +87,8 @@ async function upsertSnapshot(db: CicadaDB, rec: SnapshotRecord, assetId: number
      VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(asset_id, date) DO UPDATE SET
        net_worth = excluded.net_worth, inflow = excluded.inflow,
-       profit = excluded.profit, updated_at = excluded.updated_at`,
+       profit = excluded.profit, updated_at = excluded.updated_at
+     WHERE asset_snapshot.updated_at IS NULL OR asset_snapshot.updated_at <= excluded.updated_at`,
     [assetId, rec.date, rec.netWorth, rec.inflow, rec.profit, rec.updated_at]
   );
 }
@@ -92,8 +96,8 @@ async function upsertSnapshot(db: CicadaDB, rec: SnapshotRecord, assetId: number
 async function upsertTran(db: CicadaDB, rec: TranRecord): Promise<void> {
   const existing = await db.getFirstAsync<{ id: number }>('SELECT id FROM tran WHERE uuid = ?', [rec.uuid]);
   if (existing) {
-    await db.runAsync('UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE uuid = ?', [
-      rec.date, rec.type, rec.value, rec.cat, rec.note, rec.updated_at, rec.uuid,
+    await db.runAsync('UPDATE tran SET date = ?, type = ?, value = ?, cat = ?, note = ?, updated_at = ? WHERE uuid = ? AND (updated_at IS NULL OR updated_at <= ?)', [
+      rec.date, rec.type, rec.value, rec.cat, rec.note, rec.updated_at, rec.uuid, rec.updated_at,
     ]);
     return;
   }
@@ -105,14 +109,15 @@ async function upsertTran(db: CicadaDB, rec: TranRecord): Promise<void> {
 async function upsertSetting(db: CicadaDB, rec: SettingRecord): Promise<void> {
   await db.runAsync(
     `INSERT INTO setting (key, value, updated_at) VALUES (?, ?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+     WHERE setting.updated_at IS NULL OR setting.updated_at <= excluded.updated_at`,
     [rec.key, rec.value, rec.updated_at]
   );
 }
 
 /** Explicitly delete an account and ALL descendants (never relies on FK cascade). */
 async function deleteAccountTree(db: CicadaDB, uuid: string): Promise<void> {
-  const acc = await db.getFirstAsync<{ id: number }>('SELECT id FROM account WHERE uuid = ?', [uuid]);
+  const acc = await db.getFirstAsync<{ id: number; updated_at: string }>('SELECT id, updated_at FROM account WHERE uuid = ?', [uuid]);
   if (!acc) return;
   await db.runAsync(
     'DELETE FROM asset_snapshot WHERE asset_id IN (SELECT id FROM asset WHERE account_id = ?)',
@@ -123,7 +128,7 @@ async function deleteAccountTree(db: CicadaDB, uuid: string): Promise<void> {
 }
 
 async function deleteAssetTree(db: CicadaDB, uuid: string): Promise<void> {
-  const a = await db.getFirstAsync<{ id: number }>('SELECT id FROM asset WHERE uuid = ?', [uuid]);
+  const a = await db.getFirstAsync<{ id: number; updated_at: string }>('SELECT id, updated_at FROM asset WHERE uuid = ?', [uuid]);
   if (!a) return;
   await db.runAsync('DELETE FROM asset_snapshot WHERE asset_id = ?', [a.id]);
   await db.runAsync('DELETE FROM asset WHERE id = ?', [a.id]);
@@ -140,6 +145,11 @@ async function applyTombstone(
      ON CONFLICT(entity, uuid) DO UPDATE SET deleted_at = MAX(deleted_at, excluded.deleted_at)`,
     [t.entity, t.uuid, t.deleted_at]
   );
+  const table = { account: 'account', asset: 'asset', tran: 'tran' }[t.entity as 'account' | 'asset' | 'tran'];
+  const latest = table
+    ? await db.getFirstAsync<{ updated_at: string }>(`SELECT updated_at FROM ${table} WHERE uuid = ?`, [t.uuid])
+    : await db.getFirstAsync<{ updated_at: string }>('SELECT s.updated_at FROM asset_snapshot s JOIN asset a ON a.id=s.asset_id WHERE a.uuid=? AND s.date=?', t.uuid.split('|'));
+  if (latest && latest.updated_at > t.deleted_at) return;
   // If the merge kept the record alive (resurrection), do not delete it.
   if (t.entity === 'account') {
     if (live.account.has(t.uuid)) return;
@@ -170,15 +180,19 @@ export async function cascadeRepair(db: CicadaDB): Promise<void> {
 
 export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<ApplyResult> {
   const suffixed: string[] = [];
-  await db.withTransactionAsync(async () => {
+  await db.withTransactionAsync(async (db) => {
+    // The local snapshot may be stale by the time this transaction acquires the
+    // connection. Reconcile again while writes are excluded, including deletes.
+    const current = await buildDocument(db, { generatedBy: 'apply', generatedAt: new Date().toISOString() });
+    const effective = merge(current, { ...current, ...merged });
     const accountId = new Map<string, number>();
-    for (const rec of merged.tables.account) {
+    for (const rec of effective.tables.account) {
       await adoptAccountUuid(db, rec);
       accountId.set(rec.uuid, await upsertAccount(db, rec, suffixed));
     }
 
     const assetId = new Map<string, number>();
-    for (const rec of merged.tables.asset) {
+    for (const rec of effective.tables.asset) {
       const accId = accountId.get(rec.accountUuid);
       if (accId === undefined) continue; // orphan (parent absent) — cascade-repair handles it (Task 3)
       await adoptAssetUuid(db, rec, accId);
@@ -186,7 +200,7 @@ export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<App
     }
 
     const appliedSnapshot = new Set<string>();
-    for (const rec of merged.tables.snapshot) {
+    for (const rec of effective.tables.snapshot) {
       const asId = assetId.get(rec.assetUuid);
       if (asId === undefined) continue; // orphan snapshot — skip
       await upsertSnapshot(db, rec, asId);
@@ -194,11 +208,11 @@ export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<App
     }
 
     const appliedTran = new Set<string>();
-    for (const rec of merged.tables.tran) {
+    for (const rec of effective.tables.tran) {
       await upsertTran(db, rec);
       appliedTran.add(rec.uuid);
     }
-    for (const rec of merged.tables.setting) await upsertSetting(db, rec);
+    for (const rec of effective.tables.setting) await upsertSetting(db, rec);
 
     const live = {
       account: new Set(accountId.keys()),
@@ -206,7 +220,7 @@ export async function applyMerge(db: CicadaDB, merged: MergeResult): Promise<App
       snapshot: appliedSnapshot,
       tran: appliedTran,
     };
-    for (const t of merged.tombstones) await applyTombstone(db, t, live);
+    for (const t of effective.tombstones) await applyTombstone(db, t, live);
 
     await cascadeRepair(db);
   });

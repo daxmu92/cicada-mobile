@@ -18,7 +18,7 @@ export async function stampWrite(
   db: CicadaDB,
   opts: { withUuid: boolean }
 ): Promise<{ uuid: string | null; updatedAt: string }> {
-  const updatedAt = await tick();
+  const updatedAt = await tick(db);
   const uuid = opts.withUuid ? await genUuid(db) : null;
   return { uuid, updatedAt };
 }
@@ -30,6 +30,6 @@ export async function recordTombstones(
   uuids: string[]
 ): Promise<void> {
   if (uuids.length === 0) return;
-  const deletedAt = await tick();
+  const deletedAt = await tick(db);
   await recordTombstonesAt(db, entity, uuids, deletedAt);
 }

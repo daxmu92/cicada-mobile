@@ -1,3 +1,4 @@
+import { syncErrorHint } from '../sync/diagnostics';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -40,8 +41,8 @@ export default function CloudSyncSection() {
         setUsername(creds.username);
         setAppPassword(creds.appPassword);
       }
-    })();
-  }, [sync.available, sync.connected]);
+    })().catch(() => notify(t('common.error'), t('settings.cloudStatusError')));
+  }, [sync.available, sync.connected, t]);
 
   if (!sync.available) return null; // hidden in a plain browser / PWA
 
@@ -110,16 +111,19 @@ export default function CloudSyncSection() {
           <Text style={shared.muted}>{lastSynced}</Text>
         </View>
 
+        {sync.phase&&<Text style={shared.muted}>{t('syncDiagnostics.phase.'+sync.phase)}</Text>}
+        {sync.lastAttemptAt&&<Text style={shared.muted}>{t('syncDiagnostics.attempt',{date:new Date(sync.lastAttemptAt).toLocaleString()})}{sync.lastDurationMs!==null?` · ${t('syncDiagnostics.duration',{seconds:(sync.lastDurationMs/1000).toFixed(1)})}`:''}</Text>}
+        {sync.lastError&&<Text style={{color:semantic.negative,marginVertical:8}}>{t(syncErrorHint(sync.status,sync.lastError))}</Text>}
         <View style={styles.buttonRow}>
           {!sync.connected ? (
             <>
               <Btn label={t('settings.cloudTest')} onPress={onTest} disabled={busy} />
-              <Btn label={t('settings.cloudConnect')} onPress={onConnect} disabled={busy} primary />
+              <Btn label={t('settings.cloudConnect')} onPress={onConnect} disabled={busy || sync.status === 'syncing'} primary />
             </>
           ) : (
             <>
-              <Btn label={t('settings.cloudSyncNow')} onPress={() => sync.syncNow()} disabled={busy} primary />
-              <Btn label={t('settings.cloudDisconnect')} onPress={onDisconnect} disabled={busy} />
+              <Btn label={t('settings.cloudSyncNow')} onPress={() => sync.syncNow()} disabled={busy || sync.status === 'syncing'} primary />
+              <Btn label={t('settings.cloudDisconnect')} onPress={onDisconnect} disabled={busy || sync.status === 'syncing'} />
             </>
           )}
         </View>
