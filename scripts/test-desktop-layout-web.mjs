@@ -16,6 +16,7 @@ try {
  const sidebar=page.getByTestId('desktop-navigation'),toolbar=page.getByTestId('desktop-toolbar');
  await sidebar.waitFor();const box=await sidebar.boundingBox();assert.equal(box.x,0);assert.equal(box.width,212);assert(box.height>700);
  await page.getByRole('tab',{name:'Home',exact:true}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor();
+ const latest=page.getByRole('button',{name:'View latest recorded month · 2026-10',exact:true});if(await latest.count())await latest.click();await toolbar.getByText('Oct 2026',{exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Previous month',exact:true}).count(),1);await capture('home');
  console.log('PASS desktop side navigation and one persistent month toolbar');
  await page.getByRole('tab',{name:'Assets',exact:true}).click();await page.getByText('Alpha fund',{exact:true}).click();
