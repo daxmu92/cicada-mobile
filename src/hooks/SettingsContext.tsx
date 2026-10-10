@@ -1,3 +1,4 @@
+import {settingsVersion,subscribeSettings,serverDataVersion} from '../db/changes';
 import { getLedgerMode } from '../ledger/mode';
 import {
   createContext,
@@ -8,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 
 import i18n, {
@@ -82,6 +84,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const version = useDataVersion();
+  const preferencesVersion=useSyncExternalStore(subscribeSettings,settingsVersion,serverDataVersion);
 
   const request=useRef(0);
   const reload = useCallback(async () => {
@@ -94,7 +97,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setGainColorState(stored.gainColor === 'red' ? 'red' : 'green');
       const lang = isLanguage(stored.language) ? stored.language : DEFAULT_LANGUAGE;
       setLanguageState(lang);
-      await i18n.changeLanguage(lang);
+      if(i18n.language!==lang)await i18n.changeLanguage(lang);
       if(generation!==request.current||mode!==getLedgerMode())return;
       if (typeof document !== 'undefined') document.documentElement.lang = lang;
       setThemeState(stored.theme && Object.hasOwn(themes, stored.theme) ? stored.theme as ThemeName : DEFAULT_THEME);
@@ -105,7 +108,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       throw e;
     }
   }, []);
-  useEffect(() => { void reload().catch(() => {}); }, [reload, version]);
+  useEffect(() => { void reload().catch(() => {}); }, [reload, version, preferencesVersion]);
 
   const updateCurrency = useCallback(async (symbol: string) => {
     const mode=getLedgerMode();
@@ -132,7 +135,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const mode=getLedgerMode();
     await setSetting('language', lang);
     if(mode!==getLedgerMode())return;
-    await i18n.changeLanguage(lang);
+    if(i18n.language!==lang)await i18n.changeLanguage(lang);
     if (typeof document !== 'undefined') document.documentElement.lang = lang;
     setLanguageState(lang);
   }, []);

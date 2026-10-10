@@ -1,7 +1,7 @@
 {
   "name": "cicada-mobile",
   "main": "expo-router/entry",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "engines": {
     "node": ">=20"
   },
@@ -19,7 +19,7 @@
     "build:windows": "bash scripts/build-windows.sh",
     "lint": "expo lint",
     "screenshot": "node scripts/dev-screenshot.mjs",
-    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts src/utils/date.test.ts src/utils/composition.test.ts src/sync/tombstone.test.ts src/sync/erase.test.ts src/sync/debounce.test.ts src/sync/scheduler.test.ts src/utils/money.test.ts src/db/valuation.test.ts src/utils/allocation.test.ts src/db/serialized-db.test.ts src/services/reconciliation-core.test.ts src/utils/transaction-filter.test.ts src/ledger/maintenance-core.test.ts src/services/demo-core.test.ts src/sync/clock-core.test.ts src/services/update-core.test.ts",
+    "test": "node --import tsx --test src/sync/hlc.test.ts src/sync/document.test.ts src/sync/merge.test.ts src/sync/test-support/sqlite.test.ts src/sync/apply.test.ts src/sync/convergence.test.ts src/sync/providers/webdav.test.ts src/sync/sync.test.ts src/services/backup-core.test.ts src/utils/date.test.ts src/utils/composition.test.ts src/sync/tombstone.test.ts src/sync/erase.test.ts src/sync/debounce.test.ts src/sync/scheduler.test.ts src/utils/money.test.ts src/db/valuation.test.ts src/utils/allocation.test.ts src/db/serialized-db.test.ts src/services/reconciliation-core.test.ts src/utils/transaction-filter.test.ts src/ledger/maintenance-core.test.ts src/services/demo-core.test.ts src/sync/clock-core.test.ts src/services/update-core.test.ts src/db/query-cache-core.test.ts",
     "test:web": "node scripts/test-web.mjs",
     "test:webdav:local": "node --import tsx scripts/test-webdav-local.ts",
     "postinstall": "node scripts/patch-metro-images.cjs",

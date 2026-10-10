@@ -110,3 +110,31 @@ Demo/main switching, Chinese display, font loading and WM_CLOSE. It does not
 read personal credentials or launch against the production database. The Windows
 CI runs this check before accepting its build artifacts. Browser checks alone
 are not desktop runtime acceptance.
+
+## 0.2.4: cached navigation and no-op synchronization
+
+Home previously fetched the current month's valuation twice, while Assets made
+its own reads on every focus. Display settings also bumped the financial
+revision and redundantly changed the current language. Query results now share
+pending and settled reads by ledger epoch, financial revision and query options;
+Home warms the current Assets overview after displaying its own results. Failed
+reads are retriable, and financial writes, imports, ledger switches and remote
+changes invalidate the cache. Settings have a separate revision; valuation
+options remain part of the query key.
+
+A full sync previously applied the entire merged ledger even when it matched
+local data. On native SQLite this issued many serialized row writes and delayed
+Settings saves and screen reads. The engine now skips identical applications,
+canonicalizes record property order across native/browser SQL results, and
+still re-reads before upload to retain concurrent local edits. Committed remote
+changes notify the UI even when upload fails. Conditional 304 responses also
+observe local data, so another desktop process's writes invalidate cached views.
+
+The isolated native smoke additionally asserts that revisiting warm Home and
+Assets performs zero financial queries, display-color changes do not reload
+financial tables, and synchronizing over 3,000 synthetic snapshots against an
+in-memory remote performs zero ledger rewrites while a color save stays under
+two seconds. This is a native SQLite/UI contention test, not a test against the
+user's cloud account. The separate HTTPS/WebDAV suite exercises real transport,
+authentication, ETags, outages, conflicts and convergence. The desktop title
+includes its version to identify concurrently open executables.

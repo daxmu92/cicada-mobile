@@ -1,3 +1,4 @@
+import {readCached} from './query-cache';
 import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { getDatabase } from './database';
@@ -140,6 +141,7 @@ export async function setAssetArchived(
 
 /** Two queries for the entire active list, regardless of the number of assets. */
 export async function listAssetOverview(date: string, forwardFill: boolean) {
+  return readCached(['asset-overview',date,forwardFill],async()=>{
   const db = await getDatabase();
   let result!: (AssetWithAccount & { netWorth: number | null; sourceDate: string | null; history: number[] })[];
   await db.withTransactionAsync(async (db) => {
@@ -163,4 +165,5 @@ export async function listAssetOverview(date: string, forwardFill: boolean) {
   result = rows.map(row=>({...rowToAsset(row),accountName:row.account_name,netWorth:row.net_worth,sourceDate:row.source_date,history:values.get(row.id)??[]}));
   });
   return result;
+  });
 }

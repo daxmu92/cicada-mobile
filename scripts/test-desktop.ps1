@@ -32,8 +32,11 @@ try {
  finally { Pop-Location }
  $process=Start-Process (Join-Path $target 'release\CicadaNativeSmoke.exe') -PassThru
  $env:CICADA_DESKTOP_CDP="http://127.0.0.1:$port"
- node (Join-Path $repo 'scripts\test-desktop.mjs')
- if($LASTEXITCODE -ne 0){throw 'Native desktop acceptance failed'}
+ Push-Location $repo
+ try {
+  node --import tsx (Join-Path $repo 'scripts\test-desktop.mjs')
+  if($LASTEXITCODE -ne 0){throw 'Native desktop acceptance failed'}
+ } finally { Pop-Location }
  [void]$process.CloseMainWindow()
  if(-not $process.WaitForExit(5000)){throw 'Normal X close did not exit the isolated application'}
  Write-Output 'PASS real native window close via WM_CLOSE'

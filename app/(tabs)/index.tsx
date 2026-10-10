@@ -1,3 +1,5 @@
+import {listAssetOverview} from '../../src/db/asset-repo';
+import {listAccounts} from '../../src/db/account-repo';
 import { getLedgerEpoch } from '../../src/ledger/mode';
 import { notify } from '../../src/utils/dialog';
 import { useDataVersion } from '../../src/hooks/use-data-version';
@@ -66,6 +68,8 @@ export default function HomeScreen() {
     setPrevNetWorth(prevSnaps.length ? prevSnaps.reduce((sum, row) => sum + row.netWorth, 0) : null);
     setAllocations(snaps);
     setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
+    // Warm the next tab after Home has its data; never gate Home on this read.
+    void Promise.all([listAccounts(),listAssetOverview(currentYearMonth(),forwardFill)]).catch(()=>{});
   }, [selectedMonth, forwardFill]);
 
   useFocusEffect(

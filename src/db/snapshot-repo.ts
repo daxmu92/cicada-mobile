@@ -1,3 +1,4 @@
+import {readCached} from './query-cache';
 import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { requireAmount, requireId, requireMonth } from '../utils/validation';
@@ -53,7 +54,7 @@ export async function listSnapshotsByAsset(assetId: number): Promise<AssetSnapsh
 }
 
 export async function listSnapshotsByDate(date: string, options: ValuationOptions = {}): Promise<SnapshotWithAsset[]> {
-  return monthValuation(await getDatabase(), date, options);
+  return readCached(['month',date,options.forwardFill??false,options.includeArchived??true],async()=>monthValuation(await getDatabase(),date,options));
 }
 
 export async function listSnapshotsInRange(
@@ -163,9 +164,9 @@ export async function getDateRange(): Promise<{ start: string; end: string } | n
 }
 
 export async function getMonthlyTotals(startDate: string, endDate: string, options: ValuationOptions = {}) {
-  return monthlyValuations(await getDatabase(), startDate, endDate, options);
+  return readCached(['months',startDate,endDate,options.forwardFill??false,options.includeArchived??true],async()=>monthlyValuations(await getDatabase(),startDate,endDate,options));
 }
 export async function getTotalsForDate(date: string, options: ValuationOptions = {}): Promise<{ netWorth: number; inflow: number; profit: number }> {
-  const rows = await monthValuation(await getDatabase(), date, options);
+  const rows = await listSnapshotsByDate(date, options);
   return rows.reduce((total, row) => ({ netWorth: total.netWorth + row.netWorth, inflow: total.inflow + row.inflow, profit: total.profit + row.profit }), { netWorth: 0, inflow: 0, profit: 0 });
 }

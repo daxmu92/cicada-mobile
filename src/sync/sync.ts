@@ -7,7 +7,7 @@ import {
   type SyncDocument,
 } from './document';
 import { merge } from './merge';
-import { notifyDataChanged } from '../db/changes';
+import { notifyDataChanged,notifySettingsChanged } from '../db/changes';
 import { applyMerge } from './apply';
 import { compareHlc, parseHlc } from './hlc';
 import { ConflictError, type SyncRemote, type WritePrecondition } from './providers/types';
@@ -58,6 +58,8 @@ export type RunSyncDeps = {
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
   conditionalEtag?: string;
+  onLocalChanged?:()=>void;
+  onLocalObserved?:(doc:SyncDocument)=>void;
 };
 
 export type SyncOutcome = {
@@ -88,8 +90,8 @@ function backoffMs(attempt: number): number {
  *  Rows are sorted by their merge key so the fingerprint is ORDER-INDEPENDENT: two devices
  *  with identical data but different SELECT row-order still produce the same hash. */
 function dataFingerprint(doc: SyncDocument): string {
-  const sorted = <T>(arr: readonly T[], key: (r: T) => string): T[] =>
-    [...arr].sort((a, b) => { const ka = key(a), kb = key(b); return ka < kb ? -1 : ka > kb ? 1 : 0; });
+  const sorted = <T extends object>(arr: readonly T[], key: (r: T) => string) =>
+    [...arr].sort((a, b) => { const ka = key(a), kb = key(b); return ka < kb ? -1 : ka > kb ? 1 : 0; }).map(row=>Object.fromEntries(Object.entries(row).sort(([a],[b])=>a<b?-1:a>b?1:0)));
   return JSON.stringify({
     account: sorted(doc.tables.account, (r) => r.uuid),
     asset: sorted(doc.tables.asset, (r) => r.uuid),
@@ -116,12 +118,17 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const maxRetries = deps.maxRetries ?? 5;
 
-  const buildLocal = () =>
-    buildDocument(db, { generatedBy: deviceId, generatedAt: new Date(now()).toISOString() });
+  const buildLocal = async () => {
+    const doc=await buildDocument(db,{generatedBy:deviceId,generatedAt:new Date(now()).toISOString()});
+    deps.onLocalObserved?.(doc);
+    return doc;
+  };
 
   // Initial read — conditional when the caller knows local is clean.
   const firstRaw = await remote.read(deps.conditionalEtag ? { ifNoneMatch: deps.conditionalEtag } : undefined);
   if (firstRaw === 'not-modified') {
+    // Another desktop process can change SQLite without this process's revision notifications.
+    await buildLocal();
     const t = now();
     await setState(LAST_SYNCED_KEY, String(t));
     return { status: 'unchanged', suffixed: [] };
@@ -154,11 +161,15 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
     await setState(SYNC_IN_PROGRESS_KEY, '1');
     const max = maxRemoteStamp(remoteDoc);
     if (max) await receiveRemote(max);
-    const merged = merge(await buildLocal(), remoteDoc);
-    const applied = await applyMerge(db, merged);
+    const before=await buildLocal();
+    const merged = merge(before, remoteDoc);
+    const changed=dataFingerprint(before)!==dataFingerprint({...before,...merged});
+    const applied = changed?await applyMerge(db, merged):{suffixed:[]};
+    if(changed)deps.onLocalChanged?.();
 
     // Rebuild AFTER apply so we push the canonical merged local state.
     const localDoc = await buildLocal();
+
     const outDoc = serializeDocument(localDoc);
     if (pulled.etag) await setState(CLOUD_ETAG_KEY, pulled.etag);
 
@@ -202,6 +213,14 @@ export async function runSync(deps: RunSyncDeps): Promise<SyncOutcome> {
  *  'conditional' passes the stored ETag so the remote can return 304 if unchanged.
  *  'full' always fetches the full document.
  *  Returns null if sync is unavailable on this platform or no credentials are stored. */
+let observedFinancial:string|null=null;
+let observedPreferences:string|null=null;
+function observeLocal(doc:SyncDocument){
+ const financial=dataFingerprint({...doc,tables:{...doc.tables,setting:[]}});
+ const preferences=dataFingerprint({...doc,tables:{account:[],asset:[],snapshot:[],tran:[],setting:doc.tables.setting},tombstones:[]});
+ if(financial!==observedFinancial){observedFinancial=financial;notifyDataChanged();}
+ if(preferences!==observedPreferences){observedPreferences=preferences;notifySettingsChanged();}
+}
 export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcome | null> {
   // Dynamic imports keep platform-specific modules (react-native, expo-secure-store,
   // expo-sqlite) out of the module graph at test time.
@@ -220,7 +239,8 @@ export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcom
   const db = await getDatabase();
   const deviceId = await getDeviceId();
   const conditionalEtag = mode === 'conditional' ? (await getSyncState(CLOUD_ETAG_KEY)) ?? undefined : undefined;
-  const outcome = await runSync({
+  let localChanged=false;
+  try { return await runSync({
     db,
     remote,
     deviceId,
@@ -228,10 +248,11 @@ export async function syncOnce(mode: 'full' | 'conditional'): Promise<SyncOutcom
     getState: getSyncState,
     setState: setSyncState,
     receiveRemote: recv,
+    onLocalChanged:()=>{localChanged=true;},
+    onLocalObserved:observeLocal,
     conditionalEtag,
   });
-  notifyDataChanged();
-  return outcome;
+  } finally {if(localChanged)notifyDataChanged();}
 }
 
 /** Run a full sync against the configured remote. Returns null if sync is

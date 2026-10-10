@@ -1,3 +1,4 @@
+import {exerciseNativeSync} from './test-native-sync.ts';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright-core';
 const endpoint=process.env.CICADA_DESKTOP_CDP;
@@ -31,7 +32,31 @@ try{
  await page.getByText('Open Demo Ledger',{exact:true}).click();await page.getByRole('button',{name:'Return to My Ledger',exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Checking',{exact:true}).waitFor({state:'visible'});
- await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('中文',{exact:true}).click();
+ await page.evaluate(()=>{
+  const original=window.__TAURI_INTERNALS__.invoke.bind(window.__TAURI_INTERNALS__);
+  window.__cicadaFinancialReads=0;
+  window.__TAURI_INTERNALS__.invoke=(command,args)=>{
+   if(/(?:plugin:sql\|select|cicada_transaction_query)/.test(command)&&/\b(?:account|asset|asset_snapshot|tran)\b/i.test(args?.query??args?.sql??''))window.__cicadaFinancialReads++;
+   return original(command,args);
+  };
+ });
+ await page.waitForTimeout(250);
+ for(let i=0;i<2;i++){
+  await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
+  await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Checking',{exact:true}).waitFor({state:'visible'});
+ }
+ assert.equal(await page.evaluate(()=>window.__cicadaFinancialReads),0,'Revisiting warm Home/Assets must reuse financial reads');
+ console.log('PASS native warm Home/Assets navigation performs zero financial queries');
+ await page.getByRole('tab',{name:/Settings$/}).click();
+ for(const color of ['red','green','red','green']){
+  const started=Date.now();
+  await page.getByText(color==='red'?'Red ▲':'Green ▲',{exact:true}).click();
+  await page.waitForFunction(async color=>{const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada-demo.db',query:"SELECT value FROM setting WHERE key='gainColor'",values:[]});return rows[0]?.value===color;},color);
+  console.log('GAIN COLOR',color,Date.now()-started);
+ }
+ assert.equal(await page.evaluate(()=>window.__cicadaFinancialReads),0,'Appearance changes must not reload financial data');
+ await exerciseNativeSync(page);
+ await page.getByText('中文',{exact:true}).click();
  await page.getByRole('button',{name:'返回我的账本',exact:true}).click();await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('中文',{exact:true}).click();await page.getByRole('tab',{name:/首页$/}).click();await page.getByText('总净值',{exact:true}).waitFor({state:'visible'});
  for(const node of await page.getByText(/^(正在加载账本…|Loading ledger…)$/).all()){

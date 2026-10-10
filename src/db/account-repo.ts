@@ -1,3 +1,4 @@
+import {readCached} from './query-cache';
 import { runLedgerWrite } from '../services/ledger-write';
 import { tick } from '../sync/clock';
 import { getDatabase } from './database';
@@ -23,6 +24,7 @@ function rowToAccount(row: AccountRow): Account {
 export async function listAccounts(
   options?: { includeArchived?: boolean }
 ): Promise<Account[]> {
+  return readCached(['accounts',options?.includeArchived??false],async()=>{
   const db = await getDatabase();
   const includeArchived = options?.includeArchived ?? false;
   const sql = includeArchived
@@ -30,6 +32,7 @@ export async function listAccounts(
     : 'SELECT id, name, archived FROM account WHERE archived = 0 ORDER BY name';
   const rows = await db.getAllAsync<AccountRow>(sql);
   return rows.map(rowToAccount);
+  });
 }
 
 export async function getAccount(id: number): Promise<Account | null> {
