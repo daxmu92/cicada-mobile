@@ -14,6 +14,7 @@
     "working": "Working…",
     "today": "Today",
     "saving": "Saving…",
+    "databaseBusy": "The ledger is busy and this setting was not saved. Close other Cicada windows (including older versions), then try again.",
     "saveFailed": "Could not save. Please try again.",
     "invalidAmount": "Enter a complete amount with up to two decimals and valid thousands separators.",
     "retry": "Retry",

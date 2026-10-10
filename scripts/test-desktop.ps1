@@ -31,6 +31,7 @@ try {
  try { $env:CARGO_TARGET_DIR=$target; & (Join-Path $repo 'node_modules\.bin\tauri.cmd') build --ci --no-bundle; if($LASTEXITCODE -ne 0){throw 'Native smoke compilation failed'} }
  finally { Pop-Location }
  $process=Start-Process (Join-Path $target 'release\CicadaNativeSmoke.exe') -PassThru
+ $env:CICADA_SMOKE_IDENTIFIER=$identifier
  $env:CICADA_DESKTOP_CDP="http://127.0.0.1:$port"
  Push-Location $repo
  try {

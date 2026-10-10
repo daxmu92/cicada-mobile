@@ -14,6 +14,7 @@
     "working": "处理中…",
     "today": "今天",
     "saving": "保存中…",
+    "databaseBusy": "账本正被占用，此设置未保存。请关闭其他 Cicada 窗口（包括旧版本）后重试。",
     "saveFailed": "保存失败，请重试。",
     "invalidAmount": "请输入完整金额，最多两位小数；千位分隔符须正确。",
     "retry": "重试",

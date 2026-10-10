@@ -65,6 +65,13 @@ export default function SettingsScreen() {
   const styles = useThemedStyles(makeStyles);
   const [loading, setLoading] = useState(false);
 
+  const reportSaveError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    const key = /SQLITE_BUSY|SQLITE_LOCKED|database (?:is )?locked/i.test(message)
+      ? 'common.databaseBusy' : 'common.saveFailed';
+    notify(t('common.error'), t(key));
+  };
+
   const confirmReset = () => {
     router.push('/modals/erase-data');
   };
@@ -101,7 +108,7 @@ export default function SettingsScreen() {
               {t('settings.forwardFillHelp')}
             </Text>
           </View>
-          <Switch value={forwardFill} disabled={loading} onValueChange={(v)=>{void setForwardFill(v).catch(()=>notify(t('common.error'),t('common.saveFailed')));}} />
+          <Switch value={forwardFill} disabled={loading} onValueChange={(v)=>{void setForwardFill(v).catch(reportSaveError);}} />
         </View>
       </View>
       <View style={shared.card}>
@@ -111,7 +118,7 @@ export default function SettingsScreen() {
           {CURRENCY_OPTIONS.map((symbol) => (
             <TouchableOpacity
               key={symbol}
-              disabled={loading} onPress={() => { void setCurrency(symbol).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
+              disabled={loading} onPress={() => { void setCurrency(symbol).catch(reportSaveError); }}
               style={[
                 styles.currencyChip,
                 currency === symbol && styles.currencyChipActive,
@@ -138,7 +145,7 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={opt.value}
-                disabled={loading} onPress={() => { void setGainColor(opt.value).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
+                disabled={loading} onPress={() => { void setGainColor(opt.value).catch(reportSaveError); }}
                 style={[
                   styles.currencyChip,
                   styles.gainChip,
@@ -164,7 +171,7 @@ export default function SettingsScreen() {
           {LANGUAGES.map((lang) => (
             <TouchableOpacity
               key={lang}
-              disabled={loading} onPress={() => { void setLanguage(lang).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
+              disabled={loading} onPress={() => { void setLanguage(lang).catch(reportSaveError); }}
               style={[
                 styles.currencyChip,
                 styles.gainChip,
@@ -192,7 +199,7 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={name}
-                disabled={loading} onPress={() => { void setTheme(name).catch(()=>notify(t('common.error'),t('common.saveFailed'))); }}
+                disabled={loading} onPress={() => { void setTheme(name).catch(reportSaveError); }}
                 style={[
                   styles.themeSwatch,
                   { backgroundColor: p.bg, borderColor: active ? p.accent : c.border },

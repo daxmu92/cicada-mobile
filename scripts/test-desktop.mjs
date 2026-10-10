@@ -1,6 +1,8 @@
 import {exerciseNativeSync} from './test-native-sync.ts';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright-core';
+import Database from 'better-sqlite3';
+import path from 'node:path';
 const endpoint=process.env.CICADA_DESKTOP_CDP;
 if(!endpoint)throw new Error('Run through scripts/test-desktop.ps1 with an isolated test application');
 let browser;
@@ -29,6 +31,20 @@ try{
  await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('€',{exact:true}).click();
  await page.waitForFunction(async()=>{const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada.db',query:"SELECT value FROM setting WHERE key='currency'",values:[]});return rows[0]?.value==='€';});
  console.log('PASS desktop settings click persists through native SQLite and clock transaction');
+ const identifier=process.env.CICADA_SMOKE_IDENTIFIER;
+ assert.match(identifier??'',/^com\.daxmu\.cicada\.native-smoke\.[a-f0-9]{32}$/,'Refusing to open a production ledger');
+ const holder=new Database(path.join(process.env.APPDATA,identifier,'cicada.db'),{fileMustExist:true});
+ try{
+  holder.exec('BEGIN IMMEDIATE');
+  const dialog=page.waitForEvent('dialog');
+  await page.getByText('£',{exact:true}).click();
+  assert.match((await dialog).message(),/Close other Cicada windows/);
+  assert.equal(holder.prepare("SELECT value FROM setting WHERE key='currency'").get().value,'€','Failed settings must preserve their previous value');
+ }finally{if(holder.inTransaction)holder.exec('ROLLBACK');holder.close();}
+ await page.getByText('£',{exact:true}).click();
+ await page.waitForFunction(async()=>{const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada.db',query:"SELECT value FROM setting WHERE key='currency'",values:[]});return rows[0]?.value==='£';});
+ console.log('PASS another connection holding a write lock reports cause, preserves setting, and retries after release');
+
  await page.getByText('Open Demo Ledger',{exact:true}).click();await page.getByRole('button',{name:'Return to My Ledger',exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Checking',{exact:true}).waitFor({state:'visible'});

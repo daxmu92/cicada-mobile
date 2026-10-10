@@ -138,3 +138,20 @@ two seconds. This is a native SQLite/UI contention test, not a test against the
 user's cloud account. The separate HTTPS/WebDAV suite exercises real transport,
 authentication, ETags, outages, conflicts and convergence. The desktop title
 includes its version to identify concurrently open executables.
+
+## 0.2.5: settings failures under another process's write lock
+
+A user reported every preference save failing in 0.2.4. A read-only inspection
+found an intact production database and an unresponsive older application still
+running. A separate `BEGIN IMMEDIATE`/rollback probe returned `SQLITE_BUSY`;
+the production ledger was not changed by this probe. Closing that older process
+requires confirmation about unsaved input; a newer executable cannot release
+another process's transaction.
+
+Settings now distinguish a busy/locked database from a generic save error and
+explain that other Cicada windows, including older versions, must be closed
+before retrying. The isolated native test holds a real write lock with a second
+SQLite connection, verifies the useful error and unchanged preference, releases
+the lock, and verifies that saving succeeds without restarting the application.
+This extends the earlier single-process acceptance coverage. It does not forcibly
+terminate other applications or change the production ledger.
