@@ -1,3 +1,4 @@
+import { useSync } from '../../src/hooks/SyncContext';
 import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
 import { checkDesktopUpdates, desktopUpdatesAvailable } from '../../src/components/DesktopUpdates';
 import { useLedgerMode } from '../../src/ledger/mode';
@@ -12,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { exportBackup, importBackup, exportRecoveryBackup } from '../../src/services/backup';
@@ -48,9 +49,12 @@ const THEME_LABEL_KEYS: Record<ThemeName, string> = {
 export default function SettingsScreen() {
   const router = useRouter();
   const { desktop } = useDesktopLayout();
+  const {available:syncAvailable}=useSync();
   const scroll=useRef<ScrollView>(null);
-  const anchors=useRef<Record<string,number>>({});
   const [section,setSection]=useState('settings.preferences');
+  const params=useLocalSearchParams<{section?:string}>();
+  const sections=['settings.preferences','desktop.appearance','settings.cloudSync','settings.manage','settings.backup','settings.data'];
+  useEffect(()=>{if(params.section&&['settings.preferences','desktop.appearance','settings.cloudSync','settings.manage','settings.backup','settings.data'].includes(params.section))setSection(params.section);},[params.section]);
   const mode=useLedgerMode();
   const { t } = useTranslation();
   const {
@@ -115,14 +119,15 @@ export default function SettingsScreen() {
 
   return (
     <View style={[shared.screen,{flexDirection:'row'}]}>
-    {desktop&&<View testID="desktop-settings-sections" style={{width:180,padding:20,gap:8,borderRightWidth:1,borderColor:c.border}}>{['settings.preferences','desktop.appearance','settings.cloudSync','settings.manage','settings.backup','settings.data'].map(key=><TouchableOpacity accessibilityRole="button" key={key} onPress={()=>{setSection(key);scroll.current?.scrollTo({y:anchors.current[key]??0,animated:false});}} style={{padding:12,borderRadius:8,backgroundColor:section===key?c.accentSoft:undefined}}><Text style={{color:section===key?c.accent:c.inkSoft}}>{t(key)}</Text></TouchableOpacity>)}</View>}
+    {desktop&&<View testID="desktop-settings-sections" style={{width:180,padding:20,gap:8,borderRightWidth:1,borderColor:c.border}}>{sections.map(key=><TouchableOpacity accessibilityRole="button" key={key} accessibilityState={{selected:section===key}} onPress={()=>{setSection(key);scroll.current?.scrollTo({y:0,animated:false});}} style={{padding:12,borderRadius:8,backgroundColor:section===key?c.accentSoft:undefined}}><Text style={{color:section===key?c.accent:c.inkSoft}}>{t(key)}</Text></TouchableOpacity>)}</View>}
     <View style={{flex:1}}>
-      {desktop&&preferenceStatus!=='idle'&&<View testID="desktop-settings-feedback" accessibilityRole={preferenceStatus==='error'?'alert':undefined} style={{padding:12,borderRadius:8,backgroundColor:c.accentSoft,marginHorizontal:24,marginTop:16}}><Text style={{color:c.ink}}>{preferenceStatus==='error'?preferenceError:t(preferenceStatus==='saving'?'common.working':'desktop.saved')}</Text></View>}
-    <ScrollView ref={scroll} style={shared.screen} contentContainerStyle={[shared.scrollContent,desktop&&{maxWidth:1000,padding:32}]}>
+      {desktop&&preferenceStatus!=='idle'&&<View testID="desktop-settings-feedback" accessibilityRole={preferenceStatus==='error'?'alert':undefined} style={{padding:12,borderRadius:8,backgroundColor:preferenceStatus==='error'?'#fff3df':undefined,marginHorizontal:24,marginTop:16}}><Text style={{color:c.ink}}>{preferenceStatus==='error'?preferenceError:t(preferenceStatus==='saving'?'common.working':'desktop.saved')}</Text></View>}
+    <ScrollView ref={scroll} style={[shared.screen,desktop&&{backgroundColor:c.card}]} contentContainerStyle={[shared.scrollContent,desktop&&{maxWidth:1000,padding:32}]}>
 
       {mode==='demo' && <TouchableOpacity accessibilityRole="button" disabled={loading} style={shared.card} onPress={() => { void switchLedger('live').catch(()=>notify(t('common.error'),t('common.loadFailed'))); }}><Text style={{color:c.primary}}>{t('demo.return')}</Text></TouchableOpacity>}
-      <View onLayout={e=>{anchors.current['settings.preferences']=e.nativeEvent.layout.y;}}><Text style={shared.sectionTitle}>{t('settings.preferences')}</Text></View>
-      <View style={shared.card}>
+      <View testID="settings-preferences-panel" style={desktop&&section!=='settings.preferences'?{display:'none'}:undefined}>
+      <View><Text style={shared.sectionTitle}>{t('settings.preferences')}</Text></View>
+      <View style={desktop?styles.desktopRow:shared.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleText}>
             <Text style={styles.rowTitle}>{t('settings.forwardFillTitle')}</Text>
@@ -133,7 +138,7 @@ export default function SettingsScreen() {
           <Switch value={forwardFill} disabled={loading} onValueChange={(v)=>{void savePreference(()=>setForwardFill(v));}} />
         </View>
       </View>
-      <View style={shared.card}>
+      <View style={desktop?styles.desktopRow:shared.card}>
         <Text style={styles.rowTitle}>{t('settings.currency')}</Text>
         <Text style={shared.muted}>{t('settings.currencyHelp')}</Text>
         <View style={styles.currencyRow}>
@@ -156,8 +161,11 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
-      {desktop&&<View onLayout={e=>{anchors.current['desktop.appearance']=e.nativeEvent.layout.y;}}><Text style={shared.sectionTitle}>{t('desktop.appearance')}</Text></View>}
-      <View style={shared.card}>
+      </View>
+      {desktopUpdatesAvailable() && (!desktop||section==='settings.preferences') && <TouchableOpacity accessibilityRole="button" style={shared.card} onPress={checkDesktopUpdates}><Text style={{color:c.primary}}>{t('updates.check')}</Text></TouchableOpacity>}
+      <View testID="settings-appearance-panel" style={desktop&&section!=='desktop.appearance'?{display:'none'}:undefined}>
+      {desktop&&<View><Text style={shared.sectionTitle}>{t('desktop.appearance')}</Text></View>}
+      <View style={desktop?styles.desktopRow:shared.card}>
         <Text style={styles.rowTitle}>{t('settings.colorForGains')}</Text>
         <Text style={shared.muted}>
           {t('settings.colorForGainsHelp')}
@@ -187,7 +195,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={shared.card}>
+      <View style={desktop?styles.desktopRow:shared.card}>
         <Text style={styles.rowTitle}>{t('settings.language')}</Text>
         <Text style={shared.muted}>{t('settings.languageHelp')}</Text>
         <View style={styles.currencyRow}>
@@ -212,7 +220,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={shared.card}>
+      <View style={desktop?styles.desktopRow:shared.card}>
         <Text style={styles.rowTitle}>{t('settings.theme')}</Text>
         <Text style={shared.muted}>{t('settings.themeHelp')}</Text>
         <View style={styles.themeGrid}>
@@ -238,17 +246,21 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View onLayout={e=>{anchors.current['settings.cloudSync']=e.nativeEvent.layout.y;}}><CloudSyncSection /></View>
-      {desktopUpdatesAvailable() && <TouchableOpacity accessibilityRole="button" style={shared.card} onPress={checkDesktopUpdates}><Text style={{color:c.primary}}>{t('updates.check')}</Text></TouchableOpacity>}
+      </View>
+      <View testID="settings-sync-panel" style={desktop&&section!=='settings.cloudSync'?{display:'none'}:undefined}><CloudSyncSection />{desktop&&!syncAvailable&&<Text style={shared.muted}>{t('desktop.syncUnavailable')}</Text>}</View>
 
-      <View onLayout={e=>{anchors.current['settings.manage']=e.nativeEvent.layout.y;}}><Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.manage')}</Text></View>
+
+      <View testID="settings-manage-panel" style={desktop&&section!=='settings.manage'?{display:'none'}:undefined}>
+      <View><Text style={[shared.sectionTitle, { marginTop:desktop?0:spacing.xl }]}>{t('settings.manage')}</Text></View>
       <Row
         title={t('settings.accountsAssets')}
         subtitle={t('settings.accountsAssetsSub')}
         onPress={() => router.push('/modals/manage-accounts')}
       />
 
-      <View onLayout={e=>{anchors.current['settings.backup']=e.nativeEvent.layout.y;}}><Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.backup')}</Text></View>
+      </View>
+      <View testID="settings-backup-panel" style={desktop&&section!=='settings.backup'?{display:'none'}:undefined}>
+      <View><Text style={[shared.sectionTitle, { marginTop:desktop?0:spacing.xl }]}>{t('settings.backup')}</Text></View>
       <Row
         title={t('settings.exportData')}
         subtitle={t('settings.exportDataSub')}
@@ -302,7 +314,9 @@ export default function SettingsScreen() {
         finally { setLoading(false); }
       }} />
 
-      <View onLayout={e=>{anchors.current['settings.data']=e.nativeEvent.layout.y;}}><Text style={[shared.sectionTitle, { marginTop: spacing.xl }]}>{t('settings.data')}</Text></View>
+      </View>
+      <View testID="settings-data-panel" style={desktop&&section!=='settings.data'?{display:'none'}:undefined}>
+      <View><Text style={[shared.sectionTitle, { marginTop:desktop?0:spacing.xl }]}>{t('settings.data')}</Text></View>
       <Row
         title={t(mode==='demo'?'demo.reset':'demo.enter')}
         subtitle={t('settings.loadSampleSub')}
@@ -317,6 +331,7 @@ export default function SettingsScreen() {
         disabled={loading}
       />
 
+      </View>
       {loading && (
         <View style={styles.loading}>
           <ActivityIndicator size="small" color={c.primary} />
@@ -343,13 +358,14 @@ function Row({
   disabled?: boolean;
 }) {
   const shared = useShared();
+  const {desktop}=useDesktopLayout();
   const styles = useThemedStyles(makeStyles);
   return (
     <TouchableOpacity
       accessibilityRole="button" accessibilityLabel={title}
       onPress={onPress}
       disabled={disabled}
-      style={[shared.card, styles.row, disabled && { opacity: 0.5 }]}>
+      style={[desktop?styles.desktopRow:shared.card, styles.row, disabled && { opacity: 0.5 }]}>
       <Text
         style={[styles.rowTitle, destructive && { color: semantic.negative }]}>
         {title}
@@ -401,6 +417,7 @@ const makeStyles = (c: ThemeColors) =>
       marginTop: spacing.lg,
       alignItems: 'center',
     },
+    desktopRow: {paddingVertical:24,borderBottomWidth:1,borderColor:c.border},
     toggleRow: {
       flexDirection: 'row',
       alignItems: 'center',

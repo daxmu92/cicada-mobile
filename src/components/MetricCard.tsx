@@ -8,15 +8,16 @@ type Props = {
   value: string;
   /** Optional explicit value color (e.g. a semantic gain/loss color). */
   valueColor?: string;
+  plain?: boolean;
 };
 
 /** A compact stat card: small uppercase label over an emphasized value. */
-export function MetricCard({ label, value, valueColor }: Props) {
+export function MetricCard({ label, value, valueColor, plain = false }: Props) {
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
 
   return (
-    <View style={[shared.card, styles.card]}>
+    <View style={plain ? {flex:1,minWidth:0,paddingVertical:8} : [shared.card, styles.card]}>
       <Text style={styles.label}>{label}</Text>
       <Text style={[styles.value, valueColor ? { color: valueColor } : null]}>
         {value}

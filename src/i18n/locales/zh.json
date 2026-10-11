@@ -374,6 +374,10 @@
     "transactionValue": "金额",
     "appearance": "外观",
     "dataManagement": "数据管理",
-    "saved": "已保存"
+    "saved": "已保存",
+    "dataDetails": "数据说明",
+    "hideDataDetails": "收起数据说明",
+    "syncDetails": "同步详情",
+    "syncUnavailable": "云同步可在桌面应用和手机应用中使用。"
   }
 }

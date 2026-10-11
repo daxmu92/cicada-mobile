@@ -107,17 +107,18 @@ export default function HomeScreen() {
         <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
       </View>}
 
-      <ObservationNotice meta={metadata} month={selectedMonth} onLatest={setSelectedMonth}/>
+      {!desktop&&<ObservationNotice meta={metadata} month={selectedMonth} onLatest={setSelectedMonth}/>}
       <View style={wide ? styles.desktopGrid : undefined}>
       {/* Hero: net worth + change + trend */}
       <View style={[shared.card, wide && styles.heroColumn]}>
         <Text style={shared.sectionTitle}>{t('home.totalNetWorth')}</Text>
-        <Text style={shared.bigNumber}>{allocations.length ? fmt(totals.netWorth) : '—'}</Text>
+        <Text style={[shared.bigNumber,desktop&&{fontSize:42}]}>{allocations.length ? fmt(totals.netWorth) : '—'}</Text>
         {!allocations.length && <Text style={shared.muted}>{t('home.noSnapshot')}</Text>}
         {allocations.some((row) => row.estimated) && <Text style={shared.muted}>{t('home.estimated')}</Text>}
         <View style={{ marginTop: spacing.sm }}>
           {netGrowth !== null ? <ChangePill value={netGrowth} percent={growthPct} caption={t('observation.comparableCount',{count:comparison.count})} /> : <Text style={shared.muted}>{t('home.noComparison')}</Text>}
         </View>
+        {desktop&&<View style={{marginTop:20}}><ObservationNotice meta={metadata} month={selectedMonth} onLatest={setSelectedMonth}/></View>}
         {trend.length > 1 && (
           <View style={styles.heroTrend}>
             <NetWorthTrendChart points={trend} height={wide ? 280 : 150} />
@@ -148,9 +149,9 @@ export default function HomeScreen() {
       </View>
       <SectionCard title={t('observation.explainChange')}>
         <View style={[styles.metricsRow,!wide&&{flexDirection:'column'}]}>
-          <MetricCard label={t('observation.comparableInflow')} value={comparison.inflow===null?'—':fmt(comparison.inflow)}/>
-          <MetricCard label={t('observation.comparableProfit')} value={comparison.profit===null?'—':fmt(comparison.profit)}/>
-          <MetricCard label={t('observation.residual')} value={comparison.residual===null?'—':fmt(comparison.residual)}/>
+          <MetricCard plain={desktop} label={t('observation.comparableInflow')} value={comparison.inflow===null?'—':fmt(comparison.inflow)}/>
+          <MetricCard plain={desktop} label={t('observation.comparableProfit')} value={comparison.profit===null?'—':fmt(comparison.profit)}/>
+          <MetricCard plain={desktop} label={t('observation.residual')} value={comparison.residual===null?'—':fmt(comparison.residual)}/>
         </View>
         <Text style={shared.muted}>{t('observation.comparisonHelp',{count:comparison.count})}</Text>
       </SectionCard>

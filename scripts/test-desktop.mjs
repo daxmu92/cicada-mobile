@@ -54,6 +54,7 @@ try{
  await page.waitForFunction(async()=>{const rows=await window.__TAURI_INTERNALS__.invoke('plugin:sql|select',{db:'sqlite:cicada.db',query:"SELECT value FROM setting WHERE key='currency'",values:[]});return rows[0]?.value==='£';});
  console.log('PASS another connection holding a write lock reports cause, preserves setting, and retries after release');
 
+ await page.getByTestId('desktop-settings-sections').getByRole('button',{name:'Data',exact:true}).click();
  await page.getByText('Open Demo Ledger',{exact:true}).click();await page.getByRole('button',{name:'Return to My Ledger',exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
  await page.getByRole('tab',{name:/Assets$/}).click();await page.getByText('Checking',{exact:true}).waitFor({state:'visible'});
@@ -73,6 +74,7 @@ try{
  assert.equal(await page.evaluate(()=>window.__cicadaFinancialReads),0,'Revisiting warm Home/Assets must reuse financial reads');
  console.log('PASS native warm Home/Assets navigation performs zero financial queries');
  await page.getByRole('tab',{name:/Settings$/}).click();
+ await page.getByTestId('desktop-settings-sections').getByRole('button',{name:'Appearance',exact:true}).click();
  for(const color of ['red','green','red','green']){
   const started=Date.now();
   await page.getByText(color==='red'?'Red ▲':'Green ▲',{exact:true}).click();
@@ -95,9 +97,10 @@ try{
  console.log('PASS actual native draft reload, cleanup-failure rollback and single transaction after retry');
  await page.getByRole('tab',{name:/Settings$/}).click();
 
+ await page.getByTestId('desktop-settings-sections').getByRole('button',{name:'Appearance',exact:true}).click();
  await page.getByText('中文',{exact:true}).click();
  await page.getByRole('button',{name:'返回我的账本',exact:true}).click();await page.getByRole('tab',{name:/Home$/}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor({state:'visible'});
- await page.getByRole('tab',{name:/Settings$/}).click();await page.getByText('中文',{exact:true}).click();await page.getByRole('tab',{name:/首页$/}).click();await page.getByText('总净值',{exact:true}).waitFor({state:'visible'});
+ await page.getByRole('tab',{name:/Settings$/}).click();await page.getByTestId('desktop-settings-sections').getByRole('button',{name:'Appearance',exact:true}).click();await page.getByText('中文',{exact:true}).click();await page.getByRole('tab',{name:/首页$/}).click();await page.getByText('总净值',{exact:true}).waitFor({state:'visible'});
  for(const node of await page.getByText(/^(正在加载账本…|Loading ledger…)$/).all()){
   const shown=await node.evaluate(element=>{
    for(let current=element;current;current=current.parentElement){

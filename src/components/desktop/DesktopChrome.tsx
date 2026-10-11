@@ -1,7 +1,7 @@
 import { useDesktopEntry } from '../../hooks/use-desktop-entry';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../hooks/SettingsContext';
@@ -34,13 +34,13 @@ export function DesktopNavigation({ state, descriptors, navigation }: BottomTabB
         return <TouchableOpacity key={route.key} accessibilityRole="tab" accessibilityLabel={t(labels[name])} accessibilityState={{ selected }}
           onPress={() => { const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true }); if (!selected && !event.defaultPrevented) navigation.navigate(route.name, route.params); }}
           onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: compact ? 'center' : 'flex-start', gap: 12, padding: 12, borderRadius: 10, backgroundColor: selected ? c.accentSoft : undefined, marginTop: name === 'settings' ? 24 : 0 }}>
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: compact ? 'center' : 'flex-start', gap: 12, padding: 12, borderRadius: 10, backgroundColor: selected ? c.accentSoft : undefined, marginTop: name === 'settings' ? 'auto' : 0 }}>
           <Ionicons name={icons[name]} size={21} color={selected ? c.accent : c.muted}/>
           {!compact && <Text style={{ color: selected ? c.accent : c.inkSoft, fontSize: 14, fontWeight: selected ? '700' : '500' }}>{descriptors[route.key].options.title}</Text>}
         </TouchableOpacity>;
       })}
     </View>
-    {!compact && <Text style={{ color: c.muted, fontSize: 12, padding: 8 }}>{t(mode === 'demo' ? 'desktop.demoLedger' : 'desktop.mainLedger')}</Text>}
+    <Text style={{ color: c.muted, fontSize: compact?10:12, padding: 8 }}>{t(mode === 'demo' ? 'desktop.demoLedger' : 'desktop.mainLedger')}</Text>
   </View>;
 }
 
@@ -48,9 +48,9 @@ export function DesktopToolbar() {
   const c = useTheme();
   const { t } = useTranslation();
   const path = usePathname();
+  const router = useRouter();
   const [month, setMonth] = useObservationMonth();
   const sync = useSync();
-  const mode = useLedgerMode();
   const name = path === '/' ? 'index' : path.split('/').pop() as keyof typeof labels;
   const entry = useDesktopEntry();
   const showMonth = name !== 'settings' && !(name === 'assets' && entry.active);
@@ -63,15 +63,18 @@ export function DesktopToolbar() {
     setMonth(next);
   };
   const status = !sync.connected ? t('desktop.localLedger') : t(sync.status === 'syncing' ? 'settings.cloudStatusSyncing' : sync.status === 'ok' ? 'settings.cloudStatusOk' : sync.status === 'idle' ? 'desktop.syncReady' : 'settings.cloudStatusError');
-  return <View testID="desktop-toolbar" style={{ minHeight: 72, backgroundColor: c.card, borderBottomWidth: 1, borderColor: c.border, paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+  return <View testID="desktop-toolbar" style={{ minHeight: 72, backgroundColor: c.card, borderBottomWidth: 1, borderColor: c.border, paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
       <Text style={{ color: c.ink, fontSize: 20, fontWeight: '700' }}>{name in labels ? t(labels[name]) : ''}</Text>
-      <Text style={{ color: c.muted, fontSize: 12 }}>{t(mode === 'demo' ? 'desktop.demoLedger' : 'desktop.mainLedger')}</Text>
     </View>
     {showMonth && <MonthSelector value={month} onChange={next => { void changeMonth(next); }}/>}
-    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: sync.connected && ['error','authError','offline'].includes(sync.status) ? '#b98842' : c.accent }}/>
-      <Text style={{ color: c.muted, fontSize: 12 }}>{status}</Text>
-    </View>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('desktop.syncDetails')} onPress={()=>{void (async()=>{
+      if(hasSavingDrafts())return;
+      if(hasUnsavedDrafts()){if(!await confirmAsync(t('drafts.title'),t('drafts.body')))return;try{await discardDrafts();}catch{notify(t('common.error'),t('draftRecovery.error'));return;}}
+      router.navigate('/settings?section=settings.cloudSync');
+    })();}} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', padding:8 }}>
+      <View style={{ width: 6, height: 6, borderRadius: 4, backgroundColor: sync.connected && ['error','authError','offline'].includes(sync.status) ? '#b98842' : c.muted }}/>
+      <Text numberOfLines={1} style={{ color: c.muted, fontSize: 12, maxWidth:150 }}>{status}</Text>
+    </TouchableOpacity>
   </View>;
 }

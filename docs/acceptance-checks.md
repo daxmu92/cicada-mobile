@@ -196,3 +196,9 @@ feedback, compact side navigation and narrow-browser bottom tabs. Optional
 The isolated Windows acceptance checks the actual desktop navigation and useful
 inline SQLITE_BUSY feedback, alongside the existing sync/cache/draft/lifecycle
 checks. Native mobile device acceptance is still pending.
+
+Desktop hierarchy checks additionally exercise collapsed/expanded record details,
+the absence of a duplicated ledger label in the toolbar, category visibility and
+the status-button route to sync settings. Native tests select Data or Appearance
+before operating their controls; the existing SQLite lock/retry and draft tests
+remain intact. Desktop and mobile regression screenshots use synthetic ledgers.

@@ -20,11 +20,11 @@ export default function TabLayout() {
 function TabContent() {
   const { t } = useTranslation();
   const c = useTheme();
-  const { desktop } = useDesktopLayout();
+  const { desktop, sidebarWidth } = useDesktopLayout();
 
   return (
     <View style={{flex:1,backgroundColor:c.bg}}>
-    {desktop && <DesktopToolbar/>}
+    {desktop && <View style={{position:'absolute',top:0,left:sidebarWidth,right:0,zIndex:10}}><DesktopToolbar/></View>}
     <Tabs
       tabBar={desktop ? props => <DesktopNavigation {...props}/> : undefined}
       screenListeners={({navigation,route})=>({tabPress:event=>{
@@ -39,6 +39,7 @@ function TabContent() {
       screenOptions={{
         tabBarActiveTintColor: c.accent,
         headerShown: !desktop,
+        sceneStyle: desktop ? {paddingTop:72} : undefined,
         tabBarPosition: desktop ? 'left' : 'bottom',
         tabBarButton: HapticTab,
         // On web the tab button is vertically tight, so the label (a flex item)

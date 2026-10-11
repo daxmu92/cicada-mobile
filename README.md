@@ -10,9 +10,10 @@
 
 Ported from the original [Streamlit app](https://github.com/daxmu92/CicadaFinScape).
 
-Desktop 0.2.7 uses a dedicated sidebar and toolbar, an asset inspector, transaction
-columns and inline settings feedback. Mobile retains bottom navigation. See
-[desktop workflows](docs/product-workflows.md#desktop-027-layout).
+Desktop 0.2.8 refines the sidebar and toolbar hierarchy, collapses record details,
+and isolates settings categories with quiet save feedback. It retains the asset
+inspector and transaction columns; mobile keeps bottom navigation. See
+[desktop workflows](docs/product-workflows.md#desktop-028-information-hierarchy).
 
 ## Features
 

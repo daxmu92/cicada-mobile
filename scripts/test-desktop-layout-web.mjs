@@ -12,12 +12,15 @@ try {
  const capture=async name=>{if(screenshots)await page.screenshot({path:`${screenshots}/${name}.png`});};
  await page.goto(base+'/settings',{waitUntil:'networkidle'});
  const fixture={version:2,exportedAt:'2026-10-10T00:00:00Z',accounts:[{id:1,name:'Investment account',archived:0}],assets:[{id:1,accountId:1,name:'Alpha fund',categories:'{"风险":"低风险"}',archived:0},{id:2,accountId:1,name:'Beta fund',categories:'{"风险":"高风险"}',archived:0}],snapshots:[{assetId:1,date:'2026-09',netWorth:10000,inflow:0,profit:0},{assetId:2,date:'2026-09',netWorth:20000,inflow:0,profit:0},{assetId:1,date:'2026-10',netWorth:10500,inflow:300,profit:200},{assetId:2,date:'2026-10',netWorth:20300,inflow:0,profit:300}],transactions:[{id:1,date:'2026-10-09',type:'INCOME',value:1234,cat:'Salary',note:'October sample'},{id:2,date:'2026-09-09',type:'OUTLAY',value:200,cat:'Living',note:'September sample'}],settings:{language:'en',currency:'$',forwardFill:'false'}};
+ await page.getByTestId('desktop-settings-sections').getByRole('button',{name:'Backup',exact:true}).click();
  const chooser=page.waitForEvent('filechooser'),done=page.waitForEvent('dialog',{predicate:d=>d.message().startsWith('Imported')});await page.getByRole('button',{name:'Import Data',exact:true}).click();await(await chooser).setFiles({name:'desktop-synthetic.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(fixture))});await done;
  const sidebar=page.getByTestId('desktop-navigation'),toolbar=page.getByTestId('desktop-toolbar');
  await sidebar.waitFor();const box=await sidebar.boundingBox();assert.equal(box.x,0);assert.equal(box.width,212);assert(box.height>700);
  await page.getByRole('tab',{name:'Home',exact:true}).click();await page.getByText('Total Net Worth',{exact:true}).waitFor();
  const latest=page.getByRole('button',{name:'View latest recorded month · 2026-10',exact:true});if(await latest.count())await latest.click();await toolbar.getByText('Oct 2026',{exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Previous month',exact:true}).count(),1);await capture('home');
+ assert.equal(await toolbar.getByText('Main ledger',{exact:true}).count(),0);
+ const notice=page.getByTestId('observation-notice');assert.equal(await notice.getByText(/Latest asset record/).count(),0);await notice.getByRole('button',{name:'Data details',exact:true}).click();await notice.getByText(/Latest asset record/).waitFor();await notice.getByRole('button',{name:'Hide data details',exact:true}).click();
  console.log('PASS desktop side navigation and one persistent month toolbar');
  await page.getByRole('tab',{name:'Assets',exact:true}).click();await page.getByText('Alpha fund',{exact:true}).click();
  const inspector=page.getByTestId('desktop-asset-inspector');await inspector.getByText('$10,500.00',{exact:true}).waitFor();assert.equal(new URL(page.url()).pathname,'/assets');
@@ -32,7 +35,9 @@ try {
  console.log('PASS transaction table and shared desktop month selection');
  await toolbar.getByRole('button',{name:'Next month',exact:true}).click();await page.getByRole('tab',{name:'Insights',exact:true}).click();await page.getByText('Calendar',{exact:true}).waitFor();await capture('analysis');
  await page.getByRole('tab',{name:'Settings',exact:true}).click();await page.getByTestId('desktop-settings-sections').getByRole('button',{name:'Appearance',exact:true}).click();await page.getByText('Red ▲',{exact:true}).click();await page.getByTestId('desktop-settings-feedback').getByText('Saved',{exact:true}).waitFor();await capture('settings');
- console.log('PASS desktop settings section navigation and inline save feedback');
+ assert.equal(await page.getByTestId('settings-backup-panel').isVisible(),false);assert.equal(await page.getByTestId('settings-appearance-panel').isVisible(),true);
+ await toolbar.getByRole('button',{name:'Sync details',exact:true}).click();await page.getByTestId('settings-sync-panel').waitFor({state:'visible'});assert.equal(await page.getByTestId('settings-appearance-panel').isVisible(),false);
+ console.log('PASS desktop settings category isolation, inline feedback and sync-details routing');
  await page.setViewportSize({width:1000,height:760});await page.getByRole('tab',{name:'Assets',exact:true}).click();assert.equal((await sidebar.boundingBox()).width,76);await capture('compact-desktop');
  await page.setViewportSize({width:420,height:900});await sidebar.waitFor({state:'detached'});assert.equal(await sidebar.count(),0);assert.equal(await toolbar.count(),0);await page.getByRole('tab',{name:/Home$/}).click();await page.getByRole('button',{name:'Previous month',exact:true}).waitFor();await capture('mobile');
  console.log('PASS compact desktop keeps its sidebar and mobile keeps bottom tabs');

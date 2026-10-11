@@ -374,6 +374,10 @@
     "transactionValue": "Amount",
     "appearance": "Appearance",
     "dataManagement": "Data management",
-    "saved": "Saved"
+    "saved": "Saved",
+    "dataDetails": "Data details",
+    "hideDataDetails": "Hide data details",
+    "syncDetails": "Sync details",
+    "syncUnavailable": "Cloud sync is available in the desktop and mobile apps."
   }
 }

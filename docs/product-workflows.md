@@ -108,3 +108,21 @@ Expanded batch forms arrange net worth, inflow and profit inputs horizontally.
 The initial Windows size is 1280×820 with an 800×600 minimum; startup bounds the
 window against the current monitor. Window-position persistence, multi-row paste,
 multiple selection and a universal search are not implemented in this iteration.
+
+## Desktop 0.2.8 information hierarchy
+
+The sidebar owns the ledger label; the toolbar aligns with the content area and
+contains the page title, month and a small status button. The status button opens
+the cloud-sync settings category after the existing unsaved/saving guards.
+
+Home leads with net worth and change. Coverage is a neutral expandable line below
+the main metric, with amber text for incomplete records. The full latest-record
+dates and statistical caveats remain available through Data details. Change
+explanations use plain metrics within one surface rather than nested cards.
+Mobile keeps the expanded coverage notice.
+
+Desktop Settings shows only the selected category. Hidden categories remain
+mounted so cloud configuration inputs survive category changes. Preference rows
+use separators; successful saves show neutral text, while failures receive a
+warning background. Mobile retains the complete settings list. Category routes
+accept only known section identifiers, including the toolbar's cloud-sync link.
