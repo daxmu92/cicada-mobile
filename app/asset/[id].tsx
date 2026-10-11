@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getLedgerEpoch } from '../../src/ledger/mode';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +40,10 @@ export default function AssetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
+  const dataVersion = useDataVersion();
+  const epoch=getLedgerEpoch();
+  const [loadedEpoch,setLoadedEpoch]=useState(-1);
+  const request=useRef(0);
   const { fmt } = useFormat();
   const { gain, loss } = useSemanticColors();
   const c = useTheme();
@@ -52,24 +59,18 @@ export default function AssetDetailScreen() {
   const [range, setRange] = useState<TimeRange>('All');
 
   const loadData = useCallback(async () => {
-    const a = await getAsset(assetId);
-    setAsset(a);
-    if (a) {
-      const acc = await getAccount(a.accountId);
-      setAccountName(acc?.name ?? '');
-    }
-    const snaps = await listSnapshotsByAsset(assetId);
-    setSnapshots(snaps);
-  }, [assetId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const generation=++request.current;const capturedEpoch=getLedgerEpoch();
+    const a=await getAsset(assetId);
+    const [acc,snaps]=await Promise.all([a?getAccount(a.accountId):null,listSnapshotsByAsset(assetId)]);
+    if(generation!==request.current||capturedEpoch!==getLedgerEpoch())return;
+    setAsset(a);setAccountName(acc?.name??'');setSnapshots(snaps);setLoadedEpoch(capturedEpoch);
+  },[assetId]);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
   const reversed = [...snapshots].reverse();
@@ -124,9 +125,11 @@ export default function AssetDetailScreen() {
         ? gain
         : loss;
 
+  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
     <>
       <Stack.Screen options={{ title: asset?.name ?? t('nav.asset') }} />
+      <TouchableOpacity accessibilityRole="button" style={shared.card} onPress={()=>router.push(`/modals/reconcile-asset?assetId=${assetId}`)}><Text style={shared.muted}>{t('reconcile.title')}</Text></TouchableOpacity>
       <ScrollView style={shared.screen} contentContainerStyle={shared.scrollContent}>
         {asset && (
           <>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { formatMonthYear, nextYearMonth, prevYearMonth } from '../utils/date';
@@ -10,10 +11,12 @@ type Props = {
   value: string;
   onChange: (ym: string) => void;
   disablePicker?: boolean;
+  disabled?: boolean;
 };
 
-export function MonthSelector({ value, onChange, disablePicker = false }: Props) {
+export function MonthSelector({ value, onChange, disablePicker = false, disabled = false }: Props) {
   const locale = useLocale();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -21,19 +24,25 @@ export function MonthSelector({ value, onChange, disablePicker = false }: Props)
     <View style={styles.row}>
       <TouchableOpacity
         style={styles.arrow}
+        disabled={disabled}
+        accessibilityRole="button"
         hitSlop={8}
+        accessibilityLabel={t('common.previousMonth')}
         onPress={() => onChange(prevYearMonth(value))}>
         <Text style={styles.arrowText}>‹</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.label}
-        disabled={disablePicker}
+        disabled={disablePicker || disabled}
         onPress={() => setPickerOpen(true)}>
         <Text style={styles.labelText}>{formatMonthYear(value, locale)}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.arrow}
+        disabled={disabled}
+        accessibilityRole="button"
         hitSlop={8}
+        accessibilityLabel={t('common.nextMonth')}
         onPress={() => onChange(nextYearMonth(value))}>
         <Text style={styles.arrowText}>›</Text>
       </TouchableOpacity>
@@ -86,6 +95,7 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
     },
     labelText: {
+      color: c.ink,
       fontSize: 16,
       fontWeight: '700',
     },

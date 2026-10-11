@@ -6,6 +6,7 @@ export type Account = {
 
 export type Asset = {
   id: number;
+  uuid?:string;
   accountId: number;
   name: string;
   categories: Record<string, string>;
@@ -27,12 +28,15 @@ export type AssetSnapshot = {
 export type SnapshotWithAsset = AssetSnapshot & {
   accountName: string;
   assetName: string;
+  estimated?: boolean;
+  sourceDate?: string;
 };
 
 export type TranType = 'INCOME' | 'OUTLAY';
 
 export type Transaction = {
   id: number;
+  uuid?:string;
   date: string;
   type: TranType;
   value: number;

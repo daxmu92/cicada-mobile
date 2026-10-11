@@ -1,8 +1,9 @@
-import { getDatabase } from '../db/database';
+import { runLedgerMaintenance } from './ledger-maintenance';
+import { getLedgerMode } from '../ledger/mode';
 import { eraseAllData } from '../sync/erase';
 import { tick } from '../sync/clock';
 import { syncScheduler } from '../sync/scheduler';
-import { setSetting } from '../db/setting-repo';
+import { notifyDataChanged } from '../db/changes';
 
 // Defaults mirror SettingsContext. Language is intentionally NOT reset — it is a
 // per-device UX preference, and resetting it would propagate one device's locale
@@ -11,6 +12,7 @@ const SETTING_DEFAULTS: Record<string, string> = {
   currency: '$',
   forwardFill: 'false',
   gainColor: 'green',
+  theme: 'warmSlate',
 };
 
 /**
@@ -20,14 +22,22 @@ const SETTING_DEFAULTS: Record<string, string> = {
  * offline, the tombstones are recorded locally and pushed on the next sync.
  */
 export async function eraseAllDataAndSync(opts: { resetSettings: boolean }): Promise<void> {
-  await syncScheduler.requestSync('manual').catch(() => {}); // best-effort pre-sync (advance clock)
-  const db = await getDatabase();
-  await eraseAllData(db, { tick });
-  if (opts.resetSettings) {
-    for (const [key, value] of Object.entries(SETTING_DEFAULTS)) {
-      await setSetting(key, value);           // fresh-stamped LWW writes propagate
-    }
-  }
-  syncScheduler.markDirty();
-  await syncScheduler.requestSync('manual').catch(() => {}); // push tombstones
+  const expected=getLedgerMode();
+  await runLedgerMaintenance(expected,async (db,sync) => {
+    await sync().catch(() => {});
+    const deletedAt = await tick();
+    const updatedAt = await tick();
+    await db.withTransactionAsync(async (tx) => {
+      await eraseAllData(tx, { tick: async () => deletedAt });
+      await tx.runAsync('DELETE FROM local_backup'); // Explicit erase also erases local recovery data.
+      if (opts.resetSettings) {
+        for (const [key, value] of Object.entries(SETTING_DEFAULTS)) {
+          await tx.runAsync(`INSERT INTO setting(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`, [key, value, updatedAt]);
+        }
+      }
+    });
+    notifyDataChanged();
+    syncScheduler.markDirty();
+    await sync().catch(() => {});
+  });
 }

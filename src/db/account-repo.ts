@@ -1,5 +1,8 @@
+import {readCached} from './query-cache';
+import { runLedgerWrite } from '../services/ledger-write';
+import { tick } from '../sync/clock';
 import { getDatabase } from './database';
-import { stampWrite, recordTombstones } from '../sync/stamp';
+import { stampWrite, recordTombstonesAt } from '../sync/stamp';
 import { collectSnapshotTombstoneKeys } from './snapshot-repo';
 import { bumpDirty } from '../sync/dirty';
 import type { Account } from '../utils/types';
@@ -21,6 +24,7 @@ function rowToAccount(row: AccountRow): Account {
 export async function listAccounts(
   options?: { includeArchived?: boolean }
 ): Promise<Account[]> {
+  return readCached(['accounts',options?.includeArchived??false],async()=>{
   const db = await getDatabase();
   const includeArchived = options?.includeArchived ?? false;
   const sql = includeArchived
@@ -28,6 +32,7 @@ export async function listAccounts(
     : 'SELECT id, name, archived FROM account WHERE archived = 0 ORDER BY name';
   const rows = await db.getAllAsync<AccountRow>(sql);
   return rows.map(rowToAccount);
+  });
 }
 
 export async function getAccount(id: number): Promise<Account | null> {
@@ -40,59 +45,65 @@ export async function getAccount(id: number): Promise<Account | null> {
 }
 
 export async function createAccount(name: string): Promise<number> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { uuid, updatedAt } = await stampWrite(db, { withUuid: true });
   const result = await db.runAsync(
     'INSERT INTO account (name, uuid, updated_at) VALUES (?, ?, ?)',
     [name, uuid, updatedAt]
   );
-  bumpDirty();
+  bumpDirty(db);
   return result.lastInsertRowId;
+  });
 }
 
 export async function renameAccount(id: number, name: string): Promise<void> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const { updatedAt } = await stampWrite(db, { withUuid: false });
   await db.runAsync('UPDATE account SET name = ?, updated_at = ? WHERE id = ?', [
     name,
     updatedAt,
     id,
   ]);
-  bumpDirty();
+  bumpDirty(db);
+  });
 }
 
 export async function deleteAccount(id: number): Promise<void> {
-  const db = await getDatabase();
-  const account = await db.getFirstAsync<{ uuid: string }>(
-    'SELECT uuid FROM account WHERE id = ?',
-    [id]
-  );
-  if (!account) return;
-  const assets = await db.getAllAsync<{ id: number; uuid: string }>(
-    'SELECT id, uuid FROM asset WHERE account_id = ?',
-    [id]
-  );
-  const snapshotKeys = await collectSnapshotTombstoneKeys(
-    db,
-    assets.map((a) => a.id)
-  );
-  // Record tombstones BEFORE the delete (the rows still exist to read).
-  await recordTombstones(db, 'account', [account.uuid]);
-  await recordTombstones(db, 'asset', assets.map((a) => a.uuid));
-  await recordTombstones(db, 'snapshot', snapshotKeys);
-  // FK ON DELETE CASCADE clears assets + snapshots locally.
-  await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
-  bumpDirty();
+  return runLedgerWrite(async (db) => {
+  const deletedAt = await tick(db);
+  await db.withTransactionAsync(async (db) => {
+    const account = await db.getFirstAsync<{ uuid: string }>(
+      'SELECT uuid FROM account WHERE id = ?',
+      [id]
+    );
+    if (!account) return;
+    const assets = await db.getAllAsync<{ id: number; uuid: string }>(
+      'SELECT id, uuid FROM asset WHERE account_id = ?',
+      [id]
+    );
+    const snapshotKeys = await collectSnapshotTombstoneKeys(
+      db,
+      assets.map((a) => a.id)
+    );
+    // Record tombstones BEFORE the delete (the rows still exist to read).
+    await recordTombstonesAt(db, 'account', [account.uuid], deletedAt);
+    await recordTombstonesAt(db, 'asset', assets.map((a) => a.uuid), deletedAt);
+    await recordTombstonesAt(db, 'snapshot', snapshotKeys, deletedAt);
+    // FK ON DELETE CASCADE clears assets + snapshots locally.
+    await db.runAsync('DELETE FROM account WHERE id = ?', [id]);
+  });
+  bumpDirty(db);
+  });
 }
 
 export async function setAccountArchived(
   id: number,
   archived: boolean
 ): Promise<void> {
-  const db = await getDatabase();
+  return runLedgerWrite(async (db) => {
   const flag = archived ? 1 : 0;
   const { updatedAt } = await stampWrite(db, { withUuid: false });
-  await db.withTransactionAsync(async () => {
+  await db.withTransactionAsync(async (db) => {
     await db.runAsync('UPDATE account SET archived = ?, updated_at = ? WHERE id = ?', [
       flag,
       updatedAt,
@@ -107,5 +118,6 @@ export async function setAccountArchived(
       );
     }
   });
-  bumpDirty();
+  bumpDirty(db);
+  });
 }

@@ -109,3 +109,12 @@ test('first-connect: both devices independently created the same-named account -
   assert.deepEqual(await snapshotState(A.db), await snapshotState(B.db));
   assert.equal((await A.db.getAllAsync('SELECT * FROM account')).length, 1); // adopted into one
 });
+
+test('first-connect same-named assets keep newer local snapshots', async () => {
+  const a = await makeMigratedDb(); const b = await makeMigratedDb();
+  const data = (id:string,value:number,stamp:number) => ({ tables: {account:[{uuid:'acc'+id,name:'Bank',archived:0,updated_at:ts(stamp)}],asset:[{uuid:'asset'+id,accountUuid:'acc'+id,name:'Fund',categories:'{}',archived:0,updated_at:ts(stamp)}],snapshot:[{assetUuid:'asset'+id,date:'2026-01',netWorth:value,inflow:0,profit:0,updated_at:ts(stamp)}],tran:[],setting:[]},tombstones:[] });
+  await applyMerge(a.db,data('A',200,20)); await applyMerge(b.db,data('B',100,10));
+  await syncRound(a,b); await syncRound(a,b);
+  assert.deepEqual(await snapshotState(a.db),await snapshotState(b.db));
+  assert.equal((await a.db.getFirstAsync<{net_worth:number}>('SELECT net_worth FROM asset_snapshot'))!.net_worth,200);
+});

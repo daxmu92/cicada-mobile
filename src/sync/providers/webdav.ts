@@ -17,7 +17,8 @@ function joinUrl(base: string, path: string): string {
 // Credentials are expected to be ASCII (email + app password); btoa is present
 // on every target (Node 20, RN Hermes, browser, Tauri webview).
 function basicAuth(username: string, appPassword: string): string {
-  return 'Basic ' + btoa(`${username}:${appPassword}`);
+  const utf8 = encodeURIComponent(`${username}:${appPassword}`).replace(/%([0-9A-F]{2})/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+  return 'Basic ' + btoa(utf8);
 }
 
 function ok(status: number): boolean {
@@ -32,6 +33,8 @@ function folderUrl(fileUrl: string): string {
 }
 
 export function createWebDavRemote(config: WebDavConfig, http: HttpClient): SyncRemote {
+  const url = config.baseUrl ? new URL(config.baseUrl) : null;
+  if (url && (url.protocol !== 'https:' || url.username || url.password)) throw new Error('WebDAV requires an HTTPS URL without embedded credentials');
   const filePath = config.filePath ?? DEFAULT_FILE_PATH;
   const fileUrl = joinUrl(config.baseUrl, filePath);
   const authHeaders = (): Record<string, string> => ({

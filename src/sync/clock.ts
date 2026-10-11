@@ -1,41 +1,11 @@
-import { advanceLocal, encodeHlc, parseHlc, receive, type HlcState } from './hlc';
-import { getDeviceId } from './device';
-import { getSyncState, setSyncState } from './sync-state-repo';
-
-const HLC_KEY = 'hlc';
-
-// Serialize ticks so a read-modify-write of the persisted state can never
-// interleave (e.g. an upsert loop), which would otherwise mint duplicate HLCs.
-let queue: Promise<unknown> = Promise.resolve();
-
-async function doTick(): Promise<string> {
-  const raw = await getSyncState(HLC_KEY);
-  const prev: HlcState = raw ? (JSON.parse(raw) as HlcState) : { phys: 0, counter: 0 };
-  const next = advanceLocal(prev, Date.now());
-  await setSyncState(HLC_KEY, JSON.stringify(next));
-  const deviceId = await getDeviceId();
-  return encodeHlc(next.phys, next.counter, deviceId);
+import { getDatabase } from '../db/database';
+import type { CicadaDB } from '../db/migrations';
+import { updateDatabaseClock } from './clock-core';
+let queue:Promise<unknown>=Promise.resolve();
+function enqueue(db:Promise<CicadaDB>,remote?:string) {
+  const task=async()=>updateDatabaseClock(await db,Date.now(),remote);
+  const run=queue.then(task,task);queue=run.catch(()=>undefined);return run;
 }
-
-/** Next local HLC timestamp. Awaitable; serialized against concurrent callers. */
-export function tick(): Promise<string> {
-  const run = queue.then(doTick, doTick);
-  // Swallow errors on the queue tail so one failed tick can't wedge the chain.
-  queue = run.catch(() => undefined);
-  return run;
-}
-
-async function doReceive(remoteHlc: string): Promise<void> {
-  const raw = await getSyncState(HLC_KEY);
-  const prev: HlcState = raw ? (JSON.parse(raw) as HlcState) : { phys: 0, counter: 0 };
-  const { phys, counter } = parseHlc(remoteHlc);
-  const next = receive(prev, { phys, counter }, Date.now());
-  await setSyncState(HLC_KEY, JSON.stringify(next));
-}
-
-/** Fold a remote stamp into the local clock so future local ticks sort after it. */
-export function receiveRemote(remoteHlc: string): Promise<void> {
-  const run = queue.then(() => doReceive(remoteHlc), () => doReceive(remoteHlc));
-  queue = run.catch(() => undefined);
-  return run;
-}
+/** Capture the owning DB before entering the global clock queue. */
+export function tick(db?:CicadaDB):Promise<string> { return enqueue(db?Promise.resolve(db):getDatabase()); }
+export async function receiveRemote(stamp:string):Promise<void> { await enqueue(getDatabase(),stamp); }

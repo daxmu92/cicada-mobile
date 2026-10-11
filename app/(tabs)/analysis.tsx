@@ -1,11 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { getObservationMetadata, getTrendCoverage } from '../../src/db/observation-repo';
+import { useObservationMonth } from '../../src/hooks/use-observation-month';
+import { completeTrend } from '../../src/utils/observation';
+import { getLedgerEpoch } from '../../src/ledger/mode';
+import { notify } from '../../src/utils/dialog';
+import { useDataVersion } from '../../src/hooks/use-data-version';
+import { useCallback, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { getDateRange, getMonthlyTotals, listSnapshotsByDate } from '../../src/db/snapshot-repo';
 import { listAssets } from '../../src/db/asset-repo';
-import { currentYearMonth, minusMonths } from '../../src/utils/date';
+import { minusMonths } from '../../src/utils/date';
 import { useFormat, useSettings, useShared, useThemedStyles } from '../../src/hooks/SettingsContext';
 import { categoryPalette, spacing, type ThemeColors } from '../../src/utils/theme';
 import { MonthSelector } from '../../src/components/MonthSelector';
@@ -28,12 +35,16 @@ const EMPTY_COMP: CompositionResult = { slices: [], chartedTotal: 0, trueTotal: 
 
 export default function AnalysisScreen() {
   const { t } = useTranslation();
+  const { desktop, contentWidth } = useDesktopLayout();
+  const dataVersion = useDataVersion();
+  const epoch=getLedgerEpoch();
+  const [loadedEpoch,setLoadedEpoch]=useState(-1);
   const { fmt } = useFormat();
   const { forwardFill } = useSettings();
   const shared = useShared();
   const styles = useThemedStyles(makeStyles);
 
-  const [selectedMonth, setSelectedMonth] = useState(currentYearMonth());
+  const [selectedMonth, setSelectedMonth] = useObservationMonth();
   const [range, setRange] = useState<Range>('1Y');
   const [dimension, setDimension] = useState<string>(ACCOUNT_DIMENSION);
   const [focusedKey, setFocusedKey] = useState<string | undefined>(undefined);
@@ -42,7 +53,10 @@ export default function AnalysisScreen() {
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [compInput, setCompInput] = useState<CompositionInput[]>([]);
 
+  const request = useRef(0);
   const loadData = useCallback(async () => {
+    const generation = ++request.current;
+    const capturedEpoch=getLedgerEpoch();
     // Trend window: 1Y/3Y end at selectedMonth; All spans full history.
     let start = selectedMonth;
     let end = selectedMonth;
@@ -52,18 +66,21 @@ export default function AnalysisScreen() {
       const dr = await getDateRange();
       if (dr) {
         start = dr.start;
-        end = dr.end;
+        end = selectedMonth;
       }
     }
-    // Trend uses raw monthly sums (gaps allowed, no forward-fill); composition forward-fills — so the two cards can intentionally differ for a sparse selected month.
-    const months = await getMonthlyTotals(start, end);
-    setTrend(months.map((m) => ({ label: m.date, value: m.netWorth })));
+    // Trend and composition use the same monthly valuation policy.
+    const [months,coverage,meta]=await Promise.all([getMonthlyTotals(start, end, { forwardFill }),getTrendCoverage(start,end),getObservationMetadata(selectedMonth)]);
 
     // Composition at selectedMonth: join snapshots with assets for categories.
     const [snaps, assets] = await Promise.all([
       listSnapshotsByDate(selectedMonth, { forwardFill }),
-      listAssets({ includeArchived: false }),
+      listAssets({ includeArchived: true }),
     ]);
+    if (generation !== request.current||capturedEpoch!==getLedgerEpoch()) return;
+    setLoadedEpoch(capturedEpoch);
+    const counts=new Map(coverage.map(row=>[row.date,row.recordedActive]));
+    setTrend(completeTrend(start, end, months).map(point=>({...point,partial:point.value!==null&&(counts.get(point.label)??0)<meta.activeAssets})));
     const catById = new Map(assets.map((a) => [a.id, a.categories]));
     setCompInput(
       snaps.map((s) => ({
@@ -77,8 +94,9 @@ export default function AnalysisScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      void dataVersion;
+      void loadData().catch(() => notify(t('common.error'), t('common.loadFailed')));
+    }, [loadData, dataVersion, t])
   );
 
   // Derived (render-time, no extra state):
@@ -111,11 +129,12 @@ export default function AnalysisScreen() {
 
   const dimLabel = (d: string) => (d === ACCOUNT_DIMENSION ? t('analysis.byAccount') : d);
 
+  if(loadedEpoch!==epoch)return <View style={shared.screen}><Text style={shared.muted}>{t('common.loading')}</Text></View>;
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={styles.content}>
-      <View style={styles.selectorRow}>
+    <ScrollView style={shared.screen} contentContainerStyle={[styles.content,desktop&&{maxWidth:1440,width:'100%',alignSelf:'center'}]}>
+      {!desktop && <View style={styles.selectorRow}>
         <MonthSelector value={selectedMonth} onChange={handleMonthChange} disablePicker />
-      </View>
+      </View>}
 
       <SectionCard title={t('analysis.trendTitle')}>
         <View style={styles.chipRow}>
@@ -135,6 +154,8 @@ export default function AnalysisScreen() {
         )}
       </SectionCard>
 
+      <View style={desktop&&contentWidth>=950?{flexDirection:'row',gap:20,alignItems:'flex-start'}:undefined}>
+      <View style={desktop&&contentWidth>=950?{flex:1,minWidth:0}:undefined}>
       <SectionCard title={t('analysis.composition')}>
         <ScrollView
           horizontal
@@ -167,10 +188,13 @@ export default function AnalysisScreen() {
         )}
       </SectionCard>
 
+      </View>
+      <View style={desktop&&contentWidth>=950?{width:370}:undefined}>
       <SectionCard title={t('analysis.calendarTitle')}>
         <Text style={styles.intro}>{t('analysis.calendarIntro')}</Text>
         <YearCalendar selected={selectedMonth} onChange={handleMonthChange} />
       </SectionCard>
+      </View></View>
     </ScrollView>
   );
 }

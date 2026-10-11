@@ -371,3 +371,48 @@ test('runSync persists cloud_etag after a sync', async () => {
   await runSync(deps);
   assert.equal(await deps.getState(CLOUD_ETAG_KEY), 'v1'); // seeded write -> etag v1
 });
+
+test('identical full sync skips all ledger writes even when native/web object keys differ',async()=>{
+ const {db}=await makeMigratedDb();await addAccount(db,'a','Synthetic',HLC(10,'aaaaaa'));
+ const original=await buildDocument(db,{generatedAt:'x',generatedBy:'aaaaaa'});
+ const reordered=structuredClone(original);
+ reordered.tables.account=reordered.tables.account.map(r=>({updated_at:r.updated_at,archived:r.archived,name:r.name,uuid:r.uuid}));
+ const remote=makeFakeRemote();remote._seed(serializeDocument(reordered));
+ let mutations=0,notifications=0,uploads=0;
+ const wrap=(source:CicadaDB):CicadaDB=>({...source,
+  runAsync:async(sql,params)=>{if(/(?:INSERT INTO|UPDATE|DELETE FROM) (?:account|asset|asset_snapshot|tran|setting)\b/i.test(sql))mutations++;return source.runAsync(sql,params);},
+  withTransactionAsync:task=>source.withTransactionAsync(tx=>task(wrap(tx))),
+ });
+ const write=remote.write;remote.write=async(...args)=>{uploads++;return write(...args);};
+ const {deps}=depsFor(wrap(db),remote,'aaaaaa');
+ const outcome=await runSync({...deps,onLocalChanged:()=>{notifications++;}});
+ assert.equal(outcome.status,'unchanged');assert.equal(mutations,0);assert.equal(uploads,0);assert.equal(notifications,0);
+});
+test('committed remote changes notify even if their subsequent upload fails',async()=>{
+ const {db}=await makeMigratedDb();await addAccount(db,'a','Before',HLC(10,'aaaaaa'));
+ const doc=await buildDocument(db,{generatedAt:'x',generatedBy:'aaaaaa'});
+ doc.tables.account[0].name='After';doc.tables.account[0].updated_at=HLC(20,'bbbbbb');
+ const remote=makeFakeRemote();remote._seed(serializeDocument(doc));
+ await addAccount(db,'b','Local addition',HLC(30,'aaaaaa'));
+ remote.write=async()=>{throw new Error('offline');};
+ let notifications=0;const {deps}=depsFor(db,remote,'aaaaaa');
+ await assert.rejects(runSync({...deps,onLocalChanged:()=>{notifications++;}}),/offline/);
+ assert.equal(notifications,1);assert.equal((await db.getFirstAsync<{name:string}>("SELECT name FROM account WHERE uuid='a'"))!.name,'After');
+});
+
+ test('304 observes external local writes so cached screens can invalidate',async()=>{
+ const {db}=await makeMigratedDb();const remote=makeFakeRemote();
+ await runSync(depsFor(db,remote,'aaaaaa').deps);
+ await addAccount(db,'external','Another window',HLC(30,'bbbbbb'));
+ const observed:SyncDocument[]=[];const {deps}=depsFor(db,remote,'aaaaaa');
+ const result=await runSync({...deps,conditionalEtag:'v1',onLocalObserved:doc=>observed.push(doc)});
+ assert.equal(result.status,'unchanged');assert.equal(observed.length,1);
+ assert.equal(observed[0].tables.account[0].name,'Another window');
+ });
+test('sync reports transport, local-read and upload phases without pretending no-op data was rewritten',async()=>{
+ const {db}=await makeMigratedDb();const remote=makeFakeRemote();const {deps}=depsFor(db,remote,'aaaaaa');
+ const phases:string[]=[];await runSync({...deps,onPhase:phase=>phases.push(phase)});
+ assert.deepEqual(phases,['readingRemote','readingLocal','uploading']);
+ phases.length=0;await runSync({...deps,onPhase:phase=>phases.push(phase)});
+ assert(phases.includes('merging'));assert(!phases.includes('writingLocal'));assert(!phases.includes('uploading'));
+});

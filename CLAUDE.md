@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 CicadaFinScape Mobile — a local-first personal finance tracker (net worth, assets,
 income/expenses) built on Expo / React Native. One TypeScript codebase ships to
 **five targets**: iOS, Android, browser, installable PWA, and a Tauri desktop app.
-All data is on-device in SQLite; there is no backend or network dependency.
+Data is stored on-device in SQLite; optional WebDAV sync runs on mobile and Tauri desktop.
 
 Requires **Node 20+** (`.nvmrc`). Use `npm ci` for reproducible installs.
 
@@ -17,7 +17,8 @@ Requires **Node 20+** (`.nvmrc`). Use `npm ci` for reproducible installs.
 npx expo start          # Metro + dev server (scan QR with Expo Go)
 npm run android         # / ios / web — launch a specific platform
 npm run lint            # expo lint (eslint-config-expo, flat config)
-npx tsc --noEmit        # type-check (strict mode; there is no test suite)
+npm test               # core and regression tests
+npx tsc --noEmit        # type-check (strict mode)
 
 # Web / PWA
 npm run export:web      # static export to dist/
@@ -35,8 +36,8 @@ eas update --branch preview --message "..."
 node scripts/migrate-streamlit.js <backup.zip> cicada-backup.json
 ```
 
-There is **no configured test runner**; don't look for one. Verify changes with
-`npx tsc --noEmit` + `npm run lint`, and by running the relevant platform.
+Run `npm test`, `npx tsc --noEmit`, `npm run lint`, and the relevant platform.
+See `docs/reliability-changes.md` for browser checks and transaction conventions.
 
 ## Architecture
 
@@ -54,11 +55,10 @@ backends. Three backends are wired up, selected two ways:
     `@tauri-apps/plugin-sql`). Desktop webviews don't reliably expose OPFS.
   - **Plain browser/PWA** → expo-sqlite's WASM (wa-sqlite, persisted via OPFS).
 
-`tauri-sqlite.ts` adapts tauri-plugin-sql to `CicadaDB` and carries the tricky bits:
-it rewrites `?` placeholders to `$1, $2, …`, splits multi-statement DDL on `;`, and
-makes `withTransactionAsync` a no-op (the plugin's connection pool can't guarantee a
-JS-issued BEGIN/COMMIT lands on one connection — fine for this single-user app, but
-restores are **not** atomic on desktop).
+`tauri-sqlite.ts` adapts tauri-plugin-sql to `CicadaDB`. Native transaction
+commands pin a SQLx connection until commit/rollback. Every callback receives a
+scoped DB: use that argument, never `getDatabase()` inside the callback. The
+same convention also serializes native/browser queries around transactions.
 
 **Cross-origin isolation (COOP/COEP headers) is mandatory** for wa-sqlite's OPFS and
 must be set everywhere the web build is served: `metro.config.js` (dev),
@@ -106,7 +106,7 @@ react-native-web stubs out some RN APIs, so two utilities branch on `Platform.OS
   intentionally synchronous so a following file-picker call stays inside the user gesture.
 - **`src/services/backup.ts`** — versioned JSON export/import. Web uses a Blob download
   and a hidden `<input type=file>`; native uses `expo-file-system` + `expo-sharing` /
-  `expo-document-picker`. Import calls `resetDatabase()` first (replaces all data).
+  `expo-document-picker`. Import validates first, saves a recovery backup, then atomically replaces the ledger.
 
 ## Conventions
 

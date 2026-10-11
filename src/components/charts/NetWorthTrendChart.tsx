@@ -1,106 +1,32 @@
-import { useMemo, useState } from 'react';
-import { LayoutChangeEvent, View } from 'react-native';
-import { LineChart } from 'react-native-gifted-charts';
-
-import { useLocale, useSemanticColors, useTheme } from '../../hooks/SettingsContext';
+import { useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
+import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import { useFormat, useLocale, useSemanticColors, useTheme } from '../../hooks/SettingsContext';
 import { abbrev, niceAxis } from '../../utils/chart';
 import { monthShort } from '../../utils/date';
-import { spacing } from '../../utils/theme';
-import { usePointerConfig } from './pointer';
-
-export type TrendPoint = {
-  label: string; // "YYYY-MM"
-  value: number;
-};
-
-type Props = {
-  points: TrendPoint[];
-  color?: string;
-  height?: number;
-};
-
-const Y_AXIS_WIDTH = 42;
-
-/**
- * Compact net-worth line chart with axes for the home hero card. Width is
- * measured from the actual container (not Dimensions) so it never overflows the
- * card; the y-axis auto-scales to the data range rather than starting at zero.
- */
-export function NetWorthTrendChart({ points, color, height = 150 }: Props) {
-  const locale = useLocale();
-  const c = useTheme();
-  const { gain, loss } = useSemanticColors();
-  const [boxWidth, setBoxWidth] = useState(0);
-
-  // A net-worth curve is colored by its net direction over the range, honoring
-  // the user's gain/loss convention (green-up or red-up) — never the theme
-  // accent, so it reads the same across themes. Callers may still override.
-  const lineColor =
-    color ??
-    (points.length > 1 && points[points.length - 1].value >= points[0].value ? gain : loss);
-
-  const axis = useMemo(() => {
-    const vals = points.map((p) => p.value);
-    return niceAxis(Math.min(...vals), Math.max(...vals), 3);
-  }, [points]);
-
-  // Shift data down by the baseline so gifted-charts plots from 0 (reliable),
-  // then add the baseline back in the y-axis labels. Avoids the flaky yAxisOffset.
-  const chartData = useMemo(() => {
-    const count = points.length;
-    const step = Math.max(1, Math.ceil(count / 6)); // ~6 x-labels max
-    return points.map((p, i) => {
-      const month = Number(p.label.split('-')[1]);
-      return {
-        value: p.value - axis.offset,
-        actual: p.value, // unshifted, for the tooltip
-        date: p.label, // full "YYYY-MM", for the tooltip
-        label: i % step === 0 ? monthShort(month, locale) : '',
-      };
-    });
-  }, [points, locale, axis.offset]);
-
-  const pointer = usePointerConfig(lineColor);
-
-  // gifted-charts total width = plot width + y-axis labels; subtract the axis
-  // (plus a small margin) from the measured box so nothing spills out.
-  const plotWidth = Math.max(boxWidth - Y_AXIS_WIDTH - spacing.sm, 0);
-
-  return (
-    <View onLayout={(e: LayoutChangeEvent) => setBoxWidth(e.nativeEvent.layout.width)} style={{ overflow: 'hidden' }}>
-      {points.length >= 2 && plotWidth > 0 && (
-        <LineChart
-          data={chartData}
-          height={height}
-          width={plotWidth}
-          color={lineColor}
-          thickness={2.5}
-          curved
-          adjustToWidth
-          hideDataPoints
-          areaChart
-          startFillColor={lineColor}
-          startOpacity={0.18}
-          endOpacity={0.0}
-          // y-axis range (data is pre-shifted by axis.offset; labels add it back)
-          maxValue={axis.top - axis.offset}
-          noOfSections={axis.noOfSections}
-          stepValue={axis.niceStep}
-          // axes + grid
-          yAxisColor={c.border}
-          xAxisColor={c.border}
-          rulesColor={c.border}
-          rulesType="solid"
-          yAxisTextStyle={{ color: c.muted, fontSize: 10 }}
-          xAxisLabelTextStyle={{ color: c.muted, fontSize: 10 }}
-          formatYLabel={(label: string) => abbrev(Number(label) + axis.offset)}
-          yAxisLabelWidth={Y_AXIS_WIDTH}
-          initialSpacing={8}
-          endSpacing={16}
-          disableScroll
-          pointerConfig={pointer}
-        />
-      )}
-    </View>
-  );
+import { trendPath } from '../../utils/observation';
+export type TrendPoint = {label:string;value:number|null;partial?:boolean};
+export function NetWorthTrendChart({points,color,height=150}:{points:TrendPoint[];color?:string;height?:number}){
+ const c=useTheme(),locale=useLocale(),{fmt}=useFormat(),{gain,loss}=useSemanticColors(),{t}=useTranslation();
+ const [width,setWidth]=useState(0),[selected,setSelected]=useState<number|null>(null);
+ useEffect(()=>setSelected(null),[points]);
+ const values=points.flatMap(p=>p.value===null?[]:[p.value]);
+ const axis=niceAxis(values.length?Math.min(...values):0,values.length?Math.max(...values):1,3);
+ if(!values.length)return <Text style={{color:c.muted}}>{t('home.noSnapshot')}</Text>;
+ const lineColor=color??(values.at(-1)!>=values[0]?gain:loss),left=52,right=12,top=12,bottom=28;
+ const x=(i:number)=>left+Math.max(0,width-left-right)*i/Math.max(1,points.length-1);
+ const y=(v:number)=>top+(axis.top-v)/(axis.top-axis.offset)*(height-top-bottom);
+ const selectedPoint=selected===null?undefined:points[selected];
+ const labelStep=Math.max(1,Math.ceil(points.length/6));
+ return <View onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
+  {width>left+right&&<Svg width={width} height={height} accessibilityRole="image" accessibilityLabel={t('analysis.trendTitle')}>
+   {Array.from({length:axis.noOfSections+1},(_,i)=>{const v=axis.offset+axis.niceStep*i,yy=y(v);return <Line key={'grid'+i} x1={left} x2={width-right} y1={yy} y2={yy} stroke={c.border}/>;})}
+   {Array.from({length:axis.noOfSections+1},(_,i)=>{const v=axis.offset+axis.niceStep*i;return <SvgText key={'axis'+i} x={left-8} y={y(v)+4} fill={c.muted} fontSize={10} textAnchor="end">{abbrev(v,axis.niceStep)}</SvgText>;})}
+   <Path d={trendPath(points,x,y)} fill="none" stroke={lineColor} strokeWidth={2.5}/>
+   {points.map((p,i)=><Circle key={p.label} cx={x(i)} cy={p.value===null?height-bottom:y(p.value)} r={p.value===null?3:selected===i?5:3} fill={p.value===null?c.border:p.partial?'#b98842':lineColor} onPress={()=>setSelected(i)}/>)}
+   {points.map((p,i)=>i%labelStep===0||i===points.length-1?<SvgText key={p.label} x={x(i)} y={height-7} fill={c.muted} fontSize={10} textAnchor="middle">{p.label.endsWith('-01')||i===0?p.label:monthShort(Number(p.label.slice(5)),locale)}</SvgText>:null)}
+  </Svg>}
+  <Text style={{color:c.muted,fontSize:11}}>{selectedPoint?`${selectedPoint.label} · ${selectedPoint.value===null?t('observation.notRecorded'):fmt(selectedPoint.value)}${selectedPoint.partial?' · '+t('observation.partial'):''}`:t('observation.trendHelp')}</Text>
+ </View>;
 }

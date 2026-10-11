@@ -217,3 +217,23 @@ test('parent-delete wins over a concurrent child edit (cascade-repair removes th
   assert.equal((await db.getAllAsync('SELECT * FROM account')).length, 0);
   assert.equal((await db.getAllAsync('SELECT * FROM asset')).length, 0); // orphan removed — parent delete wins
 });
+
+for (const entity of ['account', 'asset', 'snapshot', 'tran'] as const) {
+  test(`stale merge cannot resurrect a locally deleted ${entity}`, async () => {
+    const { db } = await makeMigratedDb();
+    const stale = emptyMerge();
+    stale.tables.account = [{uuid:'acc1',name:'Bank',archived:0,updated_at:ts(1)}];
+    stale.tables.asset = [{uuid:'as1',accountUuid:'acc1',name:'Cash',categories:'{}',archived:0,updated_at:ts(1)}];
+    stale.tables.snapshot = [{assetUuid:'as1',date:'2026-06',netWorth:100,inflow:0,profit:0,updated_at:ts(1)}];
+    stale.tables.tran = [{uuid:'tr1',date:'2026-06-01',type:'INCOME',value:50,cat:'',note:'',updated_at:ts(1)}];
+    await applyMerge(db, stale);
+    const deleted = emptyMerge();
+    const uuid = {account:'acc1',asset:'as1',snapshot:'as1|2026-06',tran:'tr1'}[entity];
+    deleted.tombstones = [{entity,uuid,deleted_at:ts(5)}];
+    await applyMerge(db, deleted);
+    await applyMerge(db, stale);
+    const table = entity === 'snapshot' ? 'asset_snapshot' : entity;
+    assert.equal((await db.getFirstAsync<{n:number}>(`SELECT COUNT(*) AS n FROM ${table}`))?.n,0);
+    assert.equal((await db.getFirstAsync<{deleted_at:string}>('SELECT deleted_at FROM tombstone WHERE entity=? AND uuid=?',[entity,uuid]))?.deleted_at,ts(5));
+  });
+}

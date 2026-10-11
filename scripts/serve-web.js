@@ -11,6 +11,7 @@ const path = require('path');
 
 const DIST = path.resolve(__dirname, '..', 'dist');
 const PORT = Number(process.argv[2]) || 8080;
+const HOST = process.env.CICADA_WEB_HOST || '127.0.0.1';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -42,8 +43,9 @@ function setHeaders(res, ext) {
 function tryFiles(urlPath) {
   // Resolve a URL path to a real file inside DIST, guarding against traversal.
   const clean = decodeURIComponent(urlPath.split('?')[0]);
-  const base = path.normalize(path.join(DIST, clean));
-  if (!base.startsWith(DIST)) return null; // path traversal attempt
+  const base = path.resolve(DIST, '.' + (clean.startsWith('/') ? clean : '/' + clean));
+  const inside = (file) => { const relative = path.relative(DIST, file); return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative); };
+  if (!inside(base)) return null;
 
   const candidates = [];
   if (clean === '/' || clean === '') {
@@ -54,6 +56,7 @@ function tryFiles(urlPath) {
     candidates.push(path.join(base, 'index.html'));
   }
   for (const c of candidates) {
+    if (!inside(c)) continue;
     try {
       if (fs.statSync(c).isFile()) return c;
     } catch {}
@@ -62,7 +65,8 @@ function tryFiles(urlPath) {
 }
 
 const server = http.createServer((req, res) => {
-  let file = tryFiles(req.url);
+  let file;
+  try { file = tryFiles(req.url || '/'); } catch { res.writeHead(400); res.end('Invalid URL'); return; }
 
   // SPA-style fallback for client-side routes that have no static .html.
   const wantsHtml = (req.headers.accept || '').includes('text/html');
@@ -76,10 +80,12 @@ const server = http.createServer((req, res) => {
 
   setHeaders(res, path.extname(file).toLowerCase());
   res.writeHead(200);
-  fs.createReadStream(file).pipe(res);
+  const stream = fs.createReadStream(file);
+  stream.on('error', () => res.destroy());
+  stream.pipe(res);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, HOST, () => {
   if (!fs.existsSync(DIST)) {
     console.error('dist/ not found — run `npx expo export --platform web` first.');
     process.exit(1);

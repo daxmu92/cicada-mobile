@@ -5,14 +5,17 @@
  * 305699 → "306K". Uses one decimal below 10× a unit so adjacent steps like
  * 1500/2000 don't both round to "2K"; whole multiples drop the ".0".
  */
-export function abbrev(n: number): string {
+export function abbrev(n: number, step?: number): string {
   const a = Math.abs(n);
-  const fmt = (v: number, suffix: string) =>
-    (Math.abs(v) < 10 ? v.toFixed(1).replace(/\.0$/, '') : String(Math.round(v))) + suffix;
-  if (a >= 1e9) return fmt(n / 1e9, 'B');
-  if (a >= 1e6) return fmt(n / 1e6, 'M');
-  if (a >= 1e3) return fmt(n / 1e3, 'K');
-  return String(Math.round(n));
+  const fmt = (v: number, suffix: string, unit: number) => {
+    if (!step || step <= 0) return (Math.abs(v) < 10 ? v.toFixed(1).replace(/\.0$/, '') : String(Math.round(v))) + suffix;
+    const digits = Math.max(0, Math.min(6, Math.ceil(Math.log10(unit / step))));
+    return Number(v.toFixed(digits)).toString() + suffix;
+  };
+  if (a >= 1e9) return fmt(n / 1e9, 'B', 1e9);
+  if (a >= 1e6) return fmt(n / 1e6, 'M', 1e6);
+  if (a >= 1e3) return fmt(n / 1e3, 'K', 1e3);
+  return step ? fmt(n, '', 1) : String(Math.round(n));
 }
 
 export type NiceAxis = {

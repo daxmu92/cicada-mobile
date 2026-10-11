@@ -9,6 +9,16 @@
 # Usage:  npm run build:windows   (or: bash scripts/build-windows.sh)
 set -euo pipefail
 
+# Require PowerShell 7; WSL may not inherit its newly-installed PATH entry.
+if command -v pwsh.exe >/dev/null 2>&1; then
+  POWERSHELL="$(command -v pwsh.exe)"
+elif [ -x '/mnt/c/Program Files/PowerShell/7/pwsh.exe' ]; then
+  POWERSHELL='/mnt/c/Program Files/PowerShell/7/pwsh.exe'
+else
+  echo "ERROR: PowerShell 7 is required. Install Microsoft.PowerShell on Windows." >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
@@ -21,7 +31,16 @@ GIT_COMMON_DIR="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)"
 MAIN_ROOT="$(dirname "$GIT_COMMON_DIR")"
 WSL_UNC="$(wslpath -w "$MAIN_ROOT")"
 PS1_WIN="$(wslpath -w "$REPO_ROOT/scripts/build-windows.ps1")"
-BUILDS_DIR="$HOME/cicada-builds"
+COMMIT="$(git rev-parse --short=7 HEAD)"
+TARGET_MNT="/mnt/c/projects/cicada-build-tools/target-$COMMIT"
+TARGET_WIN="$(wslpath -w "$TARGET_MNT")"
+BUILDS_DIR="$(dirname "$REPO_ROOT")/cicada-builds/$COMMIT"
+# The signing key stays outside source control and is passed as a path only.
+if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ] && [ -f "$HOME/.config/cicada-release/tauri.key" ]; then
+  export TAURI_SIGNING_PRIVATE_KEY="$(wslpath -w "$HOME/.config/cicada-release/tauri.key")"
+  export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=''
+fi
+export WSLENV="${WSLENV:+$WSLENV:}TAURI_SIGNING_PRIVATE_KEY:TAURI_SIGNING_PRIVATE_KEY_PASSWORD:npm_config_registry"
 
 # A clean build needs the Windows checkout in place.
 if [ ! -d "$WIN_REPO_MNT/.git" ]; then
@@ -36,8 +55,8 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 echo "==> Building branch '$BRANCH' on Windows ($WIN_REPO)..."
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
-  -Branch "$BRANCH" -WslRemote "$WSL_UNC"
+"$POWERSHELL" -NoProfile -ExecutionPolicy Bypass -File "$PS1_WIN" \
+  -Branch "$BRANCH" -WslRemote "$WSL_UNC" -TargetDir "$TARGET_WIN"
 build_status=$?
 if [ "$build_status" -ne 0 ]; then
   echo "ERROR: Windows build failed (exit $build_status). No artifacts produced." >&2
@@ -45,16 +64,16 @@ if [ "$build_status" -ne 0 ]; then
 fi
 
 # Surface the installers on the Linux side for convenience.
-RELEASE="$WIN_REPO_MNT/src-tauri/target/release"
+RELEASE="$TARGET_MNT/release"
 BUNDLE="$RELEASE/bundle"
 mkdir -p "$BUILDS_DIR"
 # Clear prior installers/portable so this dir always reflects ONLY the current
 # build — otherwise older-version artifacts (e.g. a past 0.1.0) linger here
 # forever after a version bump. rm -f ignores the no-match case.
-rm -f "$BUILDS_DIR"/*.msi "$BUILDS_DIR"/*.exe
+rm -f "$BUILDS_DIR"/*.msi "$BUILDS_DIR"/*.exe "$BUILDS_DIR"/*.sig "$BUILDS_DIR"/latest.json "$BUILDS_DIR"/build-manifest.json "$BUILDS_DIR"/SHA256SUMS
 shopt -s nullglob
 copied=0
-for f in "$BUNDLE"/msi/*.msi "$BUNDLE"/nsis/*.exe; do
+for f in "$BUNDLE"/msi/*.msi "$BUNDLE"/msi/*.sig "$BUNDLE"/nsis/*.exe "$BUNDLE"/nsis/*.sig "$BUNDLE"/*.json "$BUNDLE"/SHA256SUMS; do
   cp -f "$f" "$BUILDS_DIR/"
   echo "    copied $(basename "$f")"
   copied=1
@@ -70,8 +89,9 @@ if [ -f "$RELEASE/CicadaFinScape.exe" ]; then
 fi
 
 if [ "$copied" -eq 1 ]; then
+  node scripts/release-artifacts.mjs "$BUNDLE" "$BUILDS_DIR"
   echo "==> Installers copied to $BUILDS_DIR"
 else
   echo "WARNING: no installers found under $BUNDLE" >&2
 fi
-echo "==> Done. Windows artifacts under $WIN_REPO\\src-tauri\\target\\release\\bundle\\"
+echo "==> Done. Windows artifacts under $TARGET_WIN\\release\\bundle\\"

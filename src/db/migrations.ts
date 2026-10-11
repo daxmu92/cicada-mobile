@@ -8,6 +8,8 @@ export type SqlParam = string | number | null;
 
 /** The subset of expo-sqlite's SQLiteDatabase the app actually uses. */
 export interface CicadaDB {
+  /** Local database identity; never exported or synchronized. */
+  ledgerMode?: 'live' | 'demo';
   getAllAsync<T = any>(sql: string, params?: SqlParam[]): Promise<T[]>;
   getFirstAsync<T = any>(sql: string, params?: SqlParam[]): Promise<T | null>;
   runAsync(
@@ -16,7 +18,7 @@ export interface CicadaDB {
   ): Promise<{ lastInsertRowId: number; changes: number }>;
   /** Executes one or more `;`-separated statements (no bind params). */
   execAsync(sql: string): Promise<void>;
-  withTransactionAsync(task: () => Promise<void>): Promise<void>;
+  withTransactionAsync(task: (tx: CicadaDB) => Promise<void>): Promise<void>;
 }
 
 export const SCHEMA_VERSION = 2;
@@ -82,6 +84,15 @@ export async function migrate(db: CicadaDB): Promise<void> {
     CREATE TABLE IF NOT EXISTS sync_state (
       key     TEXT PRIMARY KEY,
       value   TEXT NOT NULL
+    );
+
+    -- Local recovery copies do not travel in the cloud sync document.
+    CREATE TABLE IF NOT EXISTS local_draft (key TEXT PRIMARY KEY, content TEXT NOT NULL);
+
+    CREATE TABLE IF NOT EXISTS local_backup (
+      id INTEGER PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      content TEXT NOT NULL
     );
 
     CREATE INDEX IF NOT EXISTS idx_snapshot_date ON asset_snapshot(date);
@@ -163,6 +174,7 @@ export async function migrate(db: CicadaDB): Promise<void> {
 
 export async function resetSchema(db: CicadaDB): Promise<void> {
   await db.execAsync(`
+    DROP TABLE IF EXISTS local_draft;
     DROP TABLE IF EXISTS tran;
     DROP TABLE IF EXISTS asset_snapshot;
     DROP TABLE IF EXISTS asset;

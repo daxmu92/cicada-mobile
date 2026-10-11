@@ -1,20 +1,46 @@
+import { DesktopEntryProvider } from '../../src/hooks/use-desktop-entry';
+import { CommonActions } from '@react-navigation/native';
+import { hasUnsavedDrafts,hasSavingDrafts,discardDrafts } from '../../src/ledger/drafts';
+import { confirmAsync, notify } from '../../src/utils/dialog';
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
+import { View } from 'react-native';
+import { useDesktopLayout } from '../../src/hooks/use-desktop-layout';
+import { DesktopNavigation, DesktopToolbar } from '../../src/components/desktop/DesktopChrome';
 import { useTranslation } from 'react-i18next';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { useTheme } from '../../src/hooks/SettingsContext';
 
 export default function TabLayout() {
+  return <DesktopEntryProvider><TabContent/></DesktopEntryProvider>;
+}
+
+function TabContent() {
   const { t } = useTranslation();
   const c = useTheme();
+  const { desktop, sidebarWidth } = useDesktopLayout();
 
   return (
+    <View style={{flex:1,backgroundColor:c.bg}}>
+    {desktop && <View style={{position:'absolute',top:0,left:sidebarWidth,right:0,zIndex:10}}><DesktopToolbar/></View>}
     <Tabs
+      tabBar={desktop ? props => <DesktopNavigation {...props}/> : undefined}
+      screenListeners={({navigation,route})=>({tabPress:event=>{
+        const state=navigation.getState();
+        if(state.routes[state.index].key===route.key||!hasUnsavedDrafts())return;
+        event.preventDefault();
+        if(hasSavingDrafts())return;
+        void confirmAsync(t('drafts.title'),t('drafts.body')).then(async ok=>{
+          if(ok){await discardDrafts();navigation.dispatch(CommonActions.navigate(route.name));}
+        }).catch(()=>notify(t('common.error'),t('draftRecovery.error')));
+      }})}
       screenOptions={{
         tabBarActiveTintColor: c.accent,
-        headerShown: true,
+        headerShown: !desktop,
+        sceneStyle: desktop ? {paddingTop:72} : undefined,
+        tabBarPosition: desktop ? 'left' : 'bottom',
         tabBarButton: HapticTab,
         // On web the tab button is vertically tight, so the label (a flex item)
         // gets shrunk ~1px below its natural height and `overflow: hidden` clips
@@ -57,5 +83,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }
